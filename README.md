@@ -19,7 +19,7 @@ Token Mint: 5Uw386Bcze69DSL8CfCtWKxSv4kqx23A4kZMGAnnEdbj
 ```
 Tx API: https://oracle.txodds.com/api/
 Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
-Token Mint: ?????????????????
+Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
 ```
 
 ## Access Flow
