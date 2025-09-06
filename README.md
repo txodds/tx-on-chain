@@ -12,7 +12,7 @@ Tx Oracle provides on-chain verification of sports data through a hybrid on-chai
 ```
 Tx API: https://oracle-dev.txodds.com/api/
 Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
-Token Mint: 5Uw386Bcze69DSL8CfCtWKxSv4kqx23A4kZMGAnnEdbj
+Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
 ```
 
 ### Mainnet
