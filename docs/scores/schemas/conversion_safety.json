@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "A safety that happens during a conversion play: Ball carrier tackled or forced out of own end zone. Ball dead in teams end zone with defending team being responsible for ball being there. Infringements in own end zone. Scoring play that results in 1 point being awarded to the scoring team.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "conversion_safety",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "conversion_safety"
+          ]
+        },
+        "ActionScoreDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to the score caused by the action. See `Score` for the current score of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "KickoffInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Kick-off information",
+          "title": "KickoffInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/KickoffInfo"
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "Participant": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            2,
+            1
+          ]
+        },
+        "PossibleEvent": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Possible events happening during the game, not associated to a particular team. To be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen",
+          "title": "Possible Event",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PossibleEvent"
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            4,
+            2,
+            11,
+            6
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Down",
+    "FixtureId",
+    "Id",
+    "InPlayInfo",
+    "KickoffInfo",
+    "Participant",
+    "Score",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

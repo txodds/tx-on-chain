@@ -1,0 +1,228 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Indicates a possible situation, which will be confirmed by the relevant events later on. This is different from an unconfirmed event, as in we are only raising a possibility of the event, the event itself may never happen. The contents of the Data field depend on the presence of a Participant field in the action. If present, we indicate a possible event linked to that participant. It not present, we indicate a possible event for the game in itself. Fields are annotated with `Participant event` or `Game event` if relevant.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "possible",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "possible"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Penalty": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible penalty happening",
+              "title": "Penalty",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "Turnover": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible turnover happening",
+              "title": "Turnover",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "Challenge": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible challenge happening",
+              "title": "Challenge",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "2ptConversionAttempt": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible 2 point conversion for the team",
+              "title": "2pt Conversion Attempt",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "4thDownConversion": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible conversion on the 4th down for the team",
+              "title": "4th Down Conversion",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "FieldGoal": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible field goal for the team",
+              "title": "Field Goal",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "Safety": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible safety for the team",
+              "title": "Safety",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "Touchdown": {
+              "type": [
+                "boolean"
+              ],
+              "description": "A possible touchdown for the team",
+              "title": "Touchdown",
+              "examples": [
+                false,
+                true
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti1State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti2State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "Participant": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "PossibleEvent": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Possible events happening during the game, not associated to a particular team. To be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen",
+          "title": "Possible Event",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PossibleEvent"
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            11,
+            2,
+            4,
+            6,
+            3
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

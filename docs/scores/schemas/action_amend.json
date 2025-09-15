@@ -1,0 +1,417 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$defs": {
+    "UsFootballRush": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Rush Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "RusherId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that does the rush",
+          "title": "Rusher Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "Yards": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Yards gained by the rush",
+          "title": "Yards",
+          "examples": [
+            null,
+            0,
+            10,
+            18
+          ]
+        },
+        "IsTeam": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "If true, the rush was made by the team, not a player. This is used for team rushes.",
+          "title": "Is Team",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "UsFootballPass": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Pass Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "ReceiverId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that received the pass.",
+          "title": "Receiver Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "PasserId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that made the pass.",
+          "title": "Passer Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "SackedId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that was sacked, if relevant.",
+          "title": "Sacked Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "Yards": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Yards gained by the pass",
+          "title": "Yards",
+          "examples": [
+            null,
+            0,
+            10,
+            18
+          ]
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Pass result",
+          "title": "Outcome",
+          "enum": [
+            null,
+            "complete",
+            "incomplete",
+            "intercepted",
+            "sack"
+          ]
+        },
+        "IsTeam": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "If true, the pass was made by the team, not a player. This is used for team passes",
+          "title": "Is Team",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "UsFootballTouchdown": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Touchdown Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that scores the touchdown.",
+          "title": "Player Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "PasserId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that made the pass.",
+          "title": "Passer Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Touchdown result. Can be modified via action amend",
+          "title": "Type",
+          "enum": [
+            null,
+            "pass",
+            "rush",
+            "other"
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "description": "Amends an action that was previously sent. The Id field should match the Id of the action to amend. The Action name should match (same action type). Previous is the previous payload sent for the action, so they payload can vary depending on the action being amended. New contains the new values for that action, to replace the previous one. The fields amended are usually fields like PlayerId or Timestamp, that shouldn't have an impact on the game state itself (no changes to score, scrimmage, etc). Important note: the status id associated to this action will match the status id of the action being amended. For example, an amend during Q2 of an action that happened in Q1, will display Q1 in the status id.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "action_amend",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "action_amend"
+          ]
+        },
+        "ActionPlayerStatsDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to player statistics caused by the action. See `PlayerStats` for the current player statistics of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Action": {
+              "type": [
+                "string"
+              ],
+              "description": "Name of the action to amend. It has to match a previously sent action",
+              "title": "Action",
+              "examples": [
+                "kickoff",
+                "touchdown"
+              ]
+            },
+            "Id": {
+              "type": [
+                "number"
+              ],
+              "description": "Id of the action to amend. It has to match a previously sent action",
+              "title": "Id",
+              "examples": [
+                100,
+                106,
+                10,
+                118
+              ]
+            },
+            "New": {
+              "type": [
+                "object"
+              ],
+              "description": "New values for the action. The contents will be the same as the `Data` field for the action amended. It will also embed the `Clock` value of the updated action message.",
+              "title": "New",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UsFootballRush"
+                },
+                {
+                  "$ref": "#/$defs/UsFootballPass"
+                },
+                {
+                  "$ref": "#/$defs/UsFootballTouchdown"
+                }
+              ]
+            },
+            "Previous": {
+              "type": [
+                "object"
+              ],
+              "description": "Old values for the action. The contents will be the same as the `Data` field for the action amended. It will also embed the `Clock` value of the previous action message.",
+              "title": "Previous",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/UsFootballRush"
+                },
+                {
+                  "$ref": "#/$defs/UsFootballPass"
+                },
+                {
+                  "$ref": "#/$defs/UsFootballTouchdown"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Id",
+            "Action",
+            "New",
+            "Previous"
+          ]
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics",
+          "title": "PlayerStats",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            2,
+            6,
+            4,
+            11,
+            8
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
