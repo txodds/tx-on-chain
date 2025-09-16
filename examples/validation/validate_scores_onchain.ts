@@ -216,36 +216,31 @@ async function main() {
     `Found daily scores roots account at ${dailyScoresRootsPda.toBase58()}`
   );
 
-  const convertToUnsignedBytes = (hash: number[]): number[] => {
-    if (!hash) return [];
-    return hash.map((byte) => (byte < 0 ? byte + 256 : byte));
-  };
-
   const statToProve = {
     statToProve: {
       key: validation.statToProve.key,
       value: validation.statToProve.value,
       period: validation.statToProve.period,
     },
-    eventStatRoot: convertToUnsignedBytes(validation.eventStatRoot),
+    eventStatRoot: validation.eventStatRoot,
     statProof: validation.statProof.map((node: any) => ({
-      hash: convertToUnsignedBytes(node.hash),
+      hash: node.hash,
       isRightSibling: node.isRightSibling,
     })),
   };
 
   const predicate = {
-    threshold: 2,
-    comparison: { greaterThan: {} },
+    threshold: validation.statToProve.value,
+    comparison: { equalTo: {} },
   };
 
   const fixtureProof = validation.subTreeProof.map((node: any) => ({
-    hash: convertToUnsignedBytes(node.hash),
+    hash: node.hash,
     isRightSibling: node.isRightSibling,
   }));
 
   const mainTreeProof = validation.mainTreeProof.map((node: any) => ({
-    hash: convertToUnsignedBytes(node.hash),
+    hash: node.hash,
     isRightSibling: node.isRightSibling,
   }));
 
@@ -256,9 +251,7 @@ async function main() {
       minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
       maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
     },
-    eventsSubTreeRoot: convertToUnsignedBytes(
-      validation.summary.eventStatsSubTreeRoot
-    ),
+    eventsSubTreeRoot: validation.summary.eventStatsSubTreeRoot,
   };
 
   console.log("Executing on-chain stat validation with single stat...");
@@ -295,9 +288,9 @@ async function main() {
       value: validation.statToProve.value,
       period: validation.statToProve.period,
     },
-    eventStatRoot: convertToUnsignedBytes(validation.eventStatRoot),
+    eventStatRoot: validation.eventStatRoot,
     statProof: validation.statProof.map((node: any) => ({
-      hash: convertToUnsignedBytes(node.hash),
+      hash: node.hash,
       isRightSibling: node.isRightSibling,
     })),
   };
