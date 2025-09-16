@@ -9,11 +9,13 @@ import {
 import { Program, AnchorProvider, Wallet, BN } from "@coral-xyz/anchor";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
-import { AUTHORITY_PK, BASE_URL, KEYPAIR_PATH, RPC_ENDPOINT, TxOracleIDL } from "../../config";
-
-const TEST_FIXTURE_ID = 16583861;
-const TEST_SEQUENCE = 570;
-const TEST_STAT_KEY = "2";
+import {
+  AUTHORITY_PK,
+  BASE_URL,
+  KEYPAIR_PATH,
+  RPC_ENDPOINT,
+  TxOracleIDL,
+} from "../../config";
 
 async function main() {
   console.log("Starting scores on-chain validation example");
@@ -120,16 +122,70 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
+  console.log("Getting fixtures from last Saturday...");
+
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+
   console.log(
-    `Getting scores stat validation for fixture ${TEST_FIXTURE_ID}...`
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
+  );
+
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
+
+  console.log(fixtures);
+
+  if (!fixtures || fixtures.length === 0) {
+    throw new Error("No fixtures found for the past hour");
+  }
+
+  const fixture = fixtures[0];
+
+  console.log(`Using fixture ${fixture.FixtureId}...`);
+
+  console.log(`Getting scores snapshot for fixture ${fixture.FixtureId}...`);
+
+  const scoresResponse = await httpClient.get(
+    `/api/scores/snapshot/${fixture.FixtureId}`
+  );
+  const scoreUpdates = scoresResponse.data;
+
+  console.log(`Found ${scoreUpdates.length} score updates`);
+
+  if (!scoreUpdates || scoreUpdates.length === 0) {
+    throw new Error("No score updates found for fixture");
+  }
+
+  const touchdownUpdate = scoreUpdates.find(
+    (update: { Action: string }) => update.Action === "touchdown"
+  );
+
+  if (!touchdownUpdate) {
+    throw new Error("No touchdown action found in score updates");
+  }
+
+  const scoreUpdate = touchdownUpdate;
+  const statKey = 1;
+
+  console.log(
+    `Getting scores stat validation for fixture ${fixture.FixtureId}, seq ${scoreUpdate.Seq}, statKey ${statKey}...`
   );
   const validationResponse = await httpClient.get(
     "/api/scores/stat-validation",
     {
       params: {
-        fixtureId: TEST_FIXTURE_ID,
-        seq: TEST_SEQUENCE,
-        statKey: TEST_STAT_KEY,
+        fixtureId: fixture.FixtureId,
+        seq: scoreUpdate.Seq,
+        statKey: statKey,
       },
     }
   );
@@ -137,7 +193,7 @@ async function main() {
 
   console.log("Scores stat validation data received");
 
-  const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
+  console.log(validation);
 
   const [dailyScoresRootsPda] = PublicKey.findProgramAddressSync(
     [
@@ -166,19 +222,22 @@ async function main() {
   };
 
   const statToProve = {
-    key: validation.statToProve.key,
-    value: validation.statToProve.value,
+    statToProve: {
+      key: validation.statToProve.key,
+      value: validation.statToProve.value,
+      period: validation.statToProve.period,
+    },
+    eventStatRoot: convertToUnsignedBytes(validation.eventStatRoot),
+    statProof: validation.statProof.map((node: any) => ({
+      hash: convertToUnsignedBytes(node.hash),
+      isRightSibling: node.isRightSibling,
+    })),
   };
 
   const predicate = {
     threshold: 2,
     comparison: { greaterThan: {} },
   };
-
-  const statProof = validation.statProof.map((node: any) => ({
-    hash: convertToUnsignedBytes(node.hash),
-    isRightSibling: node.isRightSibling,
-  }));
 
   const fixtureProof = validation.subTreeProof.map((node: any) => ({
     hash: convertToUnsignedBytes(node.hash),
@@ -202,17 +261,17 @@ async function main() {
     ),
   };
 
-  console.log("Executing on-chain scores stat validation...");
-  const signature = await program.methods
-    .validateScoreStatWithPredicate(
+  console.log("Executing on-chain stat validation with single stat...");
+  const signature1 = await program.methods
+    .validateStat(
       new BN(validation.ts),
-      statToProve,
-      predicate,
-      statProof,
-      convertToUnsignedBytes(validation.eventStatRoot),
       fixtureSummary,
       fixtureProof,
-      mainTreeProof
+      mainTreeProof,
+      predicate,
+      statToProve,
+      null,
+      null
     )
     .accounts({
       dailyScoresMerkleRoots: dailyScoresRootsPda,
@@ -225,9 +284,52 @@ async function main() {
     ])
     .rpc();
 
-  console.log(`Transaction signature: ${signature}`);
+  console.log(`Single stat validation signature: ${signature1}`);
   console.log(
-    `Stat validated: ${statToProve.key} = ${statToProve.value} (threshold: ${predicate.threshold})`
+    `Single stat validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value} (threshold: ${predicate.threshold})`
+  );
+
+  const statB = {
+    statToProve: {
+      key: validation.statToProve.key,
+      value: validation.statToProve.value,
+      period: validation.statToProve.period,
+    },
+    eventStatRoot: convertToUnsignedBytes(validation.eventStatRoot),
+    statProof: validation.statProof.map((node: any) => ({
+      hash: convertToUnsignedBytes(node.hash),
+      isRightSibling: node.isRightSibling,
+    })),
+  };
+
+  const binaryOp = { add: {} };
+
+  console.log("Executing on-chain stat validation with both stats...");
+  const signature2 = await program.methods
+    .validateStat(
+      new BN(validation.ts),
+      fixtureSummary,
+      fixtureProof,
+      mainTreeProof,
+      predicate,
+      statToProve,
+      statB,
+      binaryOp
+    )
+    .accounts({
+      dailyScoresMerkleRoots: dailyScoresRootsPda,
+    })
+    .signers([userKeypair])
+    .preInstructions([
+      ComputeBudgetProgram.setComputeUnitLimit({
+        units: 10000000,
+      }),
+    ])
+    .rpc();
+
+  console.log(`Both stats validation signature: ${signature2}`);
+  console.log(
+    `Both stats validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value}, ${statB.statToProve.key} = ${statB.statToProve.value} (threshold: ${predicate.threshold})`
   );
 }
 
