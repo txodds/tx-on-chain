@@ -224,6 +224,12 @@ Validates scores data using on-chain cryptographic proofs.
 5. Executes on-chain validation against daily scores roots account
 6. Cryptographically proves the stat
 
+## Trading Flow
+
+The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.
+
+![Alt text](assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true "TxODDS Oracle trading workflow")
+
 ## Additional Documentation
 
 For comprehensive API documentation:
