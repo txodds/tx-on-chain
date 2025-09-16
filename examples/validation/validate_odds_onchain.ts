@@ -17,9 +17,6 @@ import {
   TxOracleIDL,
 } from "../../config";
 
-const TEST_MESSAGE_ID = "1793277369:00003:000352-10011-stab";
-const TEST_TIMESTAMP = "1757155576129";
-
 async function main() {
   console.log("Starting odds on-chain validation example");
 
@@ -125,23 +122,76 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
+  console.log("Getting fixtures from last Saturday...");
+
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+
+  console.log(
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
+  );
+
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
+
+  console.log(fixtures);
+
+  if (!fixtures || fixtures.length === 0) {
+    throw new Error("No fixtures found for the past hour");
+  }
+
+  const fixture = fixtures[0];
+
+  console.log(`Using fixture ${fixture.FixtureId}...`);
+
+  console.log(`Getting odds updates for time period...`);
+
+  const hourOfDay = lastSaturday.getHours();
+  const interval = Math.floor(lastSaturday.getMinutes() / 5);
+
+  const oddsResponse = await httpClient.get(
+    `/api/odds/updates/${epochDay}/${hourOfDay}/${interval}`
+  );
+  const oddsUpdates = oddsResponse.data;
+
+  console.log(`Found ${oddsUpdates.length} odds updates`);
+
+  if (!oddsUpdates || oddsUpdates.length === 0) {
+    throw new Error("No odds updates found for time period");
+  }
+
+  const oddsUpdate = oddsUpdates[0];
+  console.log(
+    `Using odds update: messageId=${oddsUpdate.MessageId}, ts=${oddsUpdate.Ts}`
+  );
+
   console.log("Getting odds validation data...");
   const validationResponse = await httpClient.get("/api/odds/validation", {
     params: {
-      messageId: TEST_MESSAGE_ID,
-      ts: TEST_TIMESTAMP,
+      messageId: oddsUpdate.MessageId,
+      ts: oddsUpdate.Ts,
     },
   });
   const validation = validationResponse.data;
 
   console.log("Odds validation data received");
 
-  const epochDay = Math.floor(validation.odds.Ts / (24 * 60 * 60 * 1000));
+  const validationEpochDay = Math.floor(
+    validation.odds.Ts / (24 * 60 * 60 * 1000)
+  );
 
   const [dailyBatchRootsPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("daily_batch_roots"),
-      new BN(epochDay).toArrayLike(Buffer, "le", 2),
+      new BN(validationEpochDay).toArrayLike(Buffer, "le", 2),
     ],
     program.programId
   );

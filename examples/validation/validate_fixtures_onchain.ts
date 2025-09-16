@@ -1,6 +1,11 @@
 import axios from "axios";
 import * as anchor from "@coral-xyz/anchor";
-import { ComputeBudgetProgram, Connection, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  Connection,
+  Keypair,
+  PublicKey,
+} from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
@@ -11,8 +16,6 @@ import {
   TxOracleIDL,
   AUTHORITY_PK,
 } from "../../config";
-
-const TEST_FIXTURE_ID = 17151124;
 
 async function main() {
   console.log("Starting fixture on-chain validation example");
@@ -123,44 +126,73 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
-  console.log(`Getting fixture validation for fixture ${TEST_FIXTURE_ID}...`);
+  console.log("Getting fixtures from last Saturday...");
+
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+
+  console.log(
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
+  );
+
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
+
+  console.log(fixtures);
+
+  if (!fixtures || fixtures.length === 0) {
+    throw new Error("No fixtures found for the past hour");
+  }
+
+  const fixture = fixtures[0];
+
+  console.log(`Getting fixture validation for fixture ${fixture.FixtureId}...`);
   const validationResponse = await httpClient.get("/api/fixtures/validation", {
     params: {
-      fixtureId: TEST_FIXTURE_ID,
-      timestamp: Date.now(),
+      fixtureId: fixture.FixtureId,
     },
   });
   const validation = validationResponse.data;
 
   console.log("Fixture validation data received");
+  console.log(validation);
 
-  const epochDay = new BN(
+  const validationEpochDay = new BN(
     Math.floor(validation.snapshot.Ts / (24 * 60 * 60 * 1000))
   );
-  const hourOfDay = new BN(
+  const validationHourOfDay = new BN(
     Math.floor((validation.snapshot.Ts / (60 * 60 * 1000)) % 24)
   );
 
-  const [fixtureMerkleRootPda] = PublicKey.findProgramAddressSync(
+  const alignedEpochDay = Math.floor(validationEpochDay.toNumber() / 10) * 10;
+
+  const [tenDailyFixturesRootsPda] = PublicKey.findProgramAddressSync(
     [
-      Buffer.from("fixture_merkle_root"),
-      epochDay.toArrayLike(Buffer, "le", 2),
-      hourOfDay.toArrayLike(Buffer, "le", 1),
+      Buffer.from("ten_daily_fixtures_roots"),
+      new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2),
     ],
     PROGRAM_ID
   );
 
   const merkleRootAccountInfo = await connection.getAccountInfo(
-    fixtureMerkleRootPda
+    tenDailyFixturesRootsPda
   );
   if (!merkleRootAccountInfo) {
     throw new Error(
-      `Fixture merkle root account not found for epoch day ${epochDay.toString()}, hour ${hourOfDay.toString()}`
+      `Ten daily fixtures roots account not found for aligned epoch day ${alignedEpochDay}`
     );
   }
 
   console.log(
-    `Found merkle root account at ${fixtureMerkleRootPda.toBase58()}`
+    `Found ten daily fixtures roots account at ${tenDailyFixturesRootsPda.toBase58()}`
   );
 
   const convertToUnsignedBytes = (hash: number[]): number[] => {
@@ -210,8 +242,9 @@ async function main() {
   const signature = await program.methods
     .validateFixture(snapshot, summary, subTreeProof, mainTreeProof)
     .accounts({
-      fixtureMerkleRoot: fixtureMerkleRootPda,
-    }).preInstructions([
+      tenDailyFixturesRoots: tenDailyFixturesRootsPda,
+    })
+    .preInstructions([
       ComputeBudgetProgram.setComputeUnitLimit({
         units: 10000000,
       }),
