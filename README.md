@@ -1,4 +1,4 @@
-# Tx Oracle Examples
+# TxODDS Oracle Examples
 
 This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology.
 
