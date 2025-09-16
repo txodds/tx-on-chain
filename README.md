@@ -4,7 +4,28 @@ This repository showcases usage of the Tx Oracle on-chain contract, demonstratin
 
 ## Overview
 
-Tx Oracle provides on-chain verification of sports data through a hybrid on-chain/off-chain architecture. Users stake tokens to gain access to validated sports data feeds - using cryptographic proofs stored on-chain to verify the validity of any item.
+Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:
+
+1. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
+   - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
+   - The data is delivered in a request-response or streaming form.
+   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` (used as a temporal fully returnable collateral) and pay for access to proprietary data using the SOL currency.
+
+2. Sophisticated and highly general binary options Trading that allows users to:
+   - submit cryptographically signed College Football and Basketball prediction offers for specified time periods,
+   - receive via stream the resulting notifications to paid subscribers over the Trading stream,
+   - accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),
+   - settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.
+
+The following is a basic diagram showing the system in opration.
+
+![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
+
+The OpenAPI documentation is available at
+   <br>
+   https://oracle-dev.txodds.com/docs for Solana DevNet use.
+   <br>
+   https://oracle.txodds.com/docs for Solana MainNet use.
 
 ## Configurations
 
