@@ -27,6 +27,24 @@ The OpenAPI documentation is available at
    <br>
    https://oracle.txodds.com/docs for Solana MainNet use.
 
+## Included data
+
+As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.
+
+| ID       | League Name            |
+| :------- | :--------------------- |
+| 550001   | NCAA Division I FCS    |
+| 10005930 | NCAA Extra Matches     |
+| 500005   | NCAA Division I FBS    |
+| 10005302 | NCAA Division I (W)    |
+| 300043   | NCAA Division I        |
+
+With the upcoming US basketball season, it is expected that data will be vailable for the the US basketball leagues exclusing NBA.
+
+The `scores` channel includes the fully detailed model of US football (and upcoming baketball) as avaiable otherwide using direct institutional sales offered to big betting operators and syndicats. The documentation for this feed is vailable at the above API endpoints and also in the included document:
+
+[TxODDS US Football Feed v1.13 (PDF)](assets/usfootball%20-%20Version%201.13%20-%2015th%20September%202025.pdf)
+
 ## Configurations
 
 ### Devnet
