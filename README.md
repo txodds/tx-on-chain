@@ -17,7 +17,7 @@ Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It sup
    - accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),
    - settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.
 
-The following is a basic diagram showing the system in opration.
+The following is a basic diagram showing the system in operation.
 
 ![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
@@ -62,6 +62,10 @@ Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
 ```
 
 ## Access Flow
+
+The following diagram shows how the users typically access data from purchasing the subscription tokens to issuing off-chain calls.
+
+![Alt text](assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
 ### 1. Purchase Tokens
 
