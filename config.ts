@@ -6,7 +6,7 @@ const isDevnet = true; // Set to false for mainnet
 
 export const TxOracleIDL = isDevnet ? txOracleDevnet : txOracleMainnet;
 
-export const KEYPAIR_PATH = "/Users/aidan/Development/solana/tx-oracle/devnet-2/keys/testuser-wallet.json";
+export const KEYPAIR_PATH = "";
 
 export const RPC_ENDPOINT = isDevnet 
   ? "https://api.devnet.solana.com"
