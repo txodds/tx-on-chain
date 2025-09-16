@@ -4,7 +4,13 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
-import { AUTHORITY_PK, BASE_URL, KEYPAIR_PATH, RPC_ENDPOINT, TxOracleIDL } from "../../config";
+import {
+  AUTHORITY_PK,
+  BASE_URL,
+  KEYPAIR_PATH,
+  RPC_ENDPOINT,
+  TxOracleIDL,
+} from "../../config";
 
 async function main() {
   console.log("Starting fixtures snapshot example");
@@ -111,93 +117,76 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
-  console.log("Getting all fixtures snapshot...");
-  const allFixturesResponse = await httpClient.get("/api/fixtures/snapshot");
-  const allFixtures = allFixturesResponse.data;
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
 
-  console.log(`Found ${allFixtures.length} total fixtures`);
-  if (allFixtures.length > 0) {
-    console.log("Sample fixture:", {
-      id: allFixtures[0].FixtureId,
-      competition: allFixtures[0].Competition,
-      competitionId: allFixtures[0].CompetitionId,
-      participant1: allFixtures[0].Participant1,
-      participant2: allFixtures[0].Participant2,
-      startTime: new Date(allFixtures[0].StartTime).toISOString(),
-      participant1IsHome: allFixtures[0].Participant1IsHome,
+  console.log(
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
+  );
+
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
+
+  console.log(
+    `Found ${fixtures.length} fixtures for NCAA Division I FBS from last saturday`
+  );
+
+  if (fixtures.length > 0) {
+    console.log("Sample fixtures:");
+    fixtures.slice(0, 3).forEach((fixture: any, index: number) => {
+      console.log(
+        `  ${index + 1}. ${fixture.Participant1} vs ${fixture.Participant2}`
+      );
+      console.log(
+        `     ID: ${fixture.FixtureId}, Start: ${new Date(
+          fixture.StartTime
+        ).toISOString()}`
+      );
+      console.log(
+        `     Home: ${
+          fixture.Participant1IsHome
+            ? fixture.Participant1
+            : fixture.Participant2
+        }`
+      );
+      console.log("     ---");
     });
   }
 
-  const currentEpochDay = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
-  console.log(
-    `Getting fixtures for epoch day ${currentEpochDay} and competition 1...`
-  );
-
-  const filteredFixturesResponse = await httpClient.get(
-    "/api/fixtures/snapshot",
-    {
-      params: {
-        startEpochDay: currentEpochDay,
-        competitionId: 1,
-      },
-    }
-  );
-  const filteredFixtures = filteredFixturesResponse.data;
+  console.log("\nGetting all competitions snapshot...");
+  const allFixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      startEpochDay: epochDay,
+    },
+  });
+  const allFixtures = allFixturesResponse.data;
 
   console.log(
-    `Found ${filteredFixtures.length} fixtures for competition 1 on epoch day ${currentEpochDay}`
+    `Found ${allFixtures.length} total fixtures for epoch day ${epochDay}`
   );
 
-  const yesterdayEpochDay = currentEpochDay - 1;
-  console.log(
-    `Getting fixtures for yesterday (epoch day ${yesterdayEpochDay})...`
-  );
+  if (allFixtures.length > 0) {
+    const competitionCounts = allFixtures.reduce((acc: any, fixture: any) => {
+      const competition = `${fixture.Competition} (ID: ${fixture.CompetitionId})`;
+      acc[competition] = (acc[competition] || 0) + 1;
+      return acc;
+    }, {});
 
-  const yesterdayFixturesResponse = await httpClient.get(
-    "/api/fixtures/snapshot",
-    {
-      params: {
-        startEpochDay: yesterdayEpochDay,
-      },
-    }
-  );
-  const yesterdayFixtures = yesterdayFixturesResponse.data;
-
-  console.log(`Found ${yesterdayFixtures.length} fixtures for yesterday`);
-  if (yesterdayFixtures.length > 0) {
-    const competitionCounts = yesterdayFixtures.reduce(
-      (acc: any, fixture: any) => {
-        acc[fixture.Competition] = (acc[fixture.Competition] || 0) + 1;
-        return acc;
-      },
-      {}
-    );
-  }
-
-  if (yesterdayFixtures.length > 0) {
-    const testFixture = yesterdayFixtures[0];
-    console.log(`Getting updates for fixture ${testFixture.FixtureId}...`);
-
-    try {
-      const updatesResponse = await httpClient.get(
-        `/api/fixtures/updates/${yesterdayEpochDay}/${testFixture.FixtureId}`
-      );
-      const updates = updatesResponse.data;
-      console.log(
-        `Found ${updates.length} updates for fixture ${testFixture.FixtureId}`
-      );
-
-      if (updates.length > 0) {
-        console.log("Latest update:", {
-          timestamp: new Date(updates[0].Ts).toISOString(),
-          startTime: new Date(updates[0].StartTime).toISOString(),
-          participant1: updates[0].Participant1,
-          participant2: updates[0].Participant2,
-        });
-      }
-    } catch (error) {
-      console.log(`No updates available for fixture ${testFixture.FixtureId}`);
-    }
+    console.log("Fixtures by competition (top 5):");
+    Object.entries(competitionCounts)
+      .sort((a, b) => (b[1] as number) - (a[1] as number))
+      .slice(0, 5)
+      .forEach(([competition, count]) => {
+        console.log(`  ${competition}: ${count} fixtures`);
+      });
   }
 }
 

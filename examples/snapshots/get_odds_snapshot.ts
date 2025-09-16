@@ -4,9 +4,13 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
-import { AUTHORITY_PK, BASE_URL, KEYPAIR_PATH, RPC_ENDPOINT, TxOracleIDL } from "../../config";
-
-const TEST_FIXTURE_ID = 17151124;
+import {
+  AUTHORITY_PK,
+  BASE_URL,
+  KEYPAIR_PATH,
+  RPC_ENDPOINT,
+  TxOracleIDL,
+} from "../../config";
 
 async function main() {
   console.log("Starting odds snapshot example");
@@ -113,120 +117,69 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
+  console.log("Getting fixtures from last Saturday...");
+
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+
   console.log(
-    `Getting current odds snapshot for fixture ${TEST_FIXTURE_ID}...`
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
   );
-  const currentOddsResponse = await httpClient.get(
-    `/api/odds/snapshot/${TEST_FIXTURE_ID}`
-  );
-  const currentOdds = currentOddsResponse.data;
 
-  console.log(`Found ${currentOdds.length} current odds entries`);
-  if (currentOdds.length > 0) {
-    console.log("Sample current odds entry:", {
-      fixtureId: currentOdds[0].FixtureId,
-      messageId: currentOdds[0].MessageId,
-      bookmaker: currentOdds[0].Bookmaker,
-      superOddsType: currentOdds[0].SuperOddsType,
-      inRunning: currentOdds[0].InRunning,
-      timestamp: new Date(currentOdds[0].Ts).toISOString(),
-      priceNames: currentOdds[0].PriceNames?.slice(0, 3),
-      prices: currentOdds[0].Prices?.slice(0, 3),
-    });
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
 
-    const bookmakerCounts = currentOdds.reduce((acc: any, odds: any) => {
-      acc[odds.Bookmaker] = (acc[odds.Bookmaker] || 0) + 1;
-      return acc;
-    }, {});
+  console.log(`Found ${fixtures.length} fixtures for NCAA Division I FBS`);
 
-    console.log("Bookmaker distribution:");
-    Object.entries(bookmakerCounts).forEach(([bookmaker, count]) => {
-      console.log(`  ${bookmaker}: ${count} odds entries`);
-    });
-
-    const oddsTypeCounts = currentOdds.reduce((acc: any, odds: any) => {
-      acc[odds.SuperOddsType] = (acc[odds.SuperOddsType] || 0) + 1;
-      return acc;
-    }, {});
-
-    console.log("Odds type distribution:");
-    Object.entries(oddsTypeCounts).forEach(([type, count]) => {
-      console.log(`  ${type}: ${count} entries`);
-    });
+  if (!fixtures || fixtures.length === 0) {
+    throw new Error("No fixtures found for NCAA Division I FBS");
   }
 
-  const historicalTimestamp = Date.now() - 24 * 60 * 60 * 1000;
+  const fixture = fixtures[0];
+
   console.log(
-    `Getting historical odds snapshot for fixture ${TEST_FIXTURE_ID} as of ${new Date(
-      historicalTimestamp
-    ).toISOString()}...`
+    `Using fixture ${fixture.FixtureId}: ${fixture.Participant1} vs ${fixture.Participant2}`
   );
 
-  try {
-    const historicalOddsResponse = await httpClient.get(
-      `/api/odds/snapshot/${TEST_FIXTURE_ID}`,
-      {
-        params: { asOf: historicalTimestamp },
-      }
-    );
-    const historicalOdds = historicalOddsResponse.data;
-
-    console.log(`Found ${historicalOdds.length} historical odds entries`);
-    if (historicalOdds.length > 0) {
-      console.log("Sample historical odds entry:", {
-        fixtureId: historicalOdds[0].FixtureId,
-        messageId: historicalOdds[0].MessageId,
-        bookmaker: historicalOdds[0].Bookmaker,
-        superOddsType: historicalOdds[0].SuperOddsType,
-        timestamp: new Date(historicalOdds[0].Ts).toISOString(),
-        prices: historicalOdds[0].Prices?.slice(0, 3),
-      });
+  const fixtureOddsResponse = await httpClient.get(
+    `/api/odds/snapshot/${fixture.FixtureId}`,
+    {
+      params: { asOf: fixture.StartTime },
     }
-  } catch (error) {
-    console.log(`No historical odds available for the specified timestamp`);
+  );
+  const fixtureOdds = fixtureOddsResponse.data;
+
+  console.log(`Found ${fixtureOdds.length} odds entries`);
+  if (fixtureOdds.length > 0) {
+    console.log("Sample odds update:", fixtureOdds[0]);
   }
 
-  console.log(`Getting live odds updates for fixture ${TEST_FIXTURE_ID}...`);
-  try {
-    const liveOddsResponse = await httpClient.get(
-      `/api/odds/updates/${TEST_FIXTURE_ID}`
-    );
-    const liveOdds = liveOddsResponse.data;
+  const hourOfDay = lastSaturday.getHours();
+  const interval = Math.floor(lastSaturday.getMinutes() / 5);
 
-    console.log(`Found ${liveOdds.length} live odds updates`);
-    if (liveOdds.length > 0) {
-      console.log("Latest odds update:", {
-        timestamp: new Date(liveOdds[0].Ts).toISOString(),
-        bookmaker: liveOdds[0].Bookmaker,
-        superOddsType: liveOdds[0].SuperOddsType,
-        inRunning: liveOdds[0].InRunning,
-        pricesCount: liveOdds[0].Prices?.length,
-      });
+  console.log(
+    `Getting odds updates for time period (epochDay: ${epochDay}, hour: ${hourOfDay}, interval: ${interval})...`
+  );
+  try {
+    const updatesResponse = await httpClient.get(
+      `/api/odds/updates/${epochDay}/${hourOfDay}/${interval}`
+    );
+    const updates = updatesResponse.data;
+
+    console.log(`Found ${updates.length} odds updates for time period`);
+    if (updates.length > 0) {
+      console.log("Sample odds update:\n", updates[0]);
     }
   } catch (error) {
-    console.log(
-      `No live odds updates available for fixture ${TEST_FIXTURE_ID}`
-    );
-  }
-
-  console.log("Getting historical odds updates...");
-  try {
-    const historicalUpdatesResponse = await httpClient.get(
-      `/api/odds/updates/20327/12/20327`
-    );
-    const historicalUpdates = historicalUpdatesResponse.data;
-
-    console.log(`Found ${historicalUpdates.length} historical odds updates`);
-    if (historicalUpdates.length > 0) {
-      console.log("Sample historical update:", {
-        fixtureId: historicalUpdates[0].FixtureId,
-        timestamp: new Date(historicalUpdates[0].Ts).toISOString(),
-        bookmaker: historicalUpdates[0].Bookmaker,
-        superOddsType: historicalUpdates[0].SuperOddsType,
-      });
-    }
-  } catch (error) {
-    console.log("No historical updates available for the specified parameters");
+    console.log("No odds updates available for the specified time period");
   }
 }
 

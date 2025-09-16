@@ -4,9 +4,13 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
-import { AUTHORITY_PK, BASE_URL, KEYPAIR_PATH, RPC_ENDPOINT, TxOracleIDL } from "../../config";
-
-const TEST_FIXTURE_ID = 16583861;
+import {
+  AUTHORITY_PK,
+  BASE_URL,
+  KEYPAIR_PATH,
+  RPC_ENDPOINT,
+  TxOracleIDL,
+} from "../../config";
 
 async function main() {
   console.log("Starting scores snapshot example");
@@ -113,114 +117,73 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
+  const today = new Date();
+  const daysSinceSaturday = (today.getDay() + 1) % 7;
+  const lastSaturday = new Date(today);
+  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
+  lastSaturday.setHours(15, 0, 0, 0);
+  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+
   console.log(
-    `Getting current scores snapshot for fixture ${TEST_FIXTURE_ID}...`
+    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
   );
-  const currentScoresResponse = await httpClient.get(
-    `/api/scores/snapshot/${TEST_FIXTURE_ID}`
-  );
-  const currentScores = currentScoresResponse.data;
 
-  console.log(`Found ${currentScores.length} current scores entries`);
-  if (currentScores.length > 0) {
-    console.log("Sample current scores entry:", {
-      id: currentScores[0].Id,
-      fixtureId: currentScores[0].FixtureId,
-      gameState: currentScores[0].GameState,
-      action: currentScores[0].Action,
-      timestamp: new Date(currentScores[0].Ts).toISOString(),
-      sequence: currentScores[0].Seq,
-      participant1Id: currentScores[0].Participant1Id,
-      participant2Id: currentScores[0].Participant2Id,
-      participant1IsHome: currentScores[0].Participant1IsHome,
-    });
+  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
+    params: {
+      competitionId: 500005,
+      startEpochDay: epochDay,
+    },
+  });
+  const fixtures = fixturesResponse.data;
 
-    if (currentScores[0].Score) {
-      console.log("Score data keys:", Object.keys(currentScores[0].Score));
-    }
+  console.log(`Found ${fixtures.length} fixtures for NCAA Division I FBS`);
 
-    if (currentScores[0].Stats) {
-      console.log(
-        `Stats available: ${
-          Object.keys(currentScores[0].Stats).length
-        } different stats`
-      );
-      console.log(
-        "Sample stats keys:",
-        Object.keys(currentScores[0].Stats).slice(0, 5)
-      );
-    }
-
-    const gameStateCounts = currentScores.reduce((acc: any, score: any) => {
-      acc[score.GameState] = (acc[score.GameState] || 0) + 1;
-      return acc;
-    }, {});
-
-    console.log("Game state distribution:");
-    Object.entries(gameStateCounts).forEach(([state, count]) => {
-      console.log(`  ${state}: ${count} entries`);
-    });
+  if (!fixtures || fixtures.length === 0) {
+    throw new Error("No fixtures found for NCAA Division I FBS");
   }
 
-  const historicalTimestamp = Date.now() - 24 * 60 * 60 * 1000;
+  const fixture = fixtures[0];
+
   console.log(
-    `Getting historical scores snapshot for fixture ${TEST_FIXTURE_ID} as of ${new Date(
-      historicalTimestamp
-    ).toISOString()}...`
+    `Using fixture ${fixture.FixtureId}: ${fixture.Participant1} vs ${fixture.Participant2}`
   );
 
-  try {
-    const historicalScoresResponse = await httpClient.get(
-      `/api/scores/snapshot/${TEST_FIXTURE_ID}`,
-      {
-        params: { asOf: historicalTimestamp },
-      }
-    );
-    const historicalScores = historicalScoresResponse.data;
+  const snapshotScoresResponse = await httpClient.get(
+    `/api/scores/snapshot/${fixture.FixtureId}`
+  );
+  const snapshotScores = snapshotScoresResponse.data;
 
-    console.log(`Found ${historicalScores.length} historical scores entries`);
-    if (historicalScores.length > 0) {
-      console.log("Sample historical scores entry:", {
-        id: historicalScores[0].Id,
-        gameState: historicalScores[0].GameState,
-        action: historicalScores[0].Action,
-        timestamp: new Date(historicalScores[0].Ts).toISOString(),
-        sequence: historicalScores[0].Seq,
-      });
-    }
-  } catch (error) {
-    console.log(`No historical scores available for the specified timestamp`);
+  console.log(`Found ${snapshotScores.length} snapshot scores entries`);
+  if (snapshotScores.length > 0) {
+    console.log("Sample snapshot scores entry:", snapshotScores[0]);
   }
 
-  console.log(`Getting live scores updates for fixture ${TEST_FIXTURE_ID}...`);
+  console.log(
+    `Getting live scores updates for fixture ${fixture.FixtureId}...`
+  );
   try {
     const liveScoresResponse = await httpClient.get(
-      `/api/scores/updates/${TEST_FIXTURE_ID}`
+      `/api/scores/updates/${fixture.FixtureId}`
     );
     const liveScores = liveScoresResponse.data;
 
     console.log(`Found ${liveScores.length} live scores updates`);
     if (liveScores.length > 0) {
-      console.log("Latest scores update:", {
-        timestamp: new Date(liveScores[0].Ts).toISOString(),
-        gameState: liveScores[0].GameState,
-        action: liveScores[0].Action,
-        sequence: liveScores[0].Seq,
-        hasScore: !!liveScores[0].Score,
-        hasStats: !!liveScores[0].Stats,
-      });
+      console.log("Latest scores update:", liveScores[0]);
     }
   } catch (error) {
     console.log(
-      `No live scores updates available for fixture ${TEST_FIXTURE_ID}`
+      `No live scores updates available for fixture ${fixture.FixtureId}`
     );
   }
 
-  console.log("Getting historical scores updates...");
   try {
-    const epochDay = 20330;
-    const hourOfDay = 19;
-    const interval = 1;
+    const hourOfDay = lastSaturday.getHours();
+    const interval = Math.floor(lastSaturday.getMinutes() / 5);
+
+    console.log(
+      `Getting scores updates for time period (epochDay: ${epochDay}, hour: ${hourOfDay}, interval: ${interval})...`
+    );
 
     const historicalUpdatesResponse = await httpClient.get(
       `/api/scores/updates/${epochDay}/${hourOfDay}/${interval}`
@@ -231,13 +194,7 @@ async function main() {
       `Found ${historicalUpdates.length} historical scores updates for epoch day ${epochDay}, hour ${hourOfDay}`
     );
     if (historicalUpdates.length > 0) {
-      console.log("Sample historical update:", {
-        fixtureId: historicalUpdates[0].FixtureId,
-        timestamp: new Date(historicalUpdates[0].Ts).toISOString(),
-        gameState: historicalUpdates[0].GameState,
-        action: historicalUpdates[0].Action,
-        sequence: historicalUpdates[0].Seq,
-      });
+      console.log("Sample historical update:", historicalUpdates[0]);
     }
   } catch (error) {
     console.log(
