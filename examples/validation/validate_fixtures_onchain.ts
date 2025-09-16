@@ -168,9 +168,6 @@ async function main() {
   const validationEpochDay = new BN(
     Math.floor(validation.snapshot.Ts / (24 * 60 * 60 * 1000))
   );
-  const validationHourOfDay = new BN(
-    Math.floor((validation.snapshot.Ts / (60 * 60 * 1000)) % 24)
-  );
 
   const alignedEpochDay = Math.floor(validationEpochDay.toNumber() / 10) * 10;
 
