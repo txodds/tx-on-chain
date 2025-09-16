@@ -146,8 +146,6 @@ async function main() {
   });
   const fixtures = fixturesResponse.data;
 
-  console.log(fixtures);
-
   if (!fixtures || fixtures.length === 0) {
     throw new Error("No fixtures found for the past hour");
   }
@@ -163,7 +161,6 @@ async function main() {
   const validation = validationResponse.data;
 
   console.log("Fixture validation data received");
-  console.log(validation);
 
   const validationEpochDay = new BN(
     Math.floor(validation.snapshot.Ts / (24 * 60 * 60 * 1000))
