@@ -48,7 +48,7 @@ As of mid-September 2025, the following data is covered for the fixtures, odds, 
 | 10005302 | NCAA Division I (W)    |
 | 300043   | NCAA Division I        |
 
-With the upcoming US basketball season, it is expected that data will be vailable for the the US basketball leagues excluding NBA.
+With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA.
 
 The `scores` channel includes the fully detailed model of US football (and upcoming baketball) as avaiable otherwide using direct institutional sales offered to big betting operators and syndicats. The documentation for this feed is vailable at the above API endpoints and also in the included document:
 
