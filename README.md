@@ -6,12 +6,12 @@ This repository showcases usage of the Tx Oracle on-chain contract, demonstratin
 
 Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:
 
-1. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
+1. **Data Access Layer**. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
    - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` (used as a temporal fully returnable collateral) and pay for access to proprietary data using the SOL currency.
 
-2. Sophisticated and highly general binary options Trading that allows users to:
+2. **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
    - submit cryptographically signed College Football and Basketball prediction offers for specified time periods,
    - receive via stream the resulting notifications to paid subscribers over the Trading stream,
    - accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),
@@ -22,19 +22,17 @@ The following is a basic diagram showing the system in operation.
 ![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
 The OpenAPI documentation is available at
-   <br>
-   https://oracle-dev.txodds.com/docs for Solana DevNet use.
-   <br>
-   https://oracle.txodds.com/docs for Solana MainNet use.
+   - https://oracle-dev.txodds.com/docs for Solana DevNet use.
+   - https://oracle.txodds.com/docs for Solana MainNet use.
 
 The data the Oracle system is currently offering includes
 - fixture snapshots/updates: every time any key metadata for a fixture changes, an update becomes available;
 - odds: specifically, what is known as TxODDS stable de-margined price available for much more sports and markets in the TxODDS Fusion product;
-- scores: a fully detailed down to every on-the field action updates from US College Football and US College Basketball matches.
+- scores: fully detailed (down to every on-the field action) updates for US College Football and US College Basketball matches.
 
-The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of thes intervals. The resulting signature, known as a Merkle root, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to encure that any published data from the baove three channels can be validated against the on-chain signatures.
+The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
 
-This validation is based on the mathematical property of Merkle roots that guarantees secure cryptographic proofs that a given record was contained in the referenced batch of data. This serves two purposes: the customeres can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a predition that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settltment and funds allocation is based on on-chain proofs that the winning condition was verified.
+This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically validate whether a given record is contained in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified.
 
 Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives.
 
