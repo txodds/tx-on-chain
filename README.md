@@ -40,7 +40,7 @@ Essentialy the data access layer (use case 1) allows users to front-run their tr
 
 As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.
 
-| ID       | League Name            |
+| Competition ID       | League Name            |
 | :------- | :--------------------- |
 | 550001   | NCAA Division I FCS    |
 | 10005930 | NCAA Extra Matches     |
