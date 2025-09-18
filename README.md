@@ -252,7 +252,7 @@ This is an example to help with understanding these two time periods.
 
 ### Example
 
-Prediction concerns the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
+Prediction might concern the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
 The **game phase** could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.
 
 Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjust to become H1 and then the nature of the prediction changes accordingly.
@@ -314,7 +314,173 @@ For US football, the game phases are encoded in a unique and economical way for 
 | `OB11` | 11012 | Overtime 11 break |
 | `OT12` | 12011 | Overtime 12 |
 
-The prediction offers reference the game phase by ID taken from the above two tables.
+Prediction offers reference the game phase by ID taken from the above two tables.
+
+### Stat period encoding
+
+The stat period is also encoded economically as follows:
+
+### Full Game Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 1 | Participant 1 Total Score | |
+| 2 | Participant 2 Total Score | |
+| 3 | Participant 1 Total Touchdowns | |
+| 4 | Participant 2 Total Touchdowns | |
+| 5 | Participant 1 Total Field Goals | |
+| 6 | Participant 2 Total Field Goals | |
+| 7 | Participant 1 Total 1pt Conversions | |
+| 8 | Participant 2 Total 1pt Conversions | |
+| 9 | Participant 1 Total 2pt Conversions | |
+| 10 | Participant 2 Total 2pt Conversions | |
+| 11 | Participant 1 Total Safeties | |
+| 12 | Participant 2 Total Safeties | |
+| 13 | Participant 1 Total 1pt Safeties | |
+| 14 | Participant 2 Total 1pt Safeties | |
+| 15 | Participant 1 Total Defensive 2pt Conversions | |
+| 16 | Participant 2 Total Defensive 2pt Conversions | |
+
+---
+
+### First Half (HT) Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 1001 | Participant 1 1st Half Score | |
+| 1002 | Participant 2 1st Half Score | |
+| 1003 | Participant 1 1st Half Touchdowns | |
+| 1004 | Participant 2 1st Half Touchdowns | |
+| 1005 | Participant 1 1st Half Field Goals | |
+| 1006 | Participant 2 1st Half Field Goals | |
+| 1007 | Participant 1 1st Half 1pt Conversions | |
+| 1008 | Participant 2 1st Half 1pt Conversions | |
+| 1009 | Participant 1 1st Half 2pt Conversions | |
+| 1010 | Participant 2 1st Half 2pt Conversions | |
+| 1011 | Participant 1 1st Half Safeties | |
+| 1012 | Participant 2 1st Half Safeties | |
+| 1013 | Participant 1 1st Half 1pt Safeties | |
+| 1014 | Participant 2 1st Half 1pt Safeties | |
+| 1015 | Participant 1 1st Half Defensive 2pt Conversions | |
+| 1016 | Participant 2 1st Half Defensive 2pt Conversions | |
+
+---
+
+### Second Half (Q3+Q4) Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 2001 | Participant 1 2nd Half Score | |
+| 2002 | Participant 2 2nd Half Score | |
+| 2003 | Participant 1 2nd Half Touchdowns | |
+| 2004 | Participant 2 2nd Half Touchdowns | |
+| 2005 | Participant 1 2nd Half Field Goals | |
+| 2006 | Participant 2 2nd Half Field Goals | |
+| 2007 | Participant 1 2nd Half 1pt Conversions | |
+| 2008 | Participant 2 2nd Half 1pt Conversions | |
+| 2009 | Participant 1 2nd Half 2pt Conversions | |
+| 2010 | Participant 2 2nd Half 2pt Conversions | |
+| 2011 | Participant 1 2nd Half Safeties | |
+| 2012 | Participant 2 2nd Half Safeties | |
+| 2013 | Participant 1 2nd Half 1pt Safeties | |
+| 2014 | Participant 2 2nd Half 1pt Safeties | |
+| 2015 | Participant 1 2nd Half Defensive 2pt Conversions | |
+| 2016 | Participant 2 2nd Half Defensive 2pt Conversions | |
+
+---
+
+### Quarter 1 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 10001 | Participant 1 Q1 Score | |
+| 10002 | Participant 2 Q1 Score | |
+| 10003 | Participant 1 Q1 Touchdowns | |
+| 10004 | Participant 2 Q1 Touchdowns | |
+| 10005 | Participant 1 Q1 Field Goals | |
+| 10006 | Participant 2 Q1 Field Goals | |
+| 10007 | Participant 1 Q1 1pt Conversions | |
+| 10008 | Participant 2 Q1 1pt Conversions | |
+| 10009 | Participant 1 Q1 2pt Conversions | |
+| 10010 | Participant 2 Q1 2pt Conversions | |
+| 10011 | Participant 1 Q1 Safeties | |
+| 10012 | Participant 2 Q1 Safeties | |
+| 10013 | Participant 1 Q1 1pt Safeties | |
+| 10014 | Participant 2 Q1 1pt Safeties | |
+| 10015 | Participant 1 Q1 Defensive 2pt Conversions | |
+| 10016 | Participant 2 Q1 Defensive 2pt Conversions | |
+
+---
+
+### Quarter 2 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 20001 | Participant 1 Q2 Score | |
+| 20002 | Participant 2 Q2 Score | |
+| 20003 | Participant 1 Q2 Touchdowns | |
+| 20004 | Participant 2 Q2 Touchdowns | |
+| 20005 | Participant 1 Q2 Field Goals | |
+| 20006 | Participant 2 Q2 Field Goals | |
+| 20007 | Participant 1 Q2 1pt Conversions | |
+| 20008 | Participant 2 Q2 1pt Conversions | |
+| 20009 | Participant 1 Q2 2pt Conversions | |
+| 20010 | Participant 2 Q2 2pt Conversions | |
+| 20011 | Participant 1 Q2 Safeties | |
+| 20012 | Participant 2 Q2 Safeties | |
+| 20013 | Participant 1 Q2 1pt Safeties | |
+| 20014 | Participant 2 Q2 1pt Safeties | |
+| 20015 | Participant 1 Q2 Defensive 2pt Conversions | |
+| 20016 | Participant 2 Q2 Defensive 2pt Conversions | |
+
+---
+
+### Quarter 3 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 30001 | Participant 1 Q3 Score | |
+| 30002 | Participant 2 Q3 Score | |
+| 30003 | Participant 1 Q3 Touchdowns | |
+| 30004 | Participant 2 Q3 Touchdowns | |
+| 30005 | Participant 1 Q3 Field Goals | |
+| 30006 | Participant 2 Q3 Field Goals | |
+| 30007 | Participant 1 Q3 1pt Conversions | |
+| 30008 | Participant 2 Q3 1pt Conversions | |
+| 30009 | Participant 1 Q3 2pt Conversions | |
+| 30010 | Participant 2 Q3 2pt Conversions | |
+| 30011 | Participant 1 Q3 Safeties | |
+| 30012 | Participant 2 Q3 Safeties | |
+| 30013 | Participant 1 Q3 1pt Safeties | |
+| 30014 | Participant 2 Q3 1pt Safeties | |
+| 30015 | Participant 1 Q3 Defensive 2pt Conversions | |
+| 30016 | Participant 2 Q3 Defensive 2pt Conversions | |
+
+---
+
+### Quarter 4 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 40001 | Participant 1 Q4 Score | |
+| 40002 | Participant 2 Q4 Score | |
+| 40003 | Participant 1 Q4 Touchdowns | |
+| 40004 | Participant 2 Q4 Touchdowns | |
+| 40005 | Participant 1 Q4 Field Goals | |
+| 40006 | Participant 2 Q4 Field Goals | |
+| 40007 | Participant 1 Q4 1pt Conversions | |
+| 40008 | Participant 2 Q4 1pt Conversions | |
+| 40009 | Participant 1 Q4 2pt Conversions | |
+| 40010 | Participant 2 Q4 2pt Conversions | |
+| 40011 | Participant 1 Q4 Safeties | |
+| 40012 | Participant 2 Q4 Safeties | |
+| 40013 | Participant 1 Q4 1pt Safeties | |
+| 40014 | Participant 2 Q4 1pt Safeties | |
+| 40015 | Participant 1 Q4 Defensive 2pt Conversions | |
+| 40016 | Participant 2 Q4 Defensive 2pt Conversions | |
+
+There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
+for the full game.
 
 ## Additional Documentation
 
