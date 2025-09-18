@@ -250,7 +250,7 @@ A prediction will be confirmed IF AND ONLY IF there exists a record with confirm
 
 This is an example to help with understanding these two time periods.
 
-### Example 1
+### Example
 
 Prediction concerns the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
 The **game phase** could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.
@@ -258,6 +258,64 @@ The **game phase** could be set to end of Q2, that is what is known in the TxODD
 Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjust to become H1 and then the nature of the prediction changes accordingly.
 
 There is a further important question: what is the difference between a prediction for the **game phase** Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **game phase** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
+
+### Game phase encoding
+
+For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. There are core 
+
+| Name   | ID   | Game phase | Description |
+|--------|------|------|-------|
+| `NS`   | 1    |  Not started | Status before the game is started         |
+| `Q1`   | 2    |  Quarter 1 | Game in play during first quarter         |
+| `Q1B`  | 3    |  Quarter 1 break | Pause in play between the 1st quarter ending and the 2nd quarter starting         |
+| `Q2`   | 4    |  Quarter 2 | Game in play during second quarter         |
+| `HT`   | 5    |  Halftime | Halftime of the game         |
+| `Q3`   | 6    |  Quarter 3 | Game in play during third quarter         |
+| `Q3B`  | 7    |  Quarter 3 break | Pause in play between the 3rd quarter ending and the 4th quarter starting         |
+| `Q4`   | 8    |  Quarter 4 |Game in play during fourth quarter         |
+| `F`    | 9    |  Ended (finished) | Game ends after the 4th quarter         |
+| `WO`   | 10   |  Break following the 4th Quarter before the start of the first overtime period         |
+| `OT`   | 11   |  Overtime | With option for overtime number to be selected. Game in play during selected
+overtime period         |
+| `OB`   | 12   | Overtime Break | Break between Overtime periods         |
+| `FO`   | 13   |  Ended after Overtime (Finished after Overtime) | Game ends after an overtime period         |
+| `I`    | 14   |    Interrupted         | The game is officially interrupted |
+| `A`    | 15   |    Abandoned         | The game is officially abandoned |
+| `C`    | 16   |    Cancelled         | The game is officially cancelled |
+| `TXCC` | 17   |    TX Coverage Cancelled         | TxODDS cancelled coverage of the event |
+| `TXCS` | 18   |    TX Coverage Suspended         | TxOODS suspended coverage of the event |
+
+---
+
+### Overtime status -- these are specific to the TxODDS Oracle system
+
+| Name   | ID    | Game phase |
+|--------|-------|-------------|
+| `OT1`  | 1011  | Overtime 1 |
+| `OB1`  | 1012  | Overtime 1 break |
+| `OT2`  | 2011  | Overtime 2 |
+| `OB2`  | 2012  | Overtime 2 break |
+| `OT3`  | 3011  | Overtime 3 |
+| `OB3`  | 3012  | Overtime 3 break |
+| `OT4`  | 4011  | Overtime 4 |
+| `OB4`  | 4012  | Overtime 4 break |
+| `OT5`  | 5011  | Overtime 5 |
+| `OB5`  | 5012  | Overtime 5 break |
+| `OT6`  | 6011  | Overtime 6 |
+| `OB6`  | 6012  | Overtime 6 break |
+| `OT7`  | 7011  | Overtime 7 |
+| `OB7`  | 7012  | Overtime 7 break |
+| `OT8`  | 8011  | Overtime 8 |
+| `OB8`  | 8012  | Overtime 8 break |
+| `OT9`  | 9011  | Overtime 9 |
+| `OB9`  | 9012  | Overtime 9 break |
+| `OT10` | 10011 | Overtime 10 |
+| `OB10` | 10012 | Overtime 10 break |
+| `OT11` | 11011 | Overtime 11 |
+| `OB11` | 11012 | Overtime 11 break |
+| `OT12` | 12011 | Overtime 12 |
+
+The prediction offers reference the game phase by ID taken from the above two tables.
 
 ## Additional Documentation
 
