@@ -274,7 +274,7 @@ For US football, the game phases are encoded in a unique and economical way for 
 | `Q3B`  | 7    |  Quarter 3 break | Pause in play between the 3rd quarter ending and the 4th quarter starting         |
 | `Q4`   | 8    |  Quarter 4 |Game in play during fourth quarter         |
 | `F`    | 9    |  Ended (finished) | Game ends after the 4th quarter         |
-| `WO`   | 10   |  Break following the 4th Quarter before the start of the first overtime period         |
+| `WO`   | 10   |  Waiting for Overtime  | Break following the 4th Quarter before the start of the first overtime period         |
 | `OT`   | 11   |  Overtime | With option for overtime number to be selected. Game in play during selected
 overtime period         |
 | `OB`   | 12   | Overtime Break | Break between Overtime periods         |
