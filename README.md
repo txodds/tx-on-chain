@@ -56,14 +56,14 @@ The `scores` channel includes the fully detailed model of US football (and upcom
 
 ## Configurations
 
-### Devnet
+### Soana DevNet - contains matches' re-runs to be used for integration
 ```
 Tx API: https://oracle-dev.txodds.com/api/
 Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
 Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
 ```
 
-### Mainnet
+### Solana MainNet - contains actual live matches with low-latency delivery from off-chain services (for example, 52 matches covered on Sat, 20 September, 2025)
 ```
 Tx API: https://oracle.txodds.com/api/
 Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
@@ -238,6 +238,26 @@ Validates scores data using on-chain cryptographic proofs.
 The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.
 
 ![Alt text](assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true "TxODDS Oracle trading workflow")
+
+Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
+
+Importantly, there are two time periods involved:
+
+1. **Game phase**: the phase of the game where an event that matches the prediction will happen.
+2. **Stat period**: the phase of the game for which the respective stats are computed.
+
+A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
+
+This is an example to help with understanding these two time periods.
+
+### Example 1
+
+Prediction concerns the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
+The **game phase** could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.
+
+Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjust to become H1 and then the nature of the prediction changes accordingly.
+
+There is a further important question: what is the difference between a prediction for the **game phase** Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **game phase** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
 
 ## Additional Documentation
 
