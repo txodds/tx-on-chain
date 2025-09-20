@@ -565,6 +565,7 @@ Once the offer is acknoledged by the TxODDS off-chain service, the subscribers t
 A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
 
 ```
+const messageBuffer = new BN(offerIdToAccept).toBuffer('le', 4);
 const signature = nacl.sign.detached(messageBuffer, user.secretKey);
 
 const acceptancePayload = {
@@ -596,6 +597,7 @@ Once the TxODDS of-chain service receives a counter-offer on the `accept` endpoi
 For the `create_trade` to be executable on blockchain, it needs to have three signers: both traders and the authority behind the `txoracle` program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above `SigningRequest` is received by both traders and each use a similar method to sign and send it back to the TxODDS service.
 
 ```
+const messageToSign = Buffer.from(data.partiallySignedTx, 'base64');
 const signature = nacl.sign.detached(messageToSign, user.secretKey);
 
 const signaturePayload = {
