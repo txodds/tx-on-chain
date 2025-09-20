@@ -562,7 +562,7 @@ Once the offer is acknoledged by the TxODDS off-chain service, the subscribers t
 
 ### Accept a new offer
 
-A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
+A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
 
 ```
 const signature = nacl.sign.detached(messageBuffer, user.secretKey);
