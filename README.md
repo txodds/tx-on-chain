@@ -612,7 +612,7 @@ await axios.post(`${API_BASE_URL}/api/trading/sign`, signaturePayload, {
 });
 ```
 
-Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a full signed `create_transaction`.
+Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a full signed `create_trade` transaction.
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
 
