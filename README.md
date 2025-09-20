@@ -482,7 +482,7 @@ The stat period is also encoded economically as follows:
 There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
 for the full game.
 
-### How to specify the stat period
+### Specify the stat period
 
 The Stat period as used in offers and settlements is wrapped in the `StatTerm` class that designates the statistic used for prediction. For example:
 
@@ -490,7 +490,7 @@ The Stat period as used in offers and settlements is wrapped in the `StatTerm` c
 { key: 1 } // Stat key for "Participant1_Score"
 ```
 
-### How to specify a trading predicate
+### Specify a trading predicate
 
 A trading predicate is wrapped in the `Predicate` class with a nested `ComparisonEnum`. Here is an example in TypeScript:
 
@@ -504,13 +504,82 @@ const predicate = {
 Essentially, the trading predicate sets a bar to compare against and accepts three modes for comparison: `greaterThan`, `lessThan`, and `equalTo`. Predicates do not specify what expression 
 or statistics to use, instead, they just capture the actual comparison being made against the specified quantity (threshold).
 
-### How to specify an optional binary expression
+### Specify an optional binary expression
 
 A binary expression (when not-null) is either `add` or `subtract` is wrapped in the `BinaryOpEnum` class. For example,
 
 binaryOp = {
    add: {}
 }
+
+## Create a new offer
+
+An `Offer` structure wraps all necessary information for specifying the prediction and associated terms made by the offer originator side (trader). Here is an example of a one-stat prediction:
+
+```
+const predicate = {
+  threshold: 11,
+  comparison: { greaterThan: {} }, 
+};    
+
+const offer = new schema.Offer({
+   fixtureId: new BN(17271370),
+   period: 4, // Q2
+   predicate,
+   binaryOp: null, // This is a single-stat predicate
+   statA: { key: 1 }, // Stat key for "Participant1_Score"
+   statB: null,
+   stake: new BN(500_000_000), // 0.5 SOL
+   odds: 2000, // 2.0 decimal odds
+   expiration: new BN(Date.now() + 60 * 60 * 1000), // Expires in 1 hour
+   traderPubkey: user.publicKey,
+});
+```
+
+The `odds` are decimal odds, multiplied by 1000 to preserve a three-decimal point precision. The decimal odds mean that if the prediction turns out to be true, trader A stands to double their original stake--with
+the eventual counter-party losing the amount of tokens equivalent to 0.5 SOL.
+The offer states that the specified fixture during the half-time break is going to have the team A's total score greater than 11--this being the result after the two quarters are fully played. The offer will be self-managed so that after an hour from the offer submission, the matching by counter-parties will be disabled.
+
+Once the offer is acknoledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a nottification `NewOffer` that looks like this:
+
+```
+{ offerId: 6,
+  offer:
+   {
+      fixtureId: 17271370,
+      period: 4,
+      predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
+      binaryOp: null,
+      statA: { key: 2 },
+      statB: null,
+      stake: 500000000,
+      odds: 2000,
+      expiration: 1758365295729,
+      traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
+      }
+}
+```
+
+### Accept a new offer
+
+A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A are too low, meaing trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
+
+```
+const signature = nacl.sign.detached(messageBuffer, user.secretKey);
+
+const acceptancePayload = {
+   offerId: offerIdToAccept,
+   acceptingTraderPubkey: user.publicKey.toBase58(),
+   signature: bs58.encode(signature),
+};
+
+const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptancePayload, {
+   headers: {
+      'Authorization': `Bearer ${jwt}`,
+      'X-Api-Token': apiToken
+   }
+});
+```
 
 ## Additional Documentation
 
