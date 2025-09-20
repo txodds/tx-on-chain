@@ -612,15 +612,100 @@ await axios.post(`${API_BASE_URL}/api/trading/sign`, signaturePayload, {
 });
 ```
 
-Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a full signed `create_trade` transaction.
+Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a fully signed `create_trade` transaction.
+
+The TxODDS service then copies the same `TradeMatched` notifications to respective trading streams for both traders.
+
+```
+{
+   offer: {
+   fixtureId: 17271370,
+   period: 4,
+   predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
+   binaryOp: null,
+   statA: { key: 1 },
+   statB: null,
+   stake: 500000000,
+   odds: 2000,
+   expiration: 1758366631894,
+   traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
+   }
+}
+```
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
 
+Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the predication can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
 
+```
+const url = `${API_BASE_URL}/api/scores/stat-validation?fixtureId=17271370&seq=401&statKey=1`
+const response = await axios.get(url, {
+   headers: {
+      'Authorization': `Bearer ${jwt}`,
+      'X-Api-Token': apiToken
+   }
+});
+```
 
-### The possible winner submits a claim for settlement
+The `seq` uniquely identified the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner bacause the actual team A score was not > than 11. Here is the call to on-chain to settle the trade.
 
+```
+const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
+   [
+      Buffer.from("daily_scores_roots"),
+      new BN(epochDay).toBuffer("le", 2), // epochDay is u16, so 2 bytes little-endian
+   ],
+   program.programId
+);
 
+const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from("escrow"), 
+      tradeId.toBuffer("le", 8)
+   ],
+   program.programId
+);
+
+const [escrowVaultPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from("escrow_vault"), 
+      tradeId.toBuffer("le", 8)
+   ],
+   program.programId
+);
+
+const txSignature = await program.methods
+   .settleTrade(
+      tradeId,
+      new BN(validation.ts),
+      fixtureSummary,
+      fixtureProof,
+      mainTreeProof,
+      predicate,
+      stat1,
+      null, // stat2
+      null // op
+   )
+   .accounts({
+      winner: user.publicKey,
+      dailyScoresMerkleRoots: dailyScoresPda,
+      tradeEscrow: tradeEscrowPda,
+      escrowVault: escrowVaultPda,
+      winnerTokenAccount: tokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
+   })
+   .preInstructions([
+      ComputeBudgetProgram.setComputeUnitLimit({
+      units: 600_000, // max: 1.4M
+      }),
+   ])
+   .signers([user])
+   .rpc();
+```
+
+The outcome of a successfully settle trade is that the funds are released from the escrow account and transferred to trader B's token account and then the escrow is fully closed. Here is an example of such settlement on DevNet:
+
+https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuuRyLDgo4ARpQ4GS8P1CkW6xvstBtQi4z8cyfSup?cluster=devnet
 
 ## Additional Documentation
 
