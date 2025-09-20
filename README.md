@@ -482,6 +482,36 @@ The stat period is also encoded economically as follows:
 There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
 for the full game.
 
+### How to specify the stat period
+
+The Stat period as used in offers and settlements is wrapped in the `StatTerm` class that designates the statistic used for prediction. For example:
+
+```
+{ key: 1 } // Stat key for "Participant1_Score"
+```
+
+### How to specify a trading predicate
+
+A trading predicate is wrapped in the `Predicate` class with a nested `ComparisonEnum`. Here is an example in TypeScript:
+
+```
+const predicate = {
+  threshold: 11,
+  comparison: { greaterThan: {} }, 
+};    
+```
+
+Essentially, the trading predicate sets a bar to compare against and accepts three modes for comparison: `greaterThan`, `lessThan`, and `equalTo`. Predicates do not specify what expression 
+or statistics to use, instead, they just capture the actual comparison being made against the specified quantity (threshold).
+
+### How to specify an optional binary expression
+
+A binary expression (when not-null) is either `add` or `subtract` is wrapped in the `BinaryOpEnum` class. For example,
+
+binaryOp = {
+   add: {}
+}
+
 ## Additional Documentation
 
 For comprehensive API documentation:
