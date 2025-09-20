@@ -703,7 +703,7 @@ const txSignature = await program.methods
    .rpc();
 ```
 
-The outcome of a successfully settle trade is that the funds are released from the escrow account and transferred to trader B's token account and then the escrow is fully closed. Here is an example of such settlement on DevNet:
+The outcome of a successfully settled trade is that the funds are released from the escrow account and transferred to trader B's token account and then the escrow is fully closed. Here is an example of such settlement on DevNet:
 
 https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuuRyLDgo4ARpQ4GS8P1CkW6xvstBtQi4z8cyfSup?cluster=devnet
 
