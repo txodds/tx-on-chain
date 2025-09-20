@@ -562,7 +562,7 @@ Once the offer is acknoledged by the TxODDS off-chain service, the subscribers t
 
 ### Accept a new offer
 
-A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A are too low, meaing trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
+A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
 
 ```
 const signature = nacl.sign.detached(messageBuffer, user.secretKey);
@@ -580,6 +580,47 @@ const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptan
    }
 });
 ```
+
+Once the TxODDS of-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both trades for signing via this `SigningRequest` message:
+
+```
+{
+   tradeId: 6,
+   partiallySignedTx: 'abc',
+   recipientPubkey: 'abc'
+}
+```
+
+### Both parties sign the trade
+
+For the `create_trade` to be executable on blockchain, it needs to have three signers: both traders and the authority behind the `txoracle` program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above `SigningRequest` is received by both traders and each use a similar method to sign and send it back to the TxODDS service.
+
+```
+const signature = nacl.sign.detached(messageToSign, user.secretKey);
+
+const signaturePayload = {
+   tradeId: data.tradeId,
+   signer: user.publicKey.toBase58(),
+   signature: bs58.encode(signature),
+};
+
+await axios.post(`${API_BASE_URL}/api/trading/sign`, signaturePayload, {
+   headers: {
+   'Authorization': `Bearer ${jwt}`,
+   'X-Api-Token': apiToken
+   }
+});
+```
+
+Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a full signed `create_transaction`.
+
+### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
+
+
+
+### The possible winner submits a claim for settlement
+
+
 
 ## Additional Documentation
 
