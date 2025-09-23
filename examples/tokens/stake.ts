@@ -24,11 +24,11 @@ async function main() {
   );
 
   const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("stake"), userKeypair.publicKey.toBuffer()],
+    [Buffer.from("stake"), userKeypair.publicKey.toBuffer(), TOKEN_MINT.toBuffer()],
     program.programId
   );
   const [stakeVaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("vault"), userKeypair.publicKey.toBuffer()],
+    [Buffer.from("vault"), userKeypair.publicKey.toBuffer(), TOKEN_MINT.toBuffer()],
     program.programId
   );
   const [oracleStatePda] = PublicKey.findProgramAddressSync(

@@ -8,13 +8,9 @@ import {
   getAccount,
 } from "@solana/spl-token";
 import fs from "fs";
-import {
-  KEYPAIR_PATH,
-  RPC_ENDPOINT,
-  TxOracleIDL,
-} from "../../config";
+import { KEYPAIR_PATH, RPC_ENDPOINT, TOKEN_MINT, TxOracleIDL } from "../../config";
 
-const PURCHASE_AMOUNT_SOL = 0.1;
+const PURCHASE_AMOUNT_SOL = 2;
 
 async function main() {
   console.log("Starting subscription token purchase");
@@ -33,24 +29,22 @@ async function main() {
 
   console.log(`Using user wallet: ${userKeypair.publicKey.toBase58()}`);
 
-  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury")],
-    program.programId
-  );
-
-  const vaultAccount = await getAccount(connection, tokenTreasuryVaultPda);
-  const SUBSCRIPTION_TOKEN_MINT = vaultAccount.mint;
 
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     userKeypair,
-    SUBSCRIPTION_TOKEN_MINT,
+    TOKEN_MINT,
     userKeypair.publicKey
   );
   console.log("User Token Account:", userTokenAccount.address.toBase58());
 
   const [solTreasuryPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("sol_treasury")],
+    program.programId
+  );
+
+  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury")],
     program.programId
   );
 
@@ -67,7 +61,7 @@ async function main() {
       solTreasury: solTreasuryPda,
       tokenTreasuryVault: tokenTreasuryVaultPda,
       buyerTokenAccount: userTokenAccount.address,
-      subscriptionTokenMint: SUBSCRIPTION_TOKEN_MINT,
+      subscriptionTokenMint: TOKEN_MINT,
       systemProgram: SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
