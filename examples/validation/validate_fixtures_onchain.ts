@@ -15,6 +15,7 @@ import {
   BASE_URL,
   TxOracleIDL,
   AUTHORITY_PK,
+  TOKEN_MINT,
 } from "../../config";
 
 async function main() {
@@ -48,7 +49,23 @@ async function main() {
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
   const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("stake"), userKeypair.publicKey.toBuffer()],
+    [
+      Buffer.from("stake"),
+      userKeypair.publicKey.toBuffer(),
+      TOKEN_MINT.toBuffer(),
+    ],
+    PROGRAM_ID
+  );
+  const [stakeVaultPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("vault"),
+      userKeypair.publicKey.toBuffer(),
+      TOKEN_MINT.toBuffer(),
+    ],
+    PROGRAM_ID
+  );
+  const [oracleStatePda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("oracle_state")],
     PROGRAM_ID
   );
 
@@ -79,16 +96,11 @@ async function main() {
     .subscribe(finalPayload)
     .accounts({
       user: userKeypair.publicKey,
-      oracleState: PublicKey.findProgramAddressSync(
-        [Buffer.from("oracle_state")],
-        PROGRAM_ID
-      )[0],
+      tokenMint: TOKEN_MINT,
+      oracleState: oracleStatePda,
       recipient: AUTHORITY_PK,
       stakeAccount: stakeAccountPda,
-      stakeVault: PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), userKeypair.publicKey.toBuffer()],
-        PROGRAM_ID
-      )[0],
+      stakeVault: stakeVaultPda,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([userKeypair])
@@ -126,36 +138,12 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
-  console.log("Getting fixtures from last Saturday...");
+  const fixtureId = 17271370;
 
-  const today = new Date();
-  const daysSinceSaturday = (today.getDay() + 1) % 7;
-  const lastSaturday = new Date(today);
-  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
-  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
-
-  console.log(
-    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
-  );
-
-  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
-    params: {
-      competitionId: 500005,
-      startEpochDay: epochDay,
-    },
-  });
-  const fixtures = fixturesResponse.data;
-
-  if (!fixtures || fixtures.length === 0) {
-    throw new Error("No fixtures found for the past hour");
-  }
-
-  const fixture = fixtures[0];
-
-  console.log(`Getting fixture validation for fixture ${fixture.FixtureId}...`);
+  console.log(`Getting fixture validation for fixture ${fixtureId}...`);
   const validationResponse = await httpClient.get("/api/fixtures/validation", {
     params: {
-      fixtureId: fixture.FixtureId,
+      fixtureId,
     },
   });
   const validation = validationResponse.data;
