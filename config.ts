@@ -1,12 +1,15 @@
 import { PublicKey } from "@solana/web3.js";
 import txOracleDevnet from "./idl/devnet.json"; 
 import txOracleMainnet from "./idl/mainnet.json"; 
+import * as anchor from "@coral-xyz/anchor";
 
 const isDevnet = true; // Set to false for mainnet
 
-export const TxOracleIDL = isDevnet ? txOracleDevnet : txOracleMainnet;
+export const TxOracleIDL = isDevnet ? txOracleDevnet as anchor.Idl : txOracleMainnet as anchor.Idl;
 
 export const KEYPAIR_PATH = "";
+
+export const USER2_KEYPAIR_PATH = "";
 
 export const RPC_ENDPOINT = isDevnet 
   ? "https://api.devnet.solana.com"
@@ -24,7 +27,6 @@ export const AUTHORITY_PK = new PublicKey(
 
 export const TOKEN_MINT = new PublicKey(
   isDevnet
-    ? "GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC"
+    ? "5Uw386Bcze69DSL8CfCtWKxSv4kqx23A4kZMGAnnEdbj"
     : "sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx"
 );
-
