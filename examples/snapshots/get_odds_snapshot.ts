@@ -9,6 +9,7 @@ import {
   BASE_URL,
   KEYPAIR_PATH,
   RPC_ENDPOINT,
+  TOKEN_MINT,
   TxOracleIDL,
 } from "../../config";
 
@@ -39,7 +40,15 @@ async function main() {
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
   const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("stake"), userKeypair.publicKey.toBuffer()],
+    [Buffer.from("stake"), userKeypair.publicKey.toBuffer(), TOKEN_MINT.toBuffer()],
+    program.programId
+  );
+  const [stakeVaultPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), userKeypair.publicKey.toBuffer(), TOKEN_MINT.toBuffer()],
+    program.programId
+  );
+  const [oracleStatePda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("oracle_state")],
     program.programId
   );
 
@@ -70,16 +79,11 @@ async function main() {
     .subscribe(finalPayload)
     .accounts({
       user: userKeypair.publicKey,
-      oracleState: PublicKey.findProgramAddressSync(
-        [Buffer.from("oracle_state")],
-        program.programId
-      )[0],
+      tokenMint: TOKEN_MINT,
+      oracleState: oracleStatePda,
       recipient: AUTHORITY_PK,
       stakeAccount: stakeAccountPda,
-      stakeVault: PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), userKeypair.publicKey.toBuffer()],
-        program.programId
-      )[0],
+      stakeVault: stakeVaultPda,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([userKeypair])

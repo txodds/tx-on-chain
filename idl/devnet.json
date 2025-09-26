@@ -8,6 +8,31 @@
   },
   "instructions": [
     {
+      "name": "close_oracle",
+      "discriminator": [
+        74,
+        239,
+        49,
+        223,
+        206,
+        52,
+        189,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "oracle_state",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "create_trade",
       "docs": [
         "Create a trade escrow after an off-chain match.",
@@ -665,6 +690,9 @@
           "name": "oracle_state"
         },
         {
+          "name": "token_mint"
+        },
+        {
           "name": "recipient",
           "writable": true
         },
@@ -706,6 +734,9 @@
           "name": "user",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_mint"
         },
         {
           "name": "stake_account",
@@ -1604,6 +1635,10 @@
           {
             "name": "unlock_ts",
             "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
