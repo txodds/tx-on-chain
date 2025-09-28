@@ -21,9 +21,13 @@
     "@coral-xyz/anchor": "^0.31.1",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.4",
+    "@types/eventsource": "^1.1.15",
     "axios": "^1.11.0",
+    "bs58": "^6.0.0",
     "crypto": "^1.0.1",
-    "fs": "^0.0.1-security"
+    "eventsource": "^4.0.0",
+    "fs": "^0.0.1-security",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@types/node": "^24.3.1",
