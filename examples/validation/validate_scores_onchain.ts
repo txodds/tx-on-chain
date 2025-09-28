@@ -14,6 +14,7 @@ import {
   BASE_URL,
   KEYPAIR_PATH,
   RPC_ENDPOINT,
+  TOKEN_MINT,
   TxOracleIDL,
 } from "../../config";
 
@@ -44,7 +45,23 @@ async function main() {
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
   const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("stake"), userKeypair.publicKey.toBuffer()],
+    [
+      Buffer.from("stake"),
+      userKeypair.publicKey.toBuffer(),
+      TOKEN_MINT.toBuffer(),
+    ],
+    program.programId
+  );
+  const [stakeVaultPda] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("vault"),
+      userKeypair.publicKey.toBuffer(),
+      TOKEN_MINT.toBuffer(),
+    ],
+    program.programId
+  );
+  const [oracleStatePda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("oracle_state")],
     program.programId
   );
 
@@ -75,16 +92,11 @@ async function main() {
     .subscribe(finalPayload)
     .accounts({
       user: userKeypair.publicKey,
-      oracleState: PublicKey.findProgramAddressSync(
-        [Buffer.from("oracle_state")],
-        program.programId
-      )[0],
+      tokenMint: TOKEN_MINT,
+      oracleState: oracleStatePda,
       recipient: AUTHORITY_PK,
       stakeAccount: stakeAccountPda,
-      stakeVault: PublicKey.findProgramAddressSync(
-        [Buffer.from("vault"), userKeypair.publicKey.toBuffer()],
-        program.programId
-      )[0],
+      stakeVault: stakeVaultPda,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([userKeypair])
@@ -122,70 +134,22 @@ async function main() {
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
-  console.log("Getting fixtures from last Saturday...");
-
-  const today = new Date();
-  const daysSinceSaturday = (today.getDay() + 1) % 7;
-  const lastSaturday = new Date(today);
-  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
-  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
-
-  console.log(
-    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
-  );
-
-  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
-    params: {
-      competitionId: 500005,
-      startEpochDay: epochDay,
-    },
-  });
-  const fixtures = fixturesResponse.data;
-
-  console.log(fixtures);
-
-  if (!fixtures || fixtures.length === 0) {
-    throw new Error("No fixtures found for the past hour");
-  }
-
-  const fixture = fixtures[0];
-
-  console.log(`Using fixture ${fixture.FixtureId}...`);
-
-  console.log(`Getting scores snapshot for fixture ${fixture.FixtureId}...`);
-
-  const scoresResponse = await httpClient.get(
-    `/api/scores/snapshot/${fixture.FixtureId}`
-  );
-  const scoreUpdates = scoresResponse.data;
-
-  console.log(`Found ${scoreUpdates.length} score updates`);
-
-  if (!scoreUpdates || scoreUpdates.length === 0) {
-    throw new Error("No score updates found for fixture");
-  }
-
-  const touchdownUpdate = scoreUpdates.find(
-    (update: { Action: string }) => update.Action === "touchdown"
-  );
-
-  if (!touchdownUpdate) {
-    throw new Error("No touchdown action found in score updates");
-  }
-
-  const scoreUpdate = touchdownUpdate;
+  const fixtureId = 17271370;
+  const seq = 401;
   const statKey = 1;
+  const statKey2 = 2;
 
   console.log(
-    `Getting scores stat validation for fixture ${fixture.FixtureId}, seq ${scoreUpdate.Seq}, statKey ${statKey}...`
+    `Getting scores stat validation for fixture ${fixtureId}, seq ${seq}, statKey ${statKey}`
   );
   const validationResponse = await httpClient.get(
     "/api/scores/stat-validation",
     {
       params: {
-        fixtureId: fixture.FixtureId,
-        seq: scoreUpdate.Seq,
-        statKey: statKey,
+        fixtureId,
+        seq,
+        statKey,
+        statKey2
       },
     }
   );
@@ -195,6 +159,7 @@ async function main() {
 
   console.log(validation);
 
+  const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
   const [dailyScoresRootsPda] = PublicKey.findProgramAddressSync(
     [
       Buffer.from("daily_scores_roots"),
@@ -230,8 +195,8 @@ async function main() {
   };
 
   const predicate = {
-    threshold: validation.statToProve.value,
-    comparison: { equalTo: {} },
+    threshold: 11,
+    comparison: { lessThan: {} },
   };
 
   const fixtureProof = validation.subTreeProof.map((node: any) => ({
@@ -282,32 +247,34 @@ async function main() {
     `Single stat validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value} (threshold: ${predicate.threshold})`
   );
 
-  const statB = {
-    statToProve: {
-      key: validation.statToProve.key,
-      value: validation.statToProve.value,
-      period: validation.statToProve.period,
-    },
+  // Now do a two-stat validation
+  const stat2 = {
+    statToProve: validation.statToProve2,
     eventStatRoot: validation.eventStatRoot,
-    statProof: validation.statProof.map((node: any) => ({
+    statProof: validation.statProof2.map((node: any) => ({
       hash: node.hash,
       isRightSibling: node.isRightSibling,
     })),
   };
 
-  const binaryOp = { add: {} };
+  const op = { subtract: {} };
 
-  console.log("Executing on-chain stat validation with both stats...");
+  const predicate2 = {
+    threshold: 5,
+    comparison: { lessThan: {} },
+  };
+
+  console.log("Executing a 2-stat on-chain scores stat validation...");
   const signature2 = await program.methods
     .validateStat(
       new BN(validation.ts),
       fixtureSummary,
       fixtureProof,
       mainTreeProof,
-      predicate,
+      predicate2,
       statToProve,
-      statB,
-      binaryOp
+      stat2,
+      op
     )
     .accounts({
       dailyScoresMerkleRoots: dailyScoresRootsPda,
@@ -322,7 +289,7 @@ async function main() {
 
   console.log(`Both stats validation signature: ${signature2}`);
   console.log(
-    `Both stats validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value}, ${statB.statToProve.key} = ${statB.statToProve.value} (threshold: ${predicate.threshold})`
+    `Both stats validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value}, ${stat2.statToProve.key} = ${stat2.statToProve.value} (threshold: ${predicate2.threshold})`
   );
 }
 
