@@ -9,7 +9,7 @@ Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It sup
 1. **Data Access Layer**. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
-   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` (used as a temporal fully returnable collateral) and pay for access to proprietary data using the SOL currency.
+   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.
 
 2. **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
    - submit cryptographically signed College Football and Basketball prediction offers for specified time periods,
@@ -32,9 +32,9 @@ The data the Oracle system is currently offering includes
 
 The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
 
-This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically validate whether a given record is contained in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified.
+This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically verify whether a given record is *contained* in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified. A non-custodial orderbook trading model is also in preparation.
 
-Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives.
+Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.
 
 ## Included data
 
@@ -80,22 +80,12 @@ The following diagram shows how the users typically access data from purchasing 
 
 Before accessing the oracle services, you must purchase TxOracle tokens. See `purchase_tokens.ts` for the complete implementation of token purchasing.
 
-### 2. Stake Tokens
-
-After purchasing tokens, you must stake them to gain API access. The staking mechanism ensures user commitment to the oracle network. See `stake.ts` and `unstake.ts` for the complete implementation of staking/unstaking.
-
-**Stake Lock Periods:**
-- **Devnet**: 60 seconds minimum lock period
-- **Mainnet**: 24 hours minimum lock period
-
-Once staked, tokens cannot be unstaked until the lock period expires.
-
-### 3. Access Off-Chain API
+### 2. Access Off-Chain API
 
 With staked tokens, you can access the off-chain API services through the following request flow:
 
 1. **Guest Authentication** - Make a `POST /auth/guest/start` request to receive a JWT token
-2. **Create Subscription** - Execute an on-chain `subscribe` transaction with encrypted JWT payload using your staked tokens
+2. **Create Subscription** - Execute an on-chain `subscribe_with_token` transaction with encrypted JWT payload, which will transfer the price of the subscription in Tx tokens to the TxODDS token treasury.
 3. **Token Activation** - Make a `GET /api/token/activate` request with the transaction signature and encryption parameters to receive your API access token
 4. **API Access** - Use the API token in subsequent requests to all off-chain services
 
@@ -154,20 +144,6 @@ npx ts-node ./examples/tokens/unstake.ts
 Demonstrates how to purchase TxOracle subscription tokens using SOL.
 1. Executes on-chain token purchase transaction
 2. Transfers tokens from treasury to user's account
-
-#### `examples/tokens/stake.ts`
-Shows how to stake purchased tokens to gain API access.
-1. Creates a stake account for the user
-2. Transfers tokens from user account to stake vault
-3. Locks tokens for the minimum period 
-4. Enables user to create subscriptions
-
-#### `examples/tokens/unstake.ts`
-Demonstrates how to withdraw staked tokens after the lock period.
-1. Verifies the stake lock period has expired
-2. Transfers tokens back from stake vault to user account
-3. Closes the stake vault and stake account
-4. Returns rent to the user
 
 ### Data Snapshots
 
