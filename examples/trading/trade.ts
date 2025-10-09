@@ -11,11 +11,9 @@ import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { BinaryWriter } from "borsh";
 import { EventSource } from "eventsource";
 import { ComputeBudgetProgram } from "@solana/web3.js";
 import {
-  AUTHORITY_PK,
   BASE_URL,
   KEYPAIR_PATH,
   USER2_KEYPAIR_PATH,
@@ -24,137 +22,13 @@ import {
   TOKEN_MINT,
 } from "../../config";
 import { inspect } from "util";
+import { SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { Offer, OfferTerms } from "./types";
 
 const predicate = {
   threshold: 11,
   comparison: { greaterThan: {} },
 };
-
-class ComparisonEnum {
-  type: string;
-
-  constructor(properties: { [key: string]: {} }) {
-    this.type = Object.keys(properties)[0];
-  }
-
-  serialize(writer: BinaryWriter): void {
-    const discriminant =
-      this.type === "greaterThan" ? 0 : this.type === "lessThan" ? 1 : 2;
-    writer.writeU8(discriminant);
-  }
-
-  toJSON() {
-    return {
-      type: this.type.charAt(0).toUpperCase() + this.type.slice(1),
-    };
-  }
-}
-
-class BinaryOpEnum {
-  type: string;
-
-  constructor(properties: { [key: string]: {} }) {
-    this.type = Object.keys(properties)[0];
-  }
-
-  serialize(writer: BinaryWriter): void {
-    const discriminant = this.type === "add" ? 0 : 1;
-    writer.writeU8(discriminant);
-  }
-
-  toJSON() {
-    return {
-      type: this.type.charAt(0).toUpperCase() + this.type.slice(1),
-    };
-  }
-}
-
-class StatTerm {
-  key: number;
-  constructor(fields: { key: number }) {
-    this.key = fields.key;
-  }
-
-  serialize(writer: BinaryWriter): void {
-    writer.writeU16(this.key);
-  }
-}
-
-class Predicate {
-  threshold: number;
-  comparison: ComparisonEnum;
-
-  constructor(fields: {
-    threshold: number;
-    comparison: { [key: string]: {} };
-  }) {
-    this.threshold = fields.threshold;
-    this.comparison = new ComparisonEnum(fields.comparison);
-  }
-  serialize(writer: BinaryWriter): void {
-    const thresholdBuffer = new BN(this.threshold).toBuffer("le", 4);
-    writer.writeFixedArray(thresholdBuffer);
-
-    this.comparison.serialize(writer);
-  }
-}
-
-class Offer {
-  fixtureId: BN;
-  period: number;
-  predicate: Predicate;
-  binaryOp?: BinaryOpEnum;
-  statA: StatTerm;
-  statB?: StatTerm;
-  stake: BN;
-  odds: number;
-  expiration: BN;
-  traderPubkey: PublicKey;
-
-  constructor(fields: any) {
-    this.fixtureId = fields.fixtureId;
-    this.period = fields.period;
-    this.predicate = new Predicate(fields.predicate);
-    this.binaryOp = fields.binaryOp
-      ? new BinaryOpEnum(fields.binaryOp)
-      : undefined;
-    this.statA = new StatTerm(fields.statA);
-    this.statB = fields.statB ? new StatTerm(fields.statB) : undefined;
-    this.stake = fields.stake;
-    this.odds = fields.odds;
-    this.expiration = fields.expiration;
-    this.traderPubkey = fields.traderPubkey;
-  }
-
-  serialize(): Buffer {
-    const writer = new BinaryWriter();
-
-    writer.writeU64(this.fixtureId);
-    writer.writeU8(this.period);
-    this.predicate.serialize(writer);
-
-    writer.writeU8(this.binaryOp ? 1 : 0);
-    if (this.binaryOp) {
-      this.binaryOp.serialize(writer);
-    }
-
-    this.statA.serialize(writer);
-
-    writer.writeU8(this.statB ? 1 : 0);
-    if (this.statB) {
-      this.statB.serialize(writer);
-    }
-
-    writer.writeU64(this.stake);
-
-    writer.writeFixedArray(new BN(this.odds).toBuffer("le", 4));
-
-    writer.writeFixedArray(this.expiration.toBuffer("le", 8));
-    writer.writeFixedArray(this.traderPubkey.toBuffer());
-
-    return Buffer.from(writer.toArray());
-  }
-}
 
 async function main() {
   console.log("Starting trading example");
@@ -178,10 +52,6 @@ async function main() {
   console.log(`[Trader A] Using wallet: ${userKeypair.publicKey.toBase58()}`);
   console.log(`[Trader B] Using wallet: ${user2Keypair.publicKey.toBase58()}`);
 
-  const tokenMint = TOKEN_MINT;
-
-  console.log("Token Mint:", tokenMint.toBase58());
-
   const httpClient = axios.create({
     timeout: 30000,
     headers: { "Content-Type": "application/json" },
@@ -191,7 +61,7 @@ async function main() {
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     userKeypair,
-    tokenMint,
+    TOKEN_MINT,
     userKeypair.publicKey
   );
   console.log(
@@ -202,7 +72,7 @@ async function main() {
   const user2TokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     user2Keypair,
-    tokenMint,
+    TOKEN_MINT,
     user2Keypair.publicKey
   );
   console.log(
@@ -210,60 +80,10 @@ async function main() {
     user2TokenAccount.address.toBase58()
   );
 
-  const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("stake"),
-      userKeypair.publicKey.toBuffer(),
-      tokenMint.toBuffer(),
-    ],
-    program.programId
-  );
-  const [stakeVaultPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("vault"),
-      userKeypair.publicKey.toBuffer(),
-      tokenMint.toBuffer(),
-    ],
-    program.programId
-  );
-  const [stakeAccountPda2] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("stake"),
-      user2Keypair.publicKey.toBuffer(),
-      tokenMint.toBuffer(),
-    ],
-    program.programId
-  );
-  const [stakeVaultPda2] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("vault"),
-      user2Keypair.publicKey.toBuffer(),
-      tokenMint.toBuffer(),
-    ],
-    program.programId
-  );
   const [oracleStatePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("oracle_state")],
     program.programId
   );
-  console.log("[Trader A] Stake Account PDA:", stakeAccountPda.toBase58());
-  console.log("[Trader A] Stake Vault PDA:", stakeVaultPda.toBase58());
-  console.log("[Trader B] Stake Account PDA:", stakeAccountPda2.toBase58());
-
-  const stakeAccountInfo = await connection.getAccountInfo(stakeAccountPda);
-  const stakeAccountInfo2 = await connection.getAccountInfo(stakeAccountPda2);
-
-  if (!stakeAccountInfo) {
-    throw new Error(
-      "No stake found for Trader A. Please stake tokens first using the stake.ts example"
-    );
-  }
-
-  if (!stakeAccountInfo2) {
-    throw new Error(
-      "No stake found for Trader B. Please stake tokens first using the stake.ts example"
-    );
-  }
 
   console.log("[Trader A] Authenticating...");
   const authResponse = await httpClient.post("/auth/guest/start");
@@ -296,15 +116,20 @@ async function main() {
     authTag2,
   ]);
 
+  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury")],
+    program.programId
+  );
+
   const txSig = await program.methods
-    .subscribe(finalPayload)
+    .subscribeWithToken(finalPayload)
     .accounts({
       user: userKeypair.publicKey,
-      tokenMint: tokenMint,
+      tokenMint: TOKEN_MINT,
       oracleState: oracleStatePda,
-      recipient: AUTHORITY_PK,
-      stakeAccount: stakeAccountPda,
-      stakeVault: stakeVaultPda,
+      tokenTreasuryVault: tokenTreasuryVaultPda,
+      userTokenAccount: userTokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([userKeypair])
@@ -314,14 +139,14 @@ async function main() {
   console.log("[Trader A] Transaction Signature:", txSig);
 
   const txSig2 = await program.methods
-    .subscribe(finalPayload2)
+    .subscribeWithToken(finalPayload2)
     .accounts({
       user: user2Keypair.publicKey,
-      tokenMint: tokenMint,
+      tokenMint: TOKEN_MINT,
       oracleState: oracleStatePda,
-      recipient: AUTHORITY_PK,
-      stakeAccount: stakeAccountPda2,
-      stakeVault: stakeVaultPda2,
+      tokenTreasuryVault: tokenTreasuryVaultPda,
+      userTokenAccount: user2TokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([user2Keypair])
@@ -361,7 +186,6 @@ async function main() {
     }
   }
 
-  // Create authenticated httpClient for Trader A
   const httpClientA = axios.create({
     timeout: 30000,
     headers: {
@@ -402,7 +226,6 @@ async function main() {
     }
   }
 
-  // Create authenticated httpClient for Trader B
   const httpClientB = axios.create({
     timeout: 30000,
     headers: {
@@ -413,97 +236,204 @@ async function main() {
     baseURL: BASE_URL,
   });
 
-  try {
-    listenToTradingStream(
-      "Trader A",
-      jwtToken,
-      apiToken,
-      userKeypair,
-      program,
-      userTokenAccount,
-      httpClientA
-    );
+  const depositAmount = new BN(60 * (10 ** 6));
 
-    listenToTradingStream(
-      "Trader B",
-      jwtToken2,
-      apiToken2,
-      user2Keypair,
-      program,
-      user2TokenAccount,
-      httpClientB
-    );
+  const [tradingVaultAccountPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("trading_vault"), userKeypair.publicKey.toBuffer()],
+    program.programId
+  );
+  const [tradingVaultTokensPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("trading_tokens"), userKeypair.publicKey.toBuffer()],
+    program.programId
+  );
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+  const userTokenBalance = await connection.getTokenAccountBalance(userTokenAccount.address);
+  console.log(`[Trader A] Current token balance: ${userTokenBalance.value.uiAmount}`);
 
-    const offer = new Offer({
-      fixtureId: new BN(17271370),
-      period: 4,
-      predicate,
-      binaryOp: null,
-      statA: { key: 1 },
-      statB: null,
-      stake: new BN(1),
-      odds: 2000,
-      expiration: new BN(Date.now() + 60 * 60 * 1000),
-      traderPubkey: userKeypair.publicKey,
-    });
-    const prefix = `[Trader A] Submitting new offer:`;
-    const inspectedOffer = inspect(offer, { depth: null, colors: true });
-    console.log(prefix, inspectedOffer);
+  const tradingVaultAccountInfo = await connection.getAccountInfo(tradingVaultAccountPda);
+  if (tradingVaultAccountInfo) {
+    console.log(`[Trader A] Trading vault exists. Checking balance...`);
+  } else {
+    console.log("[Trader A] Depositing funds into on-chain Trading Vault...");
+    try {
+      const depositTx = await program.methods
+        .deposit(depositAmount)
+        .accounts({
+          user: userKeypair.publicKey,
+          oracleState: oracleStatePda,
+          tradingVaultAccount: tradingVaultAccountPda,
+          tradingVaultTokens: tradingVaultTokensPda,
+          userTokenAccount: userTokenAccount.address,
+          tokenMint: TOKEN_MINT,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+        })
+        .transaction();
 
-    const serializedOffer = offer.serialize();
-
-    console.log(
-      "[Trader A] Client-side offer bytes:",
-      serializedOffer.toString("hex")
-    );
-
-    const signature = nacl.sign.detached(
-      serializedOffer,
-      userKeypair.secretKey
-    );
-
-    console.log(
-      `[Trader A] Offer cryptographically signed. Signature (bs58): ${bs58.encode(
-        signature
-      )}`
-    );
-
-    const payload = {
-      offer: {
-        ...offer,
-        fixtureId: offer.fixtureId.toNumber(),
-        stake: offer.stake.toNumber(),
-        expiration: offer.expiration.toNumber(),
-        traderPubkey: offer.traderPubkey.toBase58(),
-      },
-      signature: bs58.encode(signature),
-    };
-
-    const response = await httpClient.post("/api/trading/offer", payload, {
-      headers: {
-        "X-Api-Token": apiToken,
-      },
-    });
-    console.log(
-      "[Trader A] Offer successfully submitted. Server response:",
-      response.data
-    );
-  } catch (error) {
-    console.error("Error in trading flow:", error);
-    throw error;
+      const depositSig = await provider.sendAndConfirm(depositTx, [userKeypair]);
+      console.log(`[Trader A] Deposit successful. Transaction signature: ${depositSig}`);
+    } catch (err: any) {
+      if (err.message?.includes('insufficient funds')) {
+        console.log(`[Trader A] Insufficient funds in token account. Skipping deposit.`);
+      } else {
+        throw err;
+      }
+    }
   }
 
-  const waitDuration = 62 * 1000;
-  console.log(
-    `Waiting for ${waitDuration / 1000} seconds for trading to complete...`
+  const depositAmount2 = new BN(60 * (10 ** 6));
+
+  const [tradingVaultAccountPda2] = PublicKey.findProgramAddressSync(
+    [Buffer.from("trading_vault"), user2Keypair.publicKey.toBuffer()],
+    program.programId
   );
-  await new Promise((resolve) => setTimeout(resolve, waitDuration));
+  const [tradingVaultTokensPda2] = PublicKey.findProgramAddressSync(
+    [Buffer.from("trading_tokens"), user2Keypair.publicKey.toBuffer()],
+    program.programId
+  );
+
+  const user2TokenBalance = await connection.getTokenAccountBalance(user2TokenAccount.address);
+  console.log(`[Trader B] Current token balance: ${user2TokenBalance.value.uiAmount}`);
+
+  const tradingVaultAccountInfo2 = await connection.getAccountInfo(tradingVaultAccountPda2);
+  const wallet2 = new Wallet(user2Keypair);
+  const provider2 = new AnchorProvider(connection, wallet2, {
+    commitment: "confirmed",
+  });
+
+  if (tradingVaultAccountInfo2) {
+    console.log(`[Trader B] Trading vault exists. Checking balance...`);
+  } else {
+    console.log("[Trader B] Depositing funds into on-chain Trading Vault...");
+    try {
+      const depositTx2 = await program.methods
+        .deposit(depositAmount2)
+        .accounts({
+          user: user2Keypair.publicKey,
+          oracleState: oracleStatePda,
+          tradingVaultAccount: tradingVaultAccountPda2,
+          tradingVaultTokens: tradingVaultTokensPda2,
+          userTokenAccount: user2TokenAccount.address,
+          tokenMint: TOKEN_MINT,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: anchor.web3.SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
+        })
+        .transaction();
+
+      const depositSig2 = await provider2.sendAndConfirm(depositTx2, [user2Keypair]);
+      console.log(`[Trader B] Deposit successful. Transaction signature: ${depositSig2}`);
+    } catch (err: any) {
+      if (err.message?.includes('insufficient funds')) {
+        console.log(`[Trader B] Insufficient funds in token account. Skipping deposit.`);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  listenToTradingStream(
+    "Trader A",
+    jwtToken,
+    apiToken,
+    userKeypair,
+    program,
+    userTokenAccount,
+    httpClientA
+  );
+
+  listenToTradingStream(
+    "Trader B",
+    jwtToken2,
+    apiToken2,
+    user2Keypair,
+    program,
+    user2TokenAccount,
+    httpClientB
+  );
+
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+
+  console.log("[Trader A] Preparing to post a new order to the order book...");
+
+  const offerTerms: OfferTerms = {
+    fixtureId: new BN(17271370),
+    period: 4,
+    predicate,
+    binaryOp: null,
+    statA: { key: 1 },
+    statB: null,
+    stake: new BN(10 * (10 ** 6)),
+    odds: 2000,
+    expiration: new BN(Date.now() + 24 * 60 * 60 * 1000),
+  };
+
+  try {
+    const result = await postNewOrder(
+      offerTerms,
+      userKeypair,
+      jwtToken,
+      apiToken,
+      "Trader A"
+    );
+    console.log("[Trader A] Order submission result:", result);
+  } catch (error) {
+    console.error("[Trader A] Error posting order:", error);
+  }
+
+  console.log("Waiting for trading events and settlement...");
+  await new Promise((resolve) => setTimeout(resolve, 62000));
+
+  console.log("Trading example completed.");
+  process.exit(0);
 }
 
 if (require.main === module) {
   main().catch(console.error);
+}
+
+async function postNewOrder(
+  terms: OfferTerms,
+  user: Keypair,
+  jwt: string,
+  apiToken: string,
+  userName: string
+) {
+  console.log(`[${userName}] Posting a new offer to the order book...`);
+
+  const offer = new Offer({
+    ...terms,
+    traderPubkey: user.publicKey,
+  });
+  console.log(`[${userName}] Prepared offer:`, inspect(offer, { depth: null, colors: true }));
+
+  const serializedOffer = offer.serialize();
+  console.log(`[${userName}] Client-side offer bytes:`, serializedOffer.toString('hex'));
+
+  const signature = nacl.sign.detached(serializedOffer, user.secretKey);
+  console.log(`[${userName}] Offer cryptographically signed. Signature (bs58): ${bs58.encode(signature)}`);
+
+  const payload = {
+    offer: {
+      ...offer,
+      fixtureId: offer.fixtureId.toNumber(),
+      stake: offer.stake.toNumber(),
+      expiration: offer.expiration.toNumber(),
+      traderPubkey: offer.traderPubkey.toBase58(),
+    },
+    signature: bs58.encode(signature),
+  };
+
+  const response = await axios.post(`${BASE_URL}/api/trading/offer`, payload, {
+    headers: {
+      'Authorization': `Bearer ${jwt}`,
+      'X-Api-Token': apiToken
+    }
+  });
+
+  console.log(`[${userName}] Offer successfully submitted. Server response:`, response.data);
+  return response.data;
 }
 
 async function listenToTradingStream(
@@ -575,7 +505,7 @@ async function listenToTradingStream(
   eventSource.addEventListener("TradeMatched", async (event: any) => {
     const data = JSON.parse(event.data);
     const prefix = `[${bot}] [EVENT] Trade matched (ID: ${event.lastEventId}):`;
-    const inspectedEvent = inspect(data.offer, { depth: null, colors: true });
+    const inspectedEvent = inspect(data, { depth: null, colors: true });
     console.log(prefix, inspectedEvent);
     if (bot == "Trader B") {
       console.log(`[${bot}] Attempting settlement`);
@@ -612,11 +542,6 @@ async function listenToTradingStream(
           hash: node.hash,
           isRightSibling: node.isRightSibling,
         })),
-      };
-
-      const predicate = {
-        threshold: 11,
-        comparison: { greaterThan: {} },
       };
 
       const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
