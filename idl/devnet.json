@@ -2,7 +2,7 @@
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.1.0",
+    "version": "1.1.2",
     "spec": "0.1.0",
     "description": "TxODDS Data Channels"
   },
@@ -112,6 +112,121 @@
               32
             ]
           }
+        }
+      ]
+    },
+    {
+      "name": "deposit",
+      "docs": [
+        "Deposit a variable amount of tokens into the user's trading vault.",
+        "Initialize the vault accounts on the first deposit."
+      ],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle_state"
+        },
+        {
+          "name": "trading_vault_account",
+          "writable": true
+        },
+        {
+          "name": "trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "rent"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "fill_order",
+      "discriminator": [
+        232,
+        122,
+        115,
+        25,
+        199,
+        143,
+        136,
+        162
+      ],
+      "accounts": [
+        {
+          "name": "taker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "taker_trading_vault_account"
+        },
+        {
+          "name": "taker_trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "maker_order_account",
+          "writable": true
+        },
+        {
+          "name": "maker_order_vault",
+          "writable": true
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
         }
       ]
     },
@@ -391,6 +506,73 @@
         },
         {
           "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "post_order",
+      "discriminator": [
+        241,
+        172,
+        254,
+        140,
+        77,
+        72,
+        246,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "maker_trading_vault_account"
+        },
+        {
+          "name": "maker_trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "order_account",
+          "writable": true
+        },
+        {
+          "name": "order_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "u64"
+        },
+        {
+          "name": "stake",
+          "type": "u64"
+        },
+        {
+          "name": "odds",
+          "type": "u16"
+        },
+        {
+          "name": "trade_terms_hash",
           "type": {
             "array": [
               "u8",
@@ -715,6 +897,55 @@
       ]
     },
     {
+      "name": "subscribe_with_token",
+      "docs": [
+        "Subscribe to the service by paying in Tx tokens."
+      ],
+      "discriminator": [
+        184,
+        57,
+        19,
+        15,
+        241,
+        194,
+        240,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle_state"
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "encrypted_payload",
+          "type": "bytes"
+        }
+      ]
+    },
+    {
       "name": "unstake",
       "docs": [
         "Withdraw staked tokens after the lock-up period has expired."
@@ -1015,6 +1246,54 @@
           }
         }
       ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Withdraw tokens and can optionally close the vault accounts to reclaim rent."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trading_vault_account",
+          "writable": true
+        },
+        {
+          "name": "trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "close_vault",
+          "type": "bool"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1029,6 +1308,19 @@
         73,
         8,
         15
+      ]
+    },
+    {
+      "name": "Order",
+      "discriminator": [
+        134,
+        173,
+        223,
+        185,
+        77,
+        86,
+        28,
+        51
       ]
     },
     {
@@ -1055,6 +1347,19 @@
         126,
         198,
         49
+      ]
+    },
+    {
+      "name": "TradingVaultAccount",
+      "discriminator": [
+        118,
+        151,
+        34,
+        226,
+        174,
+        188,
+        242,
+        188
       ]
     }
   ],
@@ -1223,6 +1528,36 @@
       "code": 6032,
       "name": "UnauthorizedSettler",
       "msg": "Unauthorized settler"
+    },
+    {
+      "code": 6033,
+      "name": "FundsBelowMinimumDeposit",
+      "msg": "Funds below minimal deposit amount"
+    },
+    {
+      "code": 6034,
+      "name": "InsufficientUserBalance",
+      "msg": "Insufficient token balance"
+    },
+    {
+      "code": 6035,
+      "name": "ZeroAmount",
+      "msg": "Cannot withdraw zero amount"
+    },
+    {
+      "code": 6036,
+      "name": "VaultNotEmpty",
+      "msg": "Vault not empty"
+    },
+    {
+      "code": 6037,
+      "name": "InsufficientVaultBalance",
+      "msg": "Insufficient vault balance"
+    },
+    {
+      "code": 6038,
+      "name": "CalculationError",
+      "msg": "Calculation error"
     }
   ],
   "types": [
@@ -1526,6 +1861,72 @@
       }
     },
     {
+      "name": "Order",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_id",
+            "type": "u64"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_stake",
+            "type": "u64"
+          },
+          {
+            "name": "odds",
+            "type": "u16"
+          },
+          {
+            "name": "trade_terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "OrderState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Filled"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
       "name": "ProofNode",
       "type": {
         "kind": "struct",
@@ -1760,6 +2161,22 @@
                 "name": "Comparison"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradingVaultAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

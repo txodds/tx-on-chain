@@ -7,6 +7,7 @@ import {
   PublicKey,
 } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import fs from "fs";
 import { randomBytes, createCipheriv } from "crypto";
 import {
@@ -48,38 +49,27 @@ async function main() {
   const jwtToken = authResponse.data.token;
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
-  const [stakeAccountPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("stake"),
-      userKeypair.publicKey.toBuffer(),
-      TOKEN_MINT.toBuffer(),
-    ],
-    PROGRAM_ID
+  const userTokenAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    userKeypair,
+    TOKEN_MINT,
+    userKeypair.publicKey
   );
-  const [stakeVaultPda] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from("vault"),
-      userKeypair.publicKey.toBuffer(),
-      TOKEN_MINT.toBuffer(),
-    ],
-    PROGRAM_ID
-  );
+  console.log("User Token Account:", userTokenAccount.address.toBase58());
+
   const [oracleStatePda] = PublicKey.findProgramAddressSync(
     [Buffer.from("oracle_state")],
     PROGRAM_ID
   );
 
-  const stakeAccountInfo = await connection.getAccountInfo(stakeAccountPda);
+  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury")],
+    PROGRAM_ID
+  );
 
   let apiToken: string = "";
 
-  if (!stakeAccountInfo) {
-    throw new Error(
-      "No stake found. Please stake tokens first using the stake.ts example"
-    );
-  }
-
-  console.log("Creating new subscription for existing stake...");
+  console.log("Creating subscription...");
 
   const symmetricKey = randomBytes(32);
   const iv = randomBytes(16);
@@ -93,14 +83,14 @@ async function main() {
   ]);
 
   const txSignature = await program.methods
-    .subscribe(finalPayload)
+    .subscribeWithToken(finalPayload)
     .accounts({
       user: userKeypair.publicKey,
       tokenMint: TOKEN_MINT,
       oracleState: oracleStatePda,
-      recipient: AUTHORITY_PK,
-      stakeAccount: stakeAccountPda,
-      stakeVault: stakeVaultPda,
+      tokenTreasuryVault: tokenTreasuryVaultPda,
+      userTokenAccount: userTokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .signers([userKeypair])
