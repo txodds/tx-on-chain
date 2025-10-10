@@ -1,6 +1,6 @@
 /* Widen the main content container */
 .md-main__inner {
-  max-width: 1800px; /* Default is 960px */
+  max-width: 2200px; /* Default is 960px */
 }
 
 /* Widen the table of contents on the right */
