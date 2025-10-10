@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sets the current game status/period. It can be deleted/canceled. Overtime is signalled with an additional field included only during overtime.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "status",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "status"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "OvertimeNumber": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+              "title": "OvertimeNumber",
+              "examples": [
+                null,
+                1
+              ]
+            },
+            "StatusId": {
+              "type": [
+                "number"
+              ],
+              "description": "The id for the current game status/period. See [StatusId](#status-id)",
+              "title": "StatusId",
+              "examples": [
+                10,
+                11,
+                3,
+                4,
+                5
+              ]
+            },
+            "StatusName": {
+              "type": [
+                "string"
+              ],
+              "description": "The code associated to the status id. See [StatusId](#status-id)",
+              "title": "StatusName",
+              "examples": [
+                "Waiting for Overtime",
+                "Overtime",
+                "Quarter 1 Break",
+                "Quarter 2",
+                "Halftime"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "StatusId",
+            "StatusName"
+          ]
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti1State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti2State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            10,
+            11,
+            3,
+            4,
+            5
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action.",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type",
+    "Score"
+  ]
+}

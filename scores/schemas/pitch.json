@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Pitch condition description at the venue with sub types attached - can be sent approx 30 minutes prior to start as well as during the game if the conditions change.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "pitch",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "pitch"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Conditions": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "List of pitch conditions at the venue. Usually a combination of two of them.",
+              "title": "Conditions",
+              "items": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  null,
+                  "excellent",
+                  "good",
+                  "average",
+                  "bad",
+                  "damp",
+                  "wet",
+                  "dry",
+                  "snow",
+                  "frosty",
+                  "artificial"
+                ]
+              }
+            }
+          },
+          "additionalProperties": false
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            4,
+            2,
+            6,
+            3,
+            1
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

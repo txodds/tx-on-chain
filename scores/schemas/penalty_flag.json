@@ -1,0 +1,207 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Indicates an on field infringement/penalty has occurred. Indicates the resulting penalty outcome in terms of yards gained and if the new down number and the teams decision to accept or decline.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "penalty_flag",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "penalty_flag"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Origin": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Internal path at which the action was triggered",
+              "title": "Origin"
+            },
+            "Outcome": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Penalty flag result",
+              "title": "Outcome",
+              "enum": [
+                null,
+                "accept",
+                "decline",
+                "offsetting"
+              ]
+            },
+            "Participants": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "description": "List of participants involved in the penalty. Can be a single participant, or both.",
+              "title": "Participants",
+              "items": {
+                "type": [
+                  "number"
+                ]
+              },
+              "examples": [
+                [
+                  2
+                ],
+                [
+                  1,
+                  2
+                ],
+                [
+                  1
+                ]
+              ],
+              "maxLength": 2
+            },
+            "Yards": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Yards moved by the penalty",
+              "title": "Yards",
+              "examples": [
+                0,
+                5,
+                10
+              ]
+            },
+            "Down": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Next Down after penalty",
+              "title": "Down Type",
+              "enum": [
+                null,
+                "repeat",
+                "1st",
+                "auto 1st"
+              ]
+            },
+            "Type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Type of penalty",
+              "title": "Type",
+              "enum": [
+                null,
+                "offensive",
+                "defensive",
+                "offsetting"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            2,
+            4,
+            11,
+            6,
+            8
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

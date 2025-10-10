@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "When both teams get into a lineups before the upcoming play starts.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "players_lining_up",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "players_lining_up"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "OvertimeNumber": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+          "title": "OvertimeNumber",
+          "examples": [
+            null,
+            1
+          ]
+        },
+        "StatusId": {
+          "type": [
+            "number"
+          ],
+          "description": "The ID for the current game period. See [StatusId](#status-id)",
+          "title": "StatusId",
+          "examples": [
+            8,
+            2,
+            4,
+            6,
+            11
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
