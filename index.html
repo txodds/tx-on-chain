@@ -1,0 +1,2150 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+        <meta name="author" content="Alex Kozlenkov and Aidan Rolfe">
+      
+      
+        <link rel="canonical" href="https://txodds.github.io/tx-on-chain/">
+      
+      
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#txodds-oracle-examples" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform" class="md-header__button md-logo" aria-label="TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              TxODDS Oracle Examples
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="README.md" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform" class="md-nav__button md-logo" aria-label="TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="README.md" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#included-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      Included data
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configurations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configurations
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configurations">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#soana-devnet-contains-matches-re-runs-to-be-used-for-integration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Soana DevNet - contains matches' re-runs to be used for integration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#solana-mainnet-contains-actual-live-matches-with-low-latency-delivery-from-off-chain-services-for-example-52-matches-covered-on-sat-20-september-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      Solana MainNet - contains actual live matches with low-latency delivery from off-chain services (for example, 52 matches covered on Sat, 20 September, 2025)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#access-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Flow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Access Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-purchase-tokens" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Purchase Tokens
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-access-off-chain-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Access Off-Chain API
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-the-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running the Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Running the Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      Prerequisites
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Running Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#available-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Available Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Available Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#token-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Token Management
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Token Management">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplestokenspurchase_tokensts" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/tokens/purchase_tokens.ts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Snapshots
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Snapshots">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplessnapshotsget_fixtures_snapshotts" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/snapshots/get_fixtures_snapshot.ts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplessnapshotsget_odds_snapshotts" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/snapshots/get_odds_snapshot.ts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplessnapshotsget_scores_snapshotts" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/snapshots/get_scores_snapshot.ts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Streaming
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Streaming">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplesstreamingstream_oddsts" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/streaming/stream_odds.ts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesstreamingstream_scorests" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/streaming/stream_scores.ts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#on-chain-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      On-Chain Validation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="On-Chain Validation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#examplesvalidationvalidate_fixtures_onchaints" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/validation/validate_fixtures_onchain.ts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesvalidationvalidate_odds_onchaints" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/validation/validate_odds_onchain.ts
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examplesvalidationvalidate_scores_onchaints" class="md-nav__link">
+    <span class="md-ellipsis">
+      examples/validation/validate_scores_onchain.ts
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trading-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trading Flow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Trading Flow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#game-phase-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game phase encoding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#overtime-status-these-are-specific-to-the-txodds-oracle-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overtime status -- these are specific to the TxODDS Oracle system
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stat-period-encoding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stat period encoding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-game-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full Game Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#first-half-ht-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      First Half (HT) Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#second-half-q3q4-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Second Half (Q3+Q4) Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quarter-1-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quarter 1 Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quarter-2-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quarter 2 Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quarter-3-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quarter 3 Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quarter-4-stats" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quarter 4 Stats
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-the-stat-period" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify the stat period
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-a-trading-predicate" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify a trading predicate
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#specify-an-optional-binary-expression" class="md-nav__link">
+    <span class="md-ellipsis">
+      Specify an optional binary expression
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#create-a-new-offer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create a new offer
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Create a new offer">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#accept-a-new-offer" class="md-nav__link">
+    <span class="md-ellipsis">
+      Accept a new offer
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#both-parties-sign-the-trade" class="md-nav__link">
+    <span class="md-ellipsis">
+      Both parties sign the trade
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-winning-trader-submits-a-settle_trade-transaction-directly-to-the-txoracle-program-on-blockchain" class="md-nav__link">
+    <span class="md-ellipsis">
+      The winning trader submits a settle_trade transaction directly to the txoracle program on blockchain
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#additional-documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Documentation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="txodds-oracle-examples">TxODDS Oracle Examples</h1>
+<p>This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology.</p>
+<h2 id="overview">Overview</h2>
+<p>Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:</p>
+<ol>
+<li><strong>Data Access Layer</strong>. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.</li>
+<li>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</li>
+<li>The data is delivered in a request-response or streaming form.</li>
+<li>
+<p>One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase <code>TxODDS subscription tokens</code> and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.</p>
+</li>
+<li>
+<p><strong>Prediction-based trading</strong> Sophisticated and highly general binary options Trading that allows users to:</p>
+</li>
+<li>submit cryptographically signed College Football and Basketball prediction offers for specified time periods,</li>
+<li>receive via stream the resulting notifications to paid subscribers over the Trading stream,</li>
+<li>accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),</li>
+<li>settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.</li>
+</ol>
+<p>The following is a basic diagram showing the system in operation.</p>
+<p><img alt="Alt text" src="assets/TxODDS%20Oracle.png?raw=true" title="TxODDS Oracle" /></p>
+<p>The OpenAPI documentation is available at
+   - https://oracle-dev.txodds.com/docs for Solana DevNet use.
+   - https://oracle.txodds.com/docs for Solana MainNet use.</p>
+<p>The data the Oracle system is currently offering includes
+- fixture snapshots/updates: every time any key metadata for a fixture changes, an update becomes available;
+- odds: specifically, what is known as TxODDS stable de-margined price available for much more sports and markets in the TxODDS Fusion product;
+- scores: fully detailed (down to every on-the field action) updates for US College Football and US College Basketball matches.</p>
+<p>The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a <code>Merkle root</code>, is published on-chain in perpetuity. The <code>txoracle</code> Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.</p>
+<p>This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically verify whether a given record is <em>contained</em> in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain <code>txoracle</code> program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified. A non-custodial orderbook trading model is also in preparation.</p>
+<p>Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.</p>
+<h2 id="included-data">Included data</h2>
+<p>As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Competition ID</th>
+<th style="text-align: left;">League Name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">550001</td>
+<td style="text-align: left;">NCAA Division I FCS</td>
+</tr>
+<tr>
+<td style="text-align: left;">10005930</td>
+<td style="text-align: left;">NCAA Extra Matches</td>
+</tr>
+<tr>
+<td style="text-align: left;">500005</td>
+<td style="text-align: left;">NCAA Division I FBS</td>
+</tr>
+<tr>
+<td style="text-align: left;">10005302</td>
+<td style="text-align: left;">NCAA Division I (W)</td>
+</tr>
+<tr>
+<td style="text-align: left;">300043</td>
+<td style="text-align: left;">NCAA Division I</td>
+</tr>
+</tbody>
+</table>
+<p>With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA.</p>
+<p>The <code>scores</code> channel includes the fully detailed model of US football (and upcoming baketball) as avaiable otherwide using direct institutional sales offered to big betting operators and syndicats. The documentation for this feed is vailable at the above API endpoints and also in the included document:</p>
+<p><a href="assets/usfootball%20-%20Version%201.13%20-%2015th%20September%202025.pdf">TxODDS US Football Feed v1.13 (PDF)</a></p>
+<h2 id="configurations">Configurations</h2>
+<h3 id="soana-devnet-contains-matches-re-runs-to-be-used-for-integration">Soana DevNet - contains matches' re-runs to be used for integration</h3>
+<pre><code>Tx API: https://oracle-dev.txodds.com/api/
+Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
+Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
+</code></pre>
+<h3 id="solana-mainnet-contains-actual-live-matches-with-low-latency-delivery-from-off-chain-services-for-example-52-matches-covered-on-sat-20-september-2025">Solana MainNet - contains actual live matches with low-latency delivery from off-chain services (for example, 52 matches covered on Sat, 20 September, 2025)</h3>
+<pre><code>Tx API: https://oracle.txodds.com/api/
+Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
+Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
+</code></pre>
+<h2 id="access-flow">Access Flow</h2>
+<p>The following diagram shows how the users typically access data from purchasing the subscription tokens to issuing off-chain calls.</p>
+<p><img alt="Alt text" src="assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true" title="TxODDS Oracle data access workflow" /></p>
+<h3 id="1-purchase-tokens">1. Purchase Tokens</h3>
+<p>Before accessing the oracle services, you must purchase TxOracle tokens. See <code>purchase_tokens.ts</code> for the complete implementation of token purchasing.</p>
+<h3 id="2-access-off-chain-api">2. Access Off-Chain API</h3>
+<p>With staked tokens, you can access the off-chain API services through the following request flow:</p>
+<ol>
+<li><strong>Guest Authentication</strong> - Make a <code>POST /auth/guest/start</code> request to receive a JWT token</li>
+<li><strong>Create Subscription</strong> - Execute an on-chain <code>subscribe_with_token</code> transaction with encrypted JWT payload, which will transfer the price of the subscription in Tx tokens to the TxODDS token treasury.</li>
+<li><strong>Token Activation</strong> - Make a <code>GET /api/token/activate</code> request with the transaction signature and encryption parameters to receive your API access token</li>
+<li><strong>API Access</strong> - Use the API token in subsequent requests to all off-chain services</li>
+</ol>
+<h2 id="running-the-examples">Running the Examples</h2>
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li>Node.js and npm installed</li>
+<li>TypeScript and ts-node installed globally or in your project</li>
+<li>A Solana wallet keypair file</li>
+<li>SOL for transaction fees (devnet or mainnet depending on configuration)</li>
+</ul>
+<h3 id="setup">Setup</h3>
+<ol>
+<li>
+<p><strong>Install Dependencies</strong>
+   <code>bash
+   npm install</code></p>
+</li>
+<li>
+<p><strong>Configure Settings</strong>
+   Edit <code>./config.ts</code> to set up your environment:
+   ```typescript
+   // Set to true for devnet, false for mainnet
+   export const IS_DEVNET = true;</p>
+</li>
+</ol>
+<p>// Path to your Solana wallet keypair file
+   export const KEYPAIR_PATH = './path/to/your/keypair.json';
+   ```</p>
+<h3 id="running-examples">Running Examples</h3>
+<p>All example scripts are located in the <code>./examples/</code> directory and can be executed using ts-node:</p>
+<pre><code class="language-bash"># Purchase tokens
+npx ts-node ./examples/tokens/purchase_tokens.ts
+
+# Stake tokens
+npx ts-node ./examples/tokens/stake.ts
+
+# Run an example script.
+# Note: Some examples contain Id's that can be modified within the file
+npx ts-node ./examples/streaming/stream_odds.ts
+npx ts-node ./examples/snapshots/get_odds_snapshot.ts
+npx ts-node ./examples/validation/validate_odd_onchain.ts
+
+# Unstake tokens
+npx ts-node ./examples/tokens/unstake.ts
+</code></pre>
+<h2 id="available-examples">Available Examples</h2>
+<h3 id="token-management">Token Management</h3>
+<h4 id="examplestokenspurchase_tokensts"><code>examples/tokens/purchase_tokens.ts</code></h4>
+<p>Demonstrates how to purchase TxOracle subscription tokens using SOL.
+1. Executes on-chain token purchase transaction
+2. Transfers tokens from treasury to user's account</p>
+<h3 id="data-snapshots">Data Snapshots</h3>
+<h4 id="examplessnapshotsget_fixtures_snapshotts"><code>examples/snapshots/get_fixtures_snapshot.ts</code></h4>
+<p>Accesses fixture data via the API.
+1. Authenticates and creates API subscription
+2. Retrieves fixtures snapshots for a given date/competitionId
+4. Shows responses from each snapshot endpoint</p>
+<h4 id="examplessnapshotsget_odds_snapshotts"><code>examples/snapshots/get_odds_snapshot.ts</code></h4>
+<p>Accesses odds data via the API.
+1. Authenticates and creates API subscription
+2. Retrieves odds snapshots for a given fixtureId/date/competitionId
+4. Shows responses from each snapshot endpoint</p>
+<h4 id="examplessnapshotsget_scores_snapshotts"><code>examples/snapshots/get_scores_snapshot.ts</code></h4>
+<p>Accesses scores data via the API.
+1. Authenticates and creates API subscription
+2. Retrieves scores snapshots for a given fixtureId/date/competitionId
+4. Shows responses from each snapshot endpoint</p>
+<h3 id="data-streaming">Data Streaming</h3>
+<h4 id="examplesstreamingstream_oddsts"><code>examples/streaming/stream_odds.ts</code></h4>
+<p>Demonstrates real-time odds streaming using Server-Sent Events (SSE).
+1. Authenticates and creates API subscription
+2. Establishes SSE connection to odds stream
+3. Displays live odds messages</p>
+<h4 id="examplesstreamingstream_scorests"><code>examples/streaming/stream_scores.ts</code></h4>
+<p>Demonstrates real-time scores streaming using Server-Sent Events (SSE).
+1. Authenticates and creates API subscription
+2. Establishes SSE connection to scores stream
+3. Displays live scores messages</p>
+<h3 id="on-chain-validation">On-Chain Validation</h3>
+<h4 id="examplesvalidationvalidate_fixtures_onchaints"><code>examples/validation/validate_fixtures_onchain.ts</code></h4>
+<p>Validates fixture data using on-chain cryptographic proofs.
+1. Authenticates and creates API subscription
+2. Fetches college football fixture data from last Saturday
+3. Retrieves validation proofs from the API
+4. Constructs proof for On-Chain protocol
+5. Executes on-chain validation against ten daily batch roots account
+6. Cryptographically proves the fixture</p>
+<h4 id="examplesvalidationvalidate_odds_onchaints"><code>examples/validation/validate_odds_onchain.ts</code></h4>
+<p>Validates odds data using on-chain cryptographic proofs.
+1. Authenticates and creates API subscription
+2. Fetches college football fixture data from last Saturday
+3. Retrieves odds validation proofs from the API
+4. Constructs proof for On-Chain protocol
+5. Executes on-chain validation against daily batch roots account
+6. Cryptographically proves the price</p>
+<h4 id="examplesvalidationvalidate_scores_onchaints"><code>examples/validation/validate_scores_onchain.ts</code></h4>
+<p>Validates scores data using on-chain cryptographic proofs.
+1. Authenticates and creates API subscription
+2. Fetches college football fixture data from last Saturday
+3. Retrieves stat validation proofs from the API
+4. Constructs proof for On-Chain protocol
+5. Executes on-chain validation against daily scores roots account
+6. Cryptographically proves the stat</p>
+<h2 id="trading-flow">Trading Flow</h2>
+<p>The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.</p>
+<p><img alt="Alt text" src="assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true" title="TxODDS Oracle trading workflow" /></p>
+<p>Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).</p>
+<p>Importantly, there are two time periods involved:</p>
+<ol>
+<li><strong>Game phase</strong>: the phase of the game where an event that matches the prediction will happen.</li>
+<li><strong>Stat period</strong>: the phase of the game for which the respective stats are computed.</li>
+</ol>
+<p>A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given <strong>game phase</strong> that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.</p>
+<p>This is an example to help with understanding these two time periods.</p>
+<h3 id="example">Example</h3>
+<p>Prediction might concern the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the <strong>stat period</strong>. The question is when it is predicted this margin will have occurred.
+The <strong>game phase</strong> could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.</p>
+<p>Another prediction could be set to be based on a stat that is related to the first half of the game, so the <strong>stat period</strong> could be easily adjust to become H1 and then the nature of the prediction changes accordingly.</p>
+<p>There is a further important question: what is the difference between a prediction for the <strong>game phase</strong> Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the <strong>game phase</strong> is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.</p>
+<h3 id="game-phase-encoding">Game phase encoding</h3>
+<p>For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. There are core </p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>ID</th>
+<th>Game phase</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NS</code></td>
+<td>1</td>
+<td>Not started</td>
+<td>Status before the game is started</td>
+</tr>
+<tr>
+<td><code>Q1</code></td>
+<td>2</td>
+<td>Quarter 1</td>
+<td>Game in play during first quarter</td>
+</tr>
+<tr>
+<td><code>Q1B</code></td>
+<td>3</td>
+<td>Quarter 1 break</td>
+<td>Pause in play between the 1st quarter ending and the 2nd quarter starting</td>
+</tr>
+<tr>
+<td><code>Q2</code></td>
+<td>4</td>
+<td>Quarter 2</td>
+<td>Game in play during second quarter</td>
+</tr>
+<tr>
+<td><code>HT</code></td>
+<td>5</td>
+<td>Halftime</td>
+<td>Halftime of the game</td>
+</tr>
+<tr>
+<td><code>Q3</code></td>
+<td>6</td>
+<td>Quarter 3</td>
+<td>Game in play during third quarter</td>
+</tr>
+<tr>
+<td><code>Q3B</code></td>
+<td>7</td>
+<td>Quarter 3 break</td>
+<td>Pause in play between the 3rd quarter ending and the 4th quarter starting</td>
+</tr>
+<tr>
+<td><code>Q4</code></td>
+<td>8</td>
+<td>Quarter 4</td>
+<td>Game in play during fourth quarter</td>
+</tr>
+<tr>
+<td><code>F</code></td>
+<td>9</td>
+<td>Ended (finished)</td>
+<td>Game ends after the 4th quarter</td>
+</tr>
+<tr>
+<td><code>WO</code></td>
+<td>10</td>
+<td>Waiting for Overtime</td>
+<td>Break following the 4th Quarter before the start of the first overtime period</td>
+</tr>
+<tr>
+<td><code>OT</code></td>
+<td>11</td>
+<td>Overtime</td>
+<td>With option for overtime number to be selected. Game in play during selected overtime period</td>
+</tr>
+<tr>
+<td><code>OB</code></td>
+<td>12</td>
+<td>Overtime Break</td>
+<td>Break between Overtime periods</td>
+</tr>
+<tr>
+<td><code>FO</code></td>
+<td>13</td>
+<td>Ended after Overtime (Finished after Overtime)</td>
+<td>Game ends after an overtime period</td>
+</tr>
+<tr>
+<td><code>I</code></td>
+<td>14</td>
+<td>Interrupted</td>
+<td>The game is officially interrupted</td>
+</tr>
+<tr>
+<td><code>A</code></td>
+<td>15</td>
+<td>Abandoned</td>
+<td>The game is officially abandoned</td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td>16</td>
+<td>Cancelled</td>
+<td>The game is officially cancelled</td>
+</tr>
+<tr>
+<td><code>TXCC</code></td>
+<td>17</td>
+<td>TX Coverage Cancelled</td>
+<td>TxODDS cancelled coverage of the event</td>
+</tr>
+<tr>
+<td><code>TXCS</code></td>
+<td>18</td>
+<td>TX Coverage Suspended</td>
+<td>TxOODS suspended coverage of the event</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="overtime-status-these-are-specific-to-the-txodds-oracle-system">Overtime status -- these are specific to the TxODDS Oracle system</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>ID</th>
+<th>Game phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>OT1</code></td>
+<td>1011</td>
+<td>Overtime 1</td>
+</tr>
+<tr>
+<td><code>OB1</code></td>
+<td>1012</td>
+<td>Overtime 1 break</td>
+</tr>
+<tr>
+<td><code>OT2</code></td>
+<td>2011</td>
+<td>Overtime 2</td>
+</tr>
+<tr>
+<td><code>OB2</code></td>
+<td>2012</td>
+<td>Overtime 2 break</td>
+</tr>
+<tr>
+<td><code>OT3</code></td>
+<td>3011</td>
+<td>Overtime 3</td>
+</tr>
+<tr>
+<td><code>OB3</code></td>
+<td>3012</td>
+<td>Overtime 3 break</td>
+</tr>
+<tr>
+<td><code>OT4</code></td>
+<td>4011</td>
+<td>Overtime 4</td>
+</tr>
+<tr>
+<td><code>OB4</code></td>
+<td>4012</td>
+<td>Overtime 4 break</td>
+</tr>
+<tr>
+<td><code>OT5</code></td>
+<td>5011</td>
+<td>Overtime 5</td>
+</tr>
+<tr>
+<td><code>OB5</code></td>
+<td>5012</td>
+<td>Overtime 5 break</td>
+</tr>
+<tr>
+<td><code>OT6</code></td>
+<td>6011</td>
+<td>Overtime 6</td>
+</tr>
+<tr>
+<td><code>OB6</code></td>
+<td>6012</td>
+<td>Overtime 6 break</td>
+</tr>
+<tr>
+<td><code>OT7</code></td>
+<td>7011</td>
+<td>Overtime 7</td>
+</tr>
+<tr>
+<td><code>OB7</code></td>
+<td>7012</td>
+<td>Overtime 7 break</td>
+</tr>
+<tr>
+<td><code>OT8</code></td>
+<td>8011</td>
+<td>Overtime 8</td>
+</tr>
+<tr>
+<td><code>OB8</code></td>
+<td>8012</td>
+<td>Overtime 8 break</td>
+</tr>
+<tr>
+<td><code>OT9</code></td>
+<td>9011</td>
+<td>Overtime 9</td>
+</tr>
+<tr>
+<td><code>OB9</code></td>
+<td>9012</td>
+<td>Overtime 9 break</td>
+</tr>
+<tr>
+<td><code>OT10</code></td>
+<td>10011</td>
+<td>Overtime 10</td>
+</tr>
+<tr>
+<td><code>OB10</code></td>
+<td>10012</td>
+<td>Overtime 10 break</td>
+</tr>
+<tr>
+<td><code>OT11</code></td>
+<td>11011</td>
+<td>Overtime 11</td>
+</tr>
+<tr>
+<td><code>OB11</code></td>
+<td>11012</td>
+<td>Overtime 11 break</td>
+</tr>
+<tr>
+<td><code>OT12</code></td>
+<td>12011</td>
+<td>Overtime 12</td>
+</tr>
+</tbody>
+</table>
+<p>Prediction offers reference the game phase by ID taken from the above two tables.</p>
+<h3 id="stat-period-encoding">Stat period encoding</h3>
+<p>The stat period is also encoded economically as follows:</p>
+<h3 id="full-game-stats">Full Game Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Participant 1 Total Score</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Participant 2 Total Score</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Participant 1 Total Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>Participant 2 Total Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Participant 1 Total Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>Participant 2 Total Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>7</td>
+<td>Participant 1 Total 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>8</td>
+<td>Participant 2 Total 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>9</td>
+<td>Participant 1 Total 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Participant 2 Total 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>11</td>
+<td>Participant 1 Total Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>12</td>
+<td>Participant 2 Total Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>13</td>
+<td>Participant 1 Total 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>14</td>
+<td>Participant 2 Total 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td>Participant 1 Total Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>16</td>
+<td>Participant 2 Total Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="first-half-ht-stats">First Half (HT) Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1001</td>
+<td>Participant 1 1st Half Score</td>
+<td></td>
+</tr>
+<tr>
+<td>1002</td>
+<td>Participant 2 1st Half Score</td>
+<td></td>
+</tr>
+<tr>
+<td>1003</td>
+<td>Participant 1 1st Half Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>1004</td>
+<td>Participant 2 1st Half Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>1005</td>
+<td>Participant 1 1st Half Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>1006</td>
+<td>Participant 2 1st Half Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>1007</td>
+<td>Participant 1 1st Half 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>1008</td>
+<td>Participant 2 1st Half 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>1009</td>
+<td>Participant 1 1st Half 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>1010</td>
+<td>Participant 2 1st Half 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>1011</td>
+<td>Participant 1 1st Half Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>1012</td>
+<td>Participant 2 1st Half Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>1013</td>
+<td>Participant 1 1st Half 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>1014</td>
+<td>Participant 2 1st Half 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>1015</td>
+<td>Participant 1 1st Half Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>1016</td>
+<td>Participant 2 1st Half Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="second-half-q3q4-stats">Second Half (Q3+Q4) Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2001</td>
+<td>Participant 1 2nd Half Score</td>
+<td></td>
+</tr>
+<tr>
+<td>2002</td>
+<td>Participant 2 2nd Half Score</td>
+<td></td>
+</tr>
+<tr>
+<td>2003</td>
+<td>Participant 1 2nd Half Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>2004</td>
+<td>Participant 2 2nd Half Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>2005</td>
+<td>Participant 1 2nd Half Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>2006</td>
+<td>Participant 2 2nd Half Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>2007</td>
+<td>Participant 1 2nd Half 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>2008</td>
+<td>Participant 2 2nd Half 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>2009</td>
+<td>Participant 1 2nd Half 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>2010</td>
+<td>Participant 2 2nd Half 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>2011</td>
+<td>Participant 1 2nd Half Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>2012</td>
+<td>Participant 2 2nd Half Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>2013</td>
+<td>Participant 1 2nd Half 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>2014</td>
+<td>Participant 2 2nd Half 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>2015</td>
+<td>Participant 1 2nd Half Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>2016</td>
+<td>Participant 2 2nd Half Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="quarter-1-stats">Quarter 1 Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10001</td>
+<td>Participant 1 Q1 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>10002</td>
+<td>Participant 2 Q1 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>10003</td>
+<td>Participant 1 Q1 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>10004</td>
+<td>Participant 2 Q1 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>10005</td>
+<td>Participant 1 Q1 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>10006</td>
+<td>Participant 2 Q1 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>10007</td>
+<td>Participant 1 Q1 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10008</td>
+<td>Participant 2 Q1 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10009</td>
+<td>Participant 1 Q1 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10010</td>
+<td>Participant 2 Q1 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10011</td>
+<td>Participant 1 Q1 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>10012</td>
+<td>Participant 2 Q1 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>10013</td>
+<td>Participant 1 Q1 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>10014</td>
+<td>Participant 2 Q1 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>10015</td>
+<td>Participant 1 Q1 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>10016</td>
+<td>Participant 2 Q1 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="quarter-2-stats">Quarter 2 Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20001</td>
+<td>Participant 1 Q2 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>20002</td>
+<td>Participant 2 Q2 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>20003</td>
+<td>Participant 1 Q2 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>20004</td>
+<td>Participant 2 Q2 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>20005</td>
+<td>Participant 1 Q2 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>20006</td>
+<td>Participant 2 Q2 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>20007</td>
+<td>Participant 1 Q2 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>20008</td>
+<td>Participant 2 Q2 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>20009</td>
+<td>Participant 1 Q2 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>20010</td>
+<td>Participant 2 Q2 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>20011</td>
+<td>Participant 1 Q2 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>20012</td>
+<td>Participant 2 Q2 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>20013</td>
+<td>Participant 1 Q2 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>20014</td>
+<td>Participant 2 Q2 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>20015</td>
+<td>Participant 1 Q2 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>20016</td>
+<td>Participant 2 Q2 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="quarter-3-stats">Quarter 3 Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>30001</td>
+<td>Participant 1 Q3 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>30002</td>
+<td>Participant 2 Q3 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>30003</td>
+<td>Participant 1 Q3 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>30004</td>
+<td>Participant 2 Q3 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>30005</td>
+<td>Participant 1 Q3 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>30006</td>
+<td>Participant 2 Q3 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>30007</td>
+<td>Participant 1 Q3 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>30008</td>
+<td>Participant 2 Q3 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>30009</td>
+<td>Participant 1 Q3 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>30010</td>
+<td>Participant 2 Q3 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>30011</td>
+<td>Participant 1 Q3 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>30012</td>
+<td>Participant 2 Q3 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>30013</td>
+<td>Participant 1 Q3 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>30014</td>
+<td>Participant 2 Q3 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>30015</td>
+<td>Participant 1 Q3 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>30016</td>
+<td>Participant 2 Q3 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="quarter-4-stats">Quarter 4 Stats</h3>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Statistic</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>40001</td>
+<td>Participant 1 Q4 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>40002</td>
+<td>Participant 2 Q4 Score</td>
+<td></td>
+</tr>
+<tr>
+<td>40003</td>
+<td>Participant 1 Q4 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>40004</td>
+<td>Participant 2 Q4 Touchdowns</td>
+<td></td>
+</tr>
+<tr>
+<td>40005</td>
+<td>Participant 1 Q4 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>40006</td>
+<td>Participant 2 Q4 Field Goals</td>
+<td></td>
+</tr>
+<tr>
+<td>40007</td>
+<td>Participant 1 Q4 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>40008</td>
+<td>Participant 2 Q4 1pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>40009</td>
+<td>Participant 1 Q4 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>40010</td>
+<td>Participant 2 Q4 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>40011</td>
+<td>Participant 1 Q4 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>40012</td>
+<td>Participant 2 Q4 Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>40013</td>
+<td>Participant 1 Q4 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>40014</td>
+<td>Participant 2 Q4 1pt Safeties</td>
+<td></td>
+</tr>
+<tr>
+<td>40015</td>
+<td>Participant 1 Q4 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+<tr>
+<td>40016</td>
+<td>Participant 2 Q4 Defensive 2pt Conversions</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
+for the full game.</p>
+<h3 id="specify-the-stat-period">Specify the stat period</h3>
+<p>The Stat period as used in offers and settlements is wrapped in the <code>StatTerm</code> class that designates the statistic used for prediction. For example:</p>
+<pre><code>{ key: 1 } // Stat key for &quot;Participant1_Score&quot;
+</code></pre>
+<h3 id="specify-a-trading-predicate">Specify a trading predicate</h3>
+<p>A trading predicate is wrapped in the <code>Predicate</code> class with a nested <code>ComparisonEnum</code>. Here is an example in TypeScript:</p>
+<pre><code>const predicate = {
+  threshold: 11,
+  comparison: { greaterThan: {} }, 
+};    
+</code></pre>
+<p>Essentially, the trading predicate sets a bar to compare against and accepts three modes for comparison: <code>greaterThan</code>, <code>lessThan</code>, and <code>equalTo</code>. Predicates do not specify what expression 
+or statistics to use, instead, they just capture the actual comparison being made against the specified quantity (threshold).</p>
+<h3 id="specify-an-optional-binary-expression">Specify an optional binary expression</h3>
+<p>A binary expression (when not-null) is either <code>add</code> or <code>subtract</code> is wrapped in the <code>BinaryOpEnum</code> class. For example,</p>
+<p>binaryOp = {
+   add: {}
+}</p>
+<h2 id="create-a-new-offer">Create a new offer</h2>
+<p>An <code>Offer</code> structure wraps all necessary information for specifying the prediction and associated terms made by the offer originator side (trader). Here is an example of a one-stat prediction:</p>
+<pre><code>const predicate = {
+  threshold: 11,
+  comparison: { greaterThan: {} }, 
+};    
+
+const offer = new schema.Offer({
+   fixtureId: new BN(17271370),
+   period: 4, // Q2
+   predicate,
+   binaryOp: null, // This is a single-stat predicate
+   statA: { key: 1 }, // Stat key for &quot;Participant1_Score&quot;
+   statB: null,
+   stake: new BN(500_000_000), // 0.5 SOL
+   odds: 2000, // 2.0 decimal odds
+   expiration: new BN(Date.now() + 60 * 60 * 1000), // Expires in 1 hour
+   traderPubkey: user.publicKey,
+});
+</code></pre>
+<p>The <code>odds</code> are decimal odds, multiplied by 1000 to preserve a three-decimal point precision. The decimal odds mean that if the prediction turns out to be true, trader A stands to double their original stake--with
+the eventual counter-party losing the amount of tokens equivalent to 0.5 SOL.
+The offer states that the specified fixture during the half-time break is going to have the team A's total score greater than 11--this being the result after the two quarters are fully played. The offer will be self-managed so that after an hour from the offer submission, the matching by counter-parties will be disabled.</p>
+<p>Once the offer is acknoledged by the TxODDS off-chain service, the subscribers to the <code>/trading/stream</code> will receive a nottification <code>NewOffer</code> that looks like this:</p>
+<pre><code>{ offerId: 6,
+  offer:
+   {
+      fixtureId: 17271370,
+      period: 4,
+      predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
+      binaryOp: null,
+      statA: { key: 2 },
+      statB: null,
+      stake: 500000000,
+      odds: 2000,
+      expiration: 1758365295729,
+      traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
+      }
+}
+</code></pre>
+<h3 id="accept-a-new-offer">Accept a new offer</h3>
+<p>A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:</p>
+<pre><code>const messageBuffer = new BN(offerIdToAccept).toBuffer('le', 4);
+const signature = nacl.sign.detached(messageBuffer, user.secretKey);
+
+const acceptancePayload = {
+   offerId: offerIdToAccept,
+   acceptingTraderPubkey: user.publicKey.toBase58(),
+   signature: bs58.encode(signature),
+};
+
+const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptancePayload, {
+   headers: {
+      'Authorization': `Bearer ${jwt}`,
+      'X-Api-Token': apiToken
+   }
+});
+</code></pre>
+<p>Once the TxODDS of-chain service receives a counter-offer on the <code>accept</code> endpoint, it creates a new unsigned Solana transaction <code>create_trade</code> and sends it to both trades for signing via this <code>SigningRequest</code> message:</p>
+<pre><code>{
+   tradeId: 6,
+   partiallySignedTx: 'abc',
+   recipientPubkey: 'abc'
+}
+</code></pre>
+<h3 id="both-parties-sign-the-trade">Both parties sign the trade</h3>
+<p>For the <code>create_trade</code> to be executable on blockchain, it needs to have three signers: both traders and the authority behind the <code>txoracle</code> program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above <code>SigningRequest</code> is received by both traders and each use a similar method to sign and send it back to the TxODDS service.</p>
+<pre><code>const messageToSign = Buffer.from(data.partiallySignedTx, 'base64');
+const signature = nacl.sign.detached(messageToSign, user.secretKey);
+
+const signaturePayload = {
+   tradeId: data.tradeId,
+   signer: user.publicKey.toBase58(),
+   signature: bs58.encode(signature),
+};
+
+await axios.post(`${API_BASE_URL}/api/trading/sign`, signaturePayload, {
+   headers: {
+   'Authorization': `Bearer ${jwt}`,
+   'X-Api-Token': apiToken
+   }
+});
+</code></pre>
+<p>Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a fully signed <code>create_trade</code> transaction.</p>
+<p>The TxODDS service then copies the same <code>TradeMatched</code> notifications to respective trading streams for both traders.</p>
+<pre><code>{
+   offer: {
+   fixtureId: 17271370,
+   period: 4,
+   predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
+   binaryOp: null,
+   statA: { key: 1 },
+   statB: null,
+   stake: 500000000,
+   odds: 2000,
+   expiration: 1758366631894,
+   traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
+   }
+}
+</code></pre>
+<h3 id="the-winning-trader-submits-a-settle_trade-transaction-directly-to-the-txoracle-program-on-blockchain">The winning trader submits a <code>settle_trade</code> transaction directly to the <code>txoracle</code> program on blockchain</h3>
+<p>Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the predication can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the <code>txoracle</code> program with this proof.</p>
+<pre><code>const url = `${API_BASE_URL}/api/scores/stat-validation?fixtureId=17271370&amp;seq=401&amp;statKey=1`
+const response = await axios.get(url, {
+   headers: {
+      'Authorization': `Bearer ${jwt}`,
+      'X-Api-Token': apiToken
+   }
+});
+</code></pre>
+<p>The <code>seq</code> uniquely identified the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner bacause the actual team A score was not &gt; than 11. Here is the call to on-chain to settle the trade.</p>
+<pre><code>const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
+   [
+      Buffer.from(&quot;daily_scores_roots&quot;),
+      new BN(epochDay).toBuffer(&quot;le&quot;, 2), // epochDay is u16, so 2 bytes little-endian
+   ],
+   program.programId
+);
+
+const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from(&quot;escrow&quot;), 
+      tradeId.toBuffer(&quot;le&quot;, 8)
+   ],
+   program.programId
+);
+
+const [escrowVaultPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from(&quot;escrow_vault&quot;), 
+      tradeId.toBuffer(&quot;le&quot;, 8)
+   ],
+   program.programId
+);
+
+const txSignature = await program.methods
+   .settleTrade(
+      tradeId,
+      new BN(validation.ts),
+      fixtureSummary,
+      fixtureProof,
+      mainTreeProof,
+      predicate,
+      stat1,
+      null, // stat2
+      null // op
+   )
+   .accounts({
+      winner: user.publicKey,
+      dailyScoresMerkleRoots: dailyScoresPda,
+      tradeEscrow: tradeEscrowPda,
+      escrowVault: escrowVaultPda,
+      winnerTokenAccount: tokenAccount.address,
+      tokenProgram: TOKEN_PROGRAM_ID,
+   })
+   .preInstructions([
+      ComputeBudgetProgram.setComputeUnitLimit({
+      units: 600_000, // max: 1.4M
+      }),
+   ])
+   .signers([user])
+   .rpc();
+</code></pre>
+<p>The outcome of a successfully settled trade is that the funds are released from the escrow account and transferred to trader B's token account and then the escrow is fully closed. Here is an example of such settlement on DevNet:</p>
+<p>https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuuRyLDgo4ARpQ4GS8P1CkW6xvstBtQi4z8cyfSup?cluster=devnet</p>
+<h2 id="additional-documentation">Additional Documentation</h2>
+<p>For comprehensive API documentation:</p>
+<ul>
+<li><strong>Mainnet Documentation</strong>: <a href="https://oracle.txodds.com/docs">oracle.txodds.com/docs</a></li>
+<li><strong>Devnet Documentation</strong>: <a href="https://oracle-dev.txodds.com/docs">oracle-dev.txodds.com/docs</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": ".", "features": ["navigation.tabs", "navigation.instant", "search.suggest"], "search": "assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
