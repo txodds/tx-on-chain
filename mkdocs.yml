@@ -1,0 +1,34 @@
+# General site information
+site_name: TxODDS Oracle Hybrid Off-chain/On-chain sport data delivery and trading platform
+site_url: https://txodds.github.io/tx-on-chain/
+site_author: Alex Kozlenkov and Aidan Rolfe
+
+theme:
+  name: material
+  palette: 
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.instant
+    - search.suggest
+
+extra_css:
+  - assets/css/custom.css
+
+nav:
+  - 'Home': 'index.md'
+  # - 'News and changes log'
+  # - 'User Guide':
+  #   - 'Installation': 'guides/installation.md'
+  #   - 'Quick Start': 'guides/quick-start.md'
+  # - 'About': 'about.md'
+
+plugins:
+  - search

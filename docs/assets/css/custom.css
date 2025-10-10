@@ -1,0 +1,10 @@
+/* Widen the main content container */
+.md-main__inner {
+  max-width: 2200px; /* Default is 960px */
+}
+
+/* Widen the table of contents on the right */
+.md-sidebar--secondary {
+  width: 20rem; /* Optional: adjust if you want */
+}
+
