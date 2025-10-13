@@ -446,7 +446,7 @@
           <li class="md-nav__item">
   <a href="#running-examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Running Examples
+      Running examples
     </span>
   </a>
   
@@ -972,7 +972,7 @@
           <li class="md-nav__item">
   <a href="#running-examples" class="md-nav__link">
     <span class="md-ellipsis">
-      Running Examples
+      Running examples
     </span>
   </a>
   
@@ -1502,81 +1502,93 @@ Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
 <p>// Path to your Solana wallet keypair file
    export const KEYPAIR_PATH = './path/to/your/keypair.json';
    ```</p>
-<h3 id="running-examples">Running Examples</h3>
+<h3 id="running-examples">Running examples</h3>
 <p>All example scripts are located in the <code>./examples/</code> directory and can be executed using ts-node:</p>
 <pre><code class="language-bash"># Purchase tokens
 npx ts-node ./examples/tokens/purchase_tokens.ts
-
-# Stake tokens
-npx ts-node ./examples/tokens/stake.ts
 
 # Run an example script.
 # Note: Some examples contain Id's that can be modified within the file
 npx ts-node ./examples/streaming/stream_odds.ts
 npx ts-node ./examples/snapshots/get_odds_snapshot.ts
 npx ts-node ./examples/validation/validate_odd_onchain.ts
-
-# Unstake tokens
-npx ts-node ./examples/tokens/unstake.ts
 </code></pre>
 <h2 id="available-examples">Available Examples</h2>
 <h3 id="token-management">Token Management</h3>
 <h4 id="examplestokenspurchase_tokensts"><code>examples/tokens/purchase_tokens.ts</code></h4>
-<p>Demonstrates how to purchase TxOracle subscription tokens using SOL.
-1. Executes on-chain token purchase transaction
-2. Transfers tokens from treasury to user's account</p>
+<p>Demonstrates how to purchase TxOracle subscription tokens using SOL.</p>
+<ol>
+<li>Executes on-chain token purchase transaction</li>
+<li>Transfers tokens from treasury to user's account</li>
+</ol>
 <h3 id="data-snapshots">Data Snapshots</h3>
 <h4 id="examplessnapshotsget_fixtures_snapshotts"><code>examples/snapshots/get_fixtures_snapshot.ts</code></h4>
-<p>Accesses fixture data via the API.
-1. Authenticates and creates API subscription
-2. Retrieves fixtures snapshots for a given date/competitionId
-4. Shows responses from each snapshot endpoint</p>
+<p>Accesses fixture data via the API.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Retrieves fixtures snapshots for a given date/competitionId</li>
+<li>Shows responses from each snapshot endpoint</li>
+</ol>
 <h4 id="examplessnapshotsget_odds_snapshotts"><code>examples/snapshots/get_odds_snapshot.ts</code></h4>
-<p>Accesses odds data via the API.
-1. Authenticates and creates API subscription
-2. Retrieves odds snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint</p>
+<p>Accesses odds data via the API.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Retrieves odds snapshots for a given fixtureId/date/competitionId</li>
+<li>Shows responses from each snapshot endpoint</li>
+</ol>
 <h4 id="examplessnapshotsget_scores_snapshotts"><code>examples/snapshots/get_scores_snapshot.ts</code></h4>
-<p>Accesses scores data via the API.
-1. Authenticates and creates API subscription
-2. Retrieves scores snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint</p>
+<p>Accesses scores data via the API.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Retrieves scores snapshots for a given fixtureId/date/competitionId</li>
+<li>Shows responses from each snapshot endpoint</li>
+</ol>
 <h3 id="data-streaming">Data Streaming</h3>
 <h4 id="examplesstreamingstream_oddsts"><code>examples/streaming/stream_odds.ts</code></h4>
-<p>Demonstrates real-time odds streaming using Server-Sent Events (SSE).
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to odds stream
-3. Displays live odds messages</p>
+<p>Demonstrates real-time odds streaming using Server-Sent Events (SSE).</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Establishes SSE connection to odds stream</li>
+<li>Displays live odds messages</li>
+</ol>
 <h4 id="examplesstreamingstream_scorests"><code>examples/streaming/stream_scores.ts</code></h4>
-<p>Demonstrates real-time scores streaming using Server-Sent Events (SSE).
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to scores stream
-3. Displays live scores messages</p>
+<p>Demonstrates real-time scores streaming using Server-Sent Events (SSE).</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Establishes SSE connection to scores stream</li>
+<li>Displays live scores messages</li>
+</ol>
 <h3 id="on-chain-validation">On-Chain Validation</h3>
 <h4 id="examplesvalidationvalidate_fixtures_onchaints"><code>examples/validation/validate_fixtures_onchain.ts</code></h4>
-<p>Validates fixture data using on-chain cryptographic proofs.
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against ten daily batch roots account
-6. Cryptographically proves the fixture</p>
+<p>Validates fixture data using on-chain cryptographic proofs.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Fetches college football fixture data from last Saturday</li>
+<li>Retrieves validation proofs from the API</li>
+<li>Constructs proof for On-Chain protocol</li>
+<li>Executes on-chain validation against ten daily batch roots account</li>
+<li>Cryptographically proves the fixture</li>
+</ol>
 <h4 id="examplesvalidationvalidate_odds_onchaints"><code>examples/validation/validate_odds_onchain.ts</code></h4>
-<p>Validates odds data using on-chain cryptographic proofs.
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves odds validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily batch roots account
-6. Cryptographically proves the price</p>
+<p>Validates odds data using on-chain cryptographic proofs.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Fetches college football fixture data from last Saturday</li>
+<li>Retrieves odds validation proofs from the API</li>
+<li>Constructs proof for On-Chain protocol</li>
+<li>Executes on-chain validation against daily batch roots account</li>
+<li>Cryptographically proves the price</li>
+</ol>
 <h4 id="examplesvalidationvalidate_scores_onchaints"><code>examples/validation/validate_scores_onchain.ts</code></h4>
-<p>Validates scores data using on-chain cryptographic proofs.
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves stat validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily scores roots account
-6. Cryptographically proves the stat</p>
+<p>Validates scores data using on-chain cryptographic proofs.</p>
+<ol>
+<li>Authenticates and creates API subscription</li>
+<li>Fetches college football fixture data from last Saturday</li>
+<li>Retrieves stat validation proofs from the API</li>
+<li>Constructs proof for On-Chain protocol</li>
+<li>Executes on-chain validation against daily scores roots account</li>
+<li>Cryptographically proves the stat</li>
+</ol>
 <h2 id="trading-flow">Trading Flow</h2>
 <p>The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.</p>
 <p><img alt="Alt text" src="assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true" title="TxODDS Oracle trading workflow" /></p>
