@@ -323,9 +323,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#included-data" class="md-nav__link">
+  <a href="#games-coverage" class="md-nav__link">
     <span class="md-ellipsis">
-      Included data
+      Games coverage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-in-the-scors-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content in the scors channel
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-on-the-fixtures-and-odds-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content on the fixtures and odds channels
     </span>
   </a>
   
@@ -831,9 +849,27 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#included-data" class="md-nav__link">
+  <a href="#games-coverage" class="md-nav__link">
     <span class="md-ellipsis">
-      Included data
+      Games coverage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-in-the-scors-channel" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content in the scors channel
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#content-on-the-fixtures-and-odds-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Content on the fixtures and odds channels
     </span>
   </a>
   
@@ -1342,7 +1378,7 @@
 <p>The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a <code>Merkle root</code>, is published on-chain in perpetuity. The <code>txoracle</code> Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.</p>
 <p>This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically verify whether a given record is <em>contained</em> in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain <code>txoracle</code> program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified. A non-custodial orderbook trading model is also in preparation.</p>
 <p>Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.</p>
-<h2 id="included-data">Included data</h2>
+<h2 id="games-coverage">Games coverage</h2>
 <p>As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.</p>
 <table>
 <thead>
@@ -1374,10 +1410,46 @@
 </tr>
 </tbody>
 </table>
-<p>With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA.</p>
-<p>The <code>scores</code> channel includes the fully detailed model of US football (and upcoming baketball) as avaiable otherwide using direct institutional sales offered to big betting operators and syndicats. The documentation for this feed is vailable at the above API endpoints and also in the included document:</p>
+<p>With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA. Specifically, these conferences should be covered fully:</p>
+<ol>
+<li>SEC</li>
+<li>Big Ten</li>
+<li>Big 12</li>
+<li>Big East</li>
+<li>ACC</li>
+<li>Mountain West</li>
+<li>West Coast Conference</li>
+<li>Atlantic 10 Conference</li>
+<li>Conference USA</li>
+<li>Missouri Valley</li>
+<li>American</li>
+<li>Big West</li>
+<li>Southern Conference</li>
+<li>Ivy League</li>
+<li>Mid-American Conference</li>
+<li>Horizon League</li>
+<li>Western Athletic Conference</li>
+</ol>
+<p>Regular season only coverage should become available for
+1. Summit League
+2. Big South Conference
+3. Southland Conference
+4. Coastal Athletic Conference (CAA)
+5. Sun Belt
+6. MAAC (Only Sunday, Tuesday, Wednesday, Friday games)
+7. American East (non-Saturday games)
+8. SWAC Conference (only Monday games)
+9. Patriot League (non-Saturday games)
+10. ASUN Conference (non-Saturday games)</p>
+<p>All of the above conferences are covered by the same competition <code>NCAA Division I</code> with competition id = 300043.</p>
+<h2 id="content-in-the-scors-channel">Content in the <code>scors</code> channel</h2>
+<p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwide avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
 <p><a href="assets/txodds-us-football-feed-v1.13.pdf">TxODDS US Football Feed v1.13</a></p>
 <p><a href="assets/txodds-basketball-feed-v1.12.pdf">TxODDS US Baskeball Feed v1.12</a></p>
+<p>In contrast to the B2B offering, (limited) historical access to to data is also included.</p>
+<h2 id="content-on-the-fixtures-and-odds-channels">Content on the <code>fixtures</code> and <code>odds</code> channels</h2>
+<p>The fixtures updates in the <code>fixtures</code> channel represent fixtures' data that became available at the time of publication. The fixtures endpoints are dseigned to provide the best known true information about fixtures available by default at the time of asking or at specific time in the past.</p>
+<p>The <code>odds</code> channel includes fully de-margined stable odds (effectively, probabilities) for the main markets. The notion is stability comes from the TxODDS stable price B2B product that provides the most consistent view of the betting market, taking care of operators' errors, outages, etc.</p>
 <h2 id="configurations">Configurations</h2>
 <h3 id="solana-devnet-contains-matches-re-runs-to-be-used-for-integration">Solana DevNet - contains matches' re-runs to be used for integration</h3>
 <pre><code>Tx API: https://oracle-dev.txodds.com/api/
