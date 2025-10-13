@@ -69,6 +69,7 @@ With the upcoming US basketball season, it is expected that data will be availab
 17. Western Athletic Conference
 
 Regular season only coverage should become available for
+
 1. Summit League
 2. Big South Conference
 3. Southland Conference
@@ -92,7 +93,7 @@ The `scores` channel includes the fully detailed model of US football and upcomi
 
 In contrast to the B2B offering, (limited) historical access to to data is also included.
 
-## Content on the `fixtures` and `odds` channels
+## Content in the `fixtures` and `odds` channels
 
 The fixtures updates in the `fixtures` channel represent fixtures' data that became available at the time of publication. The fixtures endpoints are dseigned to provide the best known true information about fixtures available by default at the time of asking or at specific time in the past.
 
