@@ -85,7 +85,7 @@ Regular season only coverage should become available for
 
 All of the above conferences are covered by the same competition `NCAA Division I` with competition id = 300043.
 
-## Content in the `scors` channel
+## Content in the `scores` channel
 
 The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
 
