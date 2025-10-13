@@ -7,11 +7,13 @@ This repository showcases usage of the Tx Oracle on-chain contract, demonstratin
 Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:
 
 1. **Data Access Layer**. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
+
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
    - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.
 
 2. **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
+
    - submit cryptographically signed College Football and Basketball prediction offers for specified time periods,
    - receive via stream the resulting notifications to paid subscribers over the Trading stream,
    - accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),
@@ -91,7 +93,7 @@ The `scores` channel includes the fully detailed model of US football and upcomi
 
 [TxODDS US Baskeball Feed v1.12](assets/txodds-basketball-feed-v1.12.pdf)
 
-In contrast to the B2B offering, (limited) historical access to to data is also included.
+In contrast to the B2B offering, (limited) historical access to data is also included.
 
 ## Content in the `fixtures` and `odds` channels
 
