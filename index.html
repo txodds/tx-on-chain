@@ -632,14 +632,20 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#game-phase-encoding" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-phase-encoding-for-us-football" class="md-nav__link">
     <span class="md-ellipsis">
-      Game phase encoding
+      Game phase encoding for US Football
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Game phase encoding for US Football">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#overtime-status-these-are-specific-to-the-txodds-oracle-system" class="md-nav__link">
@@ -650,14 +656,20 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#stat-period-encoding" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stat-period-encoding-in-us-football" class="md-nav__link">
     <span class="md-ellipsis">
-      Stat period encoding
+      Stat period encoding in US Football
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Stat period encoding in US Football">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#full-game-stats" class="md-nav__link">
@@ -721,6 +733,21 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-phase-encoding-for-us-basketball" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game phase encoding for US Basketball
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Game phase encoding for US Basketball">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#specify-the-stat-period" class="md-nav__link">
@@ -1158,14 +1185,20 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#game-phase-encoding" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-phase-encoding-for-us-football" class="md-nav__link">
     <span class="md-ellipsis">
-      Game phase encoding
+      Game phase encoding for US Football
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Game phase encoding for US Football">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#overtime-status-these-are-specific-to-the-txodds-oracle-system" class="md-nav__link">
@@ -1176,14 +1209,20 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#stat-period-encoding" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stat-period-encoding-in-us-football" class="md-nav__link">
     <span class="md-ellipsis">
-      Stat period encoding
+      Stat period encoding in US Football
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Stat period encoding in US Football">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#full-game-stats" class="md-nav__link">
@@ -1247,6 +1286,21 @@
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#game-phase-encoding-for-us-basketball" class="md-nav__link">
+    <span class="md-ellipsis">
+      Game phase encoding for US Basketball
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Game phase encoding for US Basketball">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#specify-the-stat-period" class="md-nav__link">
@@ -1443,7 +1497,7 @@
 </ol>
 <p>All of the above conferences are covered by the same competition <code>NCAA Division I</code> with competition id = 300043.</p>
 <h2 id="content-in-the-scors-channel">Content in the <code>scors</code> channel</h2>
-<p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwide avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
+<p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
 <p><a href="assets/txodds-us-football-feed-v1.13.pdf">TxODDS US Football Feed v1.13</a></p>
 <p><a href="assets/txodds-basketball-feed-v1.12.pdf">TxODDS US Baskeball Feed v1.12</a></p>
 <p>In contrast to the B2B offering, (limited) historical access to data is also included.</p>
@@ -1603,8 +1657,8 @@ npx ts-node ./examples/validation/validate_odd_onchain.ts
 The <strong>game phase</strong> could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.</p>
 <p>Another prediction could be set to be based on a stat that is related to the first half of the game, so the <strong>stat period</strong> could be easily adjust to become H1 and then the nature of the prediction changes accordingly.</p>
 <p>There is a further important question: what is the difference between a prediction for the <strong>game phase</strong> Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the <strong>game phase</strong> is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.</p>
-<h3 id="game-phase-encoding">Game phase encoding</h3>
-<p>For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. There are core </p>
+<h2 id="game-phase-encoding-for-us-football">Game phase encoding for US Football</h2>
+<p>For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain.</p>
 <table>
 <thead>
 <tr>
@@ -1854,7 +1908,7 @@ The <strong>game phase</strong> could be set to end of Q2, that is what is known
 </tbody>
 </table>
 <p>Prediction offers reference the game phase by ID taken from the above two tables.</p>
-<h3 id="stat-period-encoding">Stat period encoding</h3>
+<h2 id="stat-period-encoding-in-us-football">Stat period encoding in US Football</h2>
 <p>The stat period is also encoded economically as follows:</p>
 <h3 id="full-game-stats">Full Game Stats</h3>
 <table>
@@ -2508,6 +2562,161 @@ The <strong>game phase</strong> could be set to end of Q2, that is what is known
 </table>
 <p>There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
 for the full game.</p>
+<h2 id="game-phase-encoding-for-us-basketball">Game phase encoding for US Basketball</h2>
+<p>For US basketball, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. </p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>ID</th>
+<th>Game phase</th>
+<th>Competitions</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NS</code></td>
+<td>1</td>
+<td>Not started</td>
+<td>Status before the game is started</td>
+<td></td>
+</tr>
+<tr>
+<td><code>Q1</code></td>
+<td>2</td>
+<td>Quarter 1</td>
+<td>NBA</td>
+<td>Game in play during first quarter</td>
+</tr>
+<tr>
+<td><code>Q1B</code></td>
+<td>3</td>
+<td>Quarter 1 break</td>
+<td>NBA</td>
+<td>Pause in play between the 1st quarter ending and the 2nd quarter starting</td>
+</tr>
+<tr>
+<td><code>Q2</code></td>
+<td>4</td>
+<td>Quarter 2</td>
+<td>NBA</td>
+<td>Game in play during second quarter</td>
+</tr>
+<tr>
+<td><code>HT</code></td>
+<td>5</td>
+<td>Halftime</td>
+<td></td>
+<td>Halftime of the game</td>
+</tr>
+<tr>
+<td><code>Q3</code></td>
+<td>6</td>
+<td>Quarter 3</td>
+<td>NBA</td>
+<td>Game in play during third quarter</td>
+</tr>
+<tr>
+<td><code>Q3B</code></td>
+<td>7</td>
+<td>Quarter 3 break</td>
+<td>NBA</td>
+<td>Pause in play between the 3rd quarter ending and the 4th quarter starting</td>
+</tr>
+<tr>
+<td><code>Q4</code></td>
+<td>8</td>
+<td>Quarter 4</td>
+<td>NBA</td>
+<td>Game in play during fourth quarter</td>
+</tr>
+<tr>
+<td><code>F</code></td>
+<td>9</td>
+<td>Ended (finished)</td>
+<td></td>
+<td>Game ends after the 4th quarter</td>
+</tr>
+<tr>
+<td><code>WO</code></td>
+<td>10</td>
+<td>Waiting for Overtime</td>
+<td></td>
+<td>Break following the 4th Quarter before the start of the first overtime period</td>
+</tr>
+<tr>
+<td><code>OT</code></td>
+<td>11</td>
+<td>Overtime</td>
+<td></td>
+<td>With option for overtime number to be selected. Game in play during selected overtime period</td>
+</tr>
+<tr>
+<td><code>OB</code></td>
+<td>12</td>
+<td>Overtime Break</td>
+<td></td>
+<td>Break between Overtime periods</td>
+</tr>
+<tr>
+<td><code>FO</code></td>
+<td>13</td>
+<td>Ended after Overtime (Finished after Overtime)</td>
+<td>Game ends after an overtime period</td>
+<td></td>
+</tr>
+<tr>
+<td><code>I</code></td>
+<td>14</td>
+<td>Interrupted</td>
+<td>The game is officially interrupted</td>
+<td></td>
+</tr>
+<tr>
+<td><code>A</code></td>
+<td>15</td>
+<td>Abandoned</td>
+<td>The game is officially abandoned</td>
+<td></td>
+</tr>
+<tr>
+<td><code>C</code></td>
+<td>16</td>
+<td>Cancelled</td>
+<td>The game is officially cancelled</td>
+<td></td>
+</tr>
+<tr>
+<td><code>TXCC</code></td>
+<td>17</td>
+<td>TX Coverage Cancelled</td>
+<td>TxODDS cancelled coverage of the event</td>
+<td></td>
+</tr>
+<tr>
+<td><code>TXCS</code></td>
+<td>18</td>
+<td>TX Coverage Suspended</td>
+<td>TxOODS suspended coverage of the event</td>
+<td></td>
+</tr>
+<tr>
+<td><code>H1</code></td>
+<td>19</td>
+<td>First half</td>
+<td>NCAA</td>
+<td>Game in play during first half</td>
+</tr>
+<tr>
+<td><code>H2</code></td>
+<td>20</td>
+<td>Second half</td>
+<td>NCAA</td>
+<td>Game in play during second half</td>
+</tr>
+</tbody>
+</table>
 <h3 id="specify-the-stat-period">Specify the stat period</h3>
 <p>The Stat period as used in offers and settlements is wrapped in the <code>StatTerm</code> class that designates the statistic used for prediction. For example:</p>
 <pre><code>{ key: 1 } // Stat key for &quot;Participant1_Score&quot;
