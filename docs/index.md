@@ -36,7 +36,7 @@ This validation is based on the mathematical property of Merkle roots such that 
 
 Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.
 
-## Included data
+## Games coverage
 
 As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.
 
@@ -48,13 +48,55 @@ As of mid-September 2025, the following data is covered for the fixtures, odds, 
 | 10005302 | NCAA Division I (W)    |
 | 300043   | NCAA Division I        |
 
-With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA.
+With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA. Specifically, these conferences should be covered fully:
 
-The `scores` channel includes the fully detailed model of US football (and upcoming baketball) as avaiable otherwide using direct institutional sales offered to big betting operators and syndicats. The documentation for this feed is vailable at the above API endpoints and also in the included document:
+1. SEC
+2. Big Ten
+3. Big 12
+4. Big East
+5. ACC
+6. Mountain West
+7. West Coast Conference
+8. Atlantic 10 Conference
+9. Conference USA
+10. Missouri Valley
+11. American
+12. Big West
+13. Southern Conference
+14. Ivy League
+15. Mid-American Conference
+16. Horizon League
+17. Western Athletic Conference
+
+Regular season only coverage should become available for
+1. Summit League
+2. Big South Conference
+3. Southland Conference
+4. Coastal Athletic Conference (CAA)
+5. Sun Belt
+6. MAAC (Only Sunday, Tuesday, Wednesday, Friday games)
+7. American East (non-Saturday games)
+8. SWAC Conference (only Monday games)
+9. Patriot League (non-Saturday games)
+10. ASUN Conference (non-Saturday games)
+
+All of the above conferences are covered by the same competition `NCAA Division I` with competition id = 300043.
+
+## Content in the `scors` channel
+
+The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwide avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
 
 [TxODDS US Football Feed v1.13](assets/txodds-us-football-feed-v1.13.pdf)
 
 [TxODDS US Baskeball Feed v1.12](assets/txodds-basketball-feed-v1.12.pdf)
+
+In contrast to the B2B offering, (limited) historical access to to data is also included.
+
+## Content on the `fixtures` and `odds` channels
+
+The fixtures updates in the `fixtures` channel represent fixtures' data that became available at the time of publication. The fixtures endpoints are dseigned to provide the best known true information about fixtures available by default at the time of asking or at specific time in the past.
+
+The `odds` channel includes fully de-margined stable odds (effectively, probabilities) for the main markets. The notion is stability comes from the TxODDS stable price B2B product that provides the most consistent view of the betting market, taking care of operators' errors, outages, etc.
 
 ## Configurations
 
