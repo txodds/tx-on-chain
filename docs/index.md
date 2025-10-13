@@ -634,6 +634,223 @@ The stat period is also encoded economically as follows:
 
 ---
 
+### Second Half (Q3+Q4) Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 2001 | Participant 1 Total Score | |
+| 2002 | Participant 2 Total Score | |
+| 2003 | Participant 1 Total Fouls | |
+| 2004 | Participant 2 Total Fouls | |
+| 2005 | Participant 1 Total Personal Fouls | |
+| 2006 | Participant 2 Total Personal Fouls | |
+| 2007 | Participant 1 Total Blocks | |
+| 2008 | Participant 2 Total Blocks | |
+| 2009 | Participant 1 Total Rebounds | |
+| 2010 | Participant 2 Total Rebounds | |
+| 2011 | Participant 1 Total free throws made | |
+| 2012 | Participant 2 Total free throws made | |
+| 2013 | Participant 1 Total 2-points made | |
+| 2014 | Participant 2 Total 2-points made | |
+| 2015 | Participant 1 Total 3-points made | |
+| 2016 | Participant 2 Total 3-points made | |
+| 2017 | Participant 1 Total free throws missed | |
+| 2018 | Participant 2 Total free throws missed | |
+| 2019 | Participant 1 Total 2-points missed | |
+| 2020 | Participant 2 Total 2-points missed | |
+| 2021 | Participant 1 Total 3-points missed | |
+| 2022 | Participant 2 Total 3-points missed | |
+| 2023 | Participant 1 Total free throws attempts | |
+| 2024 | Participant 2 Total free throws attempts | |
+| 2025 | Participant 1 Total 2-points attempts | |
+| 2026 | Participant 2 Total 2-points attempts | |
+| 2027 | Participant 1 Total 3-points attempts | |
+| 2028 | Participant 2 Total 3-points attempts | |
+| 2029 | Participant 1 Total Assists | |
+| 2030 | Participant 2 Total Assists | |
+| 2031 | Participant 1 Total Turnovers | |
+| 2032 | Participant 2 Total Turnovers | |
+| 2033 | Participant 1 Total Steals | |
+| 2034 | Participant 2 Total Steals | |
+| 2035 | Participant 1 Total Used timeouts | |
+| 2036 | Participant 2 Total Used timeouts | |
+
+---
+
+### Quarter 1 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 10001 | Participant 1 Total Score | |
+| 10002 | Participant 2 Total Score | |
+| 10003 | Participant 1 Total Fouls | |
+| 10004 | Participant 2 Total Fouls | |
+| 10005 | Participant 1 Total Personal Fouls | |
+| 10006 | Participant 2 Total Personal Fouls | |
+| 10007 | Participant 1 Total Blocks | |
+| 10008 | Participant 2 Total Blocks | |
+| 10009 | Participant 1 Total Rebounds | |
+| 10010 | Participant 2 Total Rebounds | |
+| 10011 | Participant 1 Total free throws made | |
+| 10012 | Participant 2 Total free throws made | |
+| 10013 | Participant 1 Total 2-points made | |
+| 10014 | Participant 2 Total 2-points made | |
+| 10015 | Participant 1 Total 3-points made | |
+| 10016 | Participant 2 Total 3-points made | |
+| 10017 | Participant 1 Total free throws missed | |
+| 10018 | Participant 2 Total free throws missed | |
+| 10019 | Participant 1 Total 2-points missed | |
+| 10020 | Participant 2 Total 2-points missed | |
+| 10021 | Participant 1 Total 3-points missed | |
+| 10022 | Participant 2 Total 3-points missed | |
+| 10023 | Participant 1 Total free throws attempts | |
+| 10024 | Participant 2 Total free throws attempts | |
+| 10025 | Participant 1 Total 2-points attempts | |
+| 10026 | Participant 2 Total 2-points attempts | |
+| 10027 | Participant 1 Total 3-points attempts | |
+| 10028 | Participant 2 Total 3-points attempts | |
+| 10029 | Participant 1 Total Assists | |
+| 10030 | Participant 2 Total Assists | |
+| 10031 | Participant 1 Total Turnovers | |
+| 10032 | Participant 2 Total Turnovers | |
+| 10033 | Participant 1 Total Steals | |
+| 10034 | Participant 2 Total Steals | |
+| 10035 | Participant 1 Total Used timeouts | |
+| 10036 | Participant 2 Total Used timeouts | |
+
+---
+
+### Quarter 2 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 20001 | Participant 1 Total Score | |
+| 20002 | Participant 2 Total Score | |
+| 20003 | Participant 1 Total Fouls | |
+| 20004 | Participant 2 Total Fouls | |
+| 20005 | Participant 1 Total Personal Fouls | |
+| 20006 | Participant 2 Total Personal Fouls | |
+| 20007 | Participant 1 Total Blocks | |
+| 20008 | Participant 2 Total Blocks | |
+| 20009 | Participant 1 Total Rebounds | |
+| 20010 | Participant 2 Total Rebounds | |
+| 20011 | Participant 1 Total free throws made | |
+| 20012 | Participant 2 Total free throws made | |
+| 20013 | Participant 1 Total 2-points made | |
+| 20014 | Participant 2 Total 2-points made | |
+| 20015 | Participant 1 Total 3-points made | |
+| 20016 | Participant 2 Total 3-points made | |
+| 20017 | Participant 1 Total free throws missed | |
+| 20018 | Participant 2 Total free throws missed | |
+| 20019 | Participant 1 Total 2-points missed | |
+| 20020 | Participant 2 Total 2-points missed | |
+| 20021 | Participant 1 Total 3-points missed | |
+| 20022 | Participant 2 Total 3-points missed | |
+| 20023 | Participant 1 Total free throws attempts | |
+| 20024 | Participant 2 Total free throws attempts | |
+| 20025 | Participant 1 Total 2-points attempts | |
+| 20026 | Participant 2 Total 2-points attempts | |
+| 20027 | Participant 1 Total 3-points attempts | |
+| 20028 | Participant 2 Total 3-points attempts | |
+| 20029 | Participant 1 Total Assists | |
+| 20030 | Participant 2 Total Assists | |
+| 20031 | Participant 1 Total Turnovers | |
+| 20032 | Participant 2 Total Turnovers | |
+| 20033 | Participant 1 Total Steals | |
+| 20034 | Participant 2 Total Steals | |
+| 20035 | Participant 1 Total Used timeouts | |
+| 20036 | Participant 2 Total Used timeouts | |
+
+---
+
+### Quarter 3 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 30001 | Participant 1 Total Score | |
+| 30002 | Participant 2 Total Score | |
+| 30003 | Participant 1 Total Fouls | |
+| 30004 | Participant 2 Total Fouls | |
+| 30005 | Participant 1 Total Personal Fouls | |
+| 30006 | Participant 2 Total Personal Fouls | |
+| 30007 | Participant 1 Total Blocks | |
+| 30008 | Participant 2 Total Blocks | |
+| 30009 | Participant 1 Total Rebounds | |
+| 30010 | Participant 2 Total Rebounds | |
+| 30011 | Participant 1 Total free throws made | |
+| 30012 | Participant 2 Total free throws made | |
+| 30013 | Participant 1 Total 2-points made | |
+| 30014 | Participant 2 Total 2-points made | |
+| 30015 | Participant 1 Total 3-points made | |
+| 30016 | Participant 2 Total 3-points made | |
+| 30017 | Participant 1 Total free throws missed | |
+| 30018 | Participant 2 Total free throws missed | |
+| 30019 | Participant 1 Total 2-points missed | |
+| 30020 | Participant 2 Total 2-points missed | |
+| 30021 | Participant 1 Total 3-points missed | |
+| 30022 | Participant 2 Total 3-points missed | |
+| 30023 | Participant 1 Total free throws attempts | |
+| 30024 | Participant 2 Total free throws attempts | |
+| 30025 | Participant 1 Total 2-points attempts | |
+| 30026 | Participant 2 Total 2-points attempts | |
+| 30027 | Participant 1 Total 3-points attempts | |
+| 30028 | Participant 2 Total 3-points attempts | |
+| 30029 | Participant 1 Total Assists | |
+| 30030 | Participant 2 Total Assists | |
+| 30031 | Participant 1 Total Turnovers | |
+| 30032 | Participant 2 Total Turnovers | |
+| 30033 | Participant 1 Total Steals | |
+| 30034 | Participant 2 Total Steals | |
+| 30035 | Participant 1 Total Used timeouts | |
+| 30036 | Participant 2 Total Used timeouts | |
+
+---
+
+### Quarter 4 Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 40001 | Participant 1 Total Score | |
+| 40002 | Participant 2 Total Score | |
+| 40003 | Participant 1 Total Fouls | |
+| 40004 | Participant 2 Total Fouls | |
+| 40005 | Participant 1 Total Personal Fouls | |
+| 40006 | Participant 2 Total Personal Fouls | |
+| 40007 | Participant 1 Total Blocks | |
+| 40008 | Participant 2 Total Blocks | |
+| 40009 | Participant 1 Total Rebounds | |
+| 40010 | Participant 2 Total Rebounds | |
+| 40011 | Participant 1 Total free throws made | |
+| 40012 | Participant 2 Total free throws made | |
+| 40013 | Participant 1 Total 2-points made | |
+| 40014 | Participant 2 Total 2-points made | |
+| 40015 | Participant 1 Total 3-points made | |
+| 40016 | Participant 2 Total 3-points made | |
+| 40017 | Participant 1 Total free throws missed | |
+| 40018 | Participant 2 Total free throws missed | |
+| 40019 | Participant 1 Total 2-points missed | |
+| 40020 | Participant 2 Total 2-points missed | |
+| 40021 | Participant 1 Total 3-points missed | |
+| 40022 | Participant 2 Total 3-points missed | |
+| 40023 | Participant 1 Total free throws attempts | |
+| 40024 | Participant 2 Total free throws attempts | |
+| 40025 | Participant 1 Total 2-points attempts | |
+| 40026 | Participant 2 Total 2-points attempts | |
+| 40027 | Participant 1 Total 3-points attempts | |
+| 40028 | Participant 2 Total 3-points attempts | |
+| 40029 | Participant 1 Total Assists | |
+| 40030 | Participant 2 Total Assists | |
+| 40031 | Participant 1 Total Turnovers | |
+| 40032 | Participant 2 Total Turnovers | |
+| 40033 | Participant 1 Total Steals | |
+| 40034 | Participant 2 Total Steals | |
+| 40035 | Participant 1 Total Used timeouts | |
+| 40036 | Participant 2 Total Used timeouts | |
+
+---
+
+## Trading offer definition
+
 ### Specify the stat period
 
 The Stat period as used in offers and settlements is wrapped in the `StatTerm` class that designates the statistic used for prediction. For example:
