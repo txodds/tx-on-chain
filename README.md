@@ -351,7 +351,7 @@ For US football, the game phases are encoded in a unique and economical way for 
 
 Prediction offers reference the game phase by ID taken from the above two tables.
 
-## Stat period encoding in US Football
+## Stat period encoding for US Football
 
 The stat period is also encoded economically as follows:
 
@@ -543,6 +543,96 @@ For US basketball, the game phases are encoded in a unique and economical way fo
 | `TXCS` | 18   |    TX Coverage Suspended         | TxOODS suspended coverage of the event |
 | `H1` | 19 | First half | NCAA | Game in play during first half |
 | `H2` | 20 | Second half | NCAA | Game in play during second half |
+
+## Stat period encoding for US Basketball
+
+The stat period is also encoded economically as follows:
+
+### Full Game Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 1 | Participant 1 Total Score | |
+| 2 | Participant 2 Total Score | |
+| 3 | Participant 1 Total Fouls | |
+| 4 | Participant 2 Total Fouls | |
+| 5 | Participant 1 Total Personal Fouls | |
+| 6 | Participant 2 Total Personal Fouls | |
+| 7 | Participant 1 Total Blocks | |
+| 8 | Participant 2 Total Blocks | |
+| 9 | Participant 1 Total Rebounds | |
+| 10 | Participant 2 Total Rebounds | |
+| 11 | Participant 1 Total free throws made | |
+| 12 | Participant 2 Total free throws made | |
+| 13 | Participant 1 Total 2-points made | |
+| 14 | Participant 2 Total 2-points made | |
+| 15 | Participant 1 Total 3-points made | |
+| 16 | Participant 2 Total 3-points made | |
+| 17 | Participant 1 Total free throws missed | |
+| 18 | Participant 2 Total free throws missed | |
+| 19 | Participant 1 Total 2-points missed | |
+| 20 | Participant 2 Total 2-points missed | |
+| 21 | Participant 1 Total 3-points missed | |
+| 22 | Participant 2 Total 3-points missed | |
+| 23 | Participant 1 Total free throws attempts | |
+| 24 | Participant 2 Total free throws attempts | |
+| 25 | Participant 1 Total 2-points attempts | |
+| 26 | Participant 2 Total 2-points attempts | |
+| 27 | Participant 1 Total 3-points attempts | |
+| 28 | Participant 2 Total 3-points attempts | |
+| 29 | Participant 1 Total Assists | |
+| 30 | Participant 2 Total Assists | |
+| 31 | Participant 1 Total Turnovers | |
+| 32 | Participant 2 Total Turnovers | |
+| 33 | Participant 1 Total Steals | |
+| 34 | Participant 2 Total Steals | |
+| 35 | Participant 1 Total Used timeouts | |
+| 36 | Participant 2 Total Used timeouts | |
+
+---
+
+### First Half (HT) Stats
+
+| Key | Statistic | Description |
+|---|---|---|
+| 1001 | Participant 1 Total Score | |
+| 1002 | Participant 2 Total Score | |
+| 1003 | Participant 1 Total Fouls | |
+| 1004 | Participant 2 Total Fouls | |
+| 1005 | Participant 1 Total Personal Fouls | |
+| 1006 | Participant 2 Total Personal Fouls | |
+| 1007 | Participant 1 Total Blocks | |
+| 1008 | Participant 2 Total Blocks | |
+| 1009 | Participant 1 Total Rebounds | |
+| 1010 | Participant 2 Total Rebounds | |
+| 1011 | Participant 1 Total free throws made | |
+| 1012 | Participant 2 Total free throws made | |
+| 1013 | Participant 1 Total 2-points made | |
+| 1014 | Participant 2 Total 2-points made | |
+| 1015 | Participant 1 Total 3-points made | |
+| 1016 | Participant 2 Total 3-points made | |
+| 1017 | Participant 1 Total free throws missed | |
+| 1018 | Participant 2 Total free throws missed | |
+| 1019 | Participant 1 Total 2-points missed | |
+| 1020 | Participant 2 Total 2-points missed | |
+| 1021 | Participant 1 Total 3-points missed | |
+| 1022 | Participant 2 Total 3-points missed | |
+| 1023 | Participant 1 Total free throws attempts | |
+| 1024 | Participant 2 Total free throws attempts | |
+| 1025 | Participant 1 Total 2-points attempts | |
+| 1026 | Participant 2 Total 2-points attempts | |
+| 1027 | Participant 1 Total 3-points attempts | |
+| 1028 | Participant 2 Total 3-points attempts | |
+| 1029 | Participant 1 Total Assists | |
+| 1030 | Participant 2 Total Assists | |
+| 1031 | Participant 1 Total Turnovers | |
+| 1032 | Participant 2 Total Turnovers | |
+| 1033 | Participant 1 Total Steals | |
+| 1034 | Participant 2 Total Steals | |
+| 1035 | Participant 1 Total Used timeouts | |
+| 1036 | Participant 2 Total Used timeouts | |
+
+---
 
 ### Specify the stat period
 
