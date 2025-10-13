@@ -87,7 +87,7 @@ All of the above conferences are covered by the same competition `NCAA Division 
 
 ## Content in the `scors` channel
 
-The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwide avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
+The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
 
 [TxODDS US Football Feed v1.13](assets/txodds-us-football-feed-v1.13.pdf)
 
@@ -294,9 +294,9 @@ Another prediction could be set to be based on a stat that is related to the fir
 
 There is a further important question: what is the difference between a prediction for the **game phase** Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **game phase** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
 
-### Game phase encoding
+## Game phase encoding for US Football
 
-For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. There are core 
+For US football, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain.
 
 | Name   | ID   | Game phase | Description |
 |--------|------|------|-------|
@@ -351,7 +351,7 @@ For US football, the game phases are encoded in a unique and economical way for 
 
 Prediction offers reference the game phase by ID taken from the above two tables.
 
-### Stat period encoding
+## Stat period encoding in US Football
 
 The stat period is also encoded economically as follows:
 
@@ -516,6 +516,33 @@ The stat period is also encoded economically as follows:
 
 There is a very simple formula used for the above encoding such that the half number is multiplied by 1000 while the quarter number is multiplied by 10000. It is then added to the original code
 for the full game.
+
+## Game phase encoding for US Basketball
+
+For US basketball, the game phases are encoded in a unique and economical way for easy prediction proofs on-chain. 
+
+| Name   | ID   | Game phase | Competitions | Description |
+|--------|------|------|-----|-------|
+| `NS`   | 1    |  Not started | Status before the game is started         |
+| `Q1`   | 2    |  Quarter 1 | NBA | Game in play during first quarter         |
+| `Q1B`  | 3    |  Quarter 1 break | NBA | Pause in play between the 1st quarter ending and the 2nd quarter starting         |
+| `Q2`   | 4    |  Quarter 2 | NBA | Game in play during second quarter         |
+| `HT`   | 5    |  Halftime | | Halftime of the game         |
+| `Q3`   | 6    |  Quarter 3 | NBA | Game in play during third quarter         |
+| `Q3B`  | 7    |  Quarter 3 break | NBA | Pause in play between the 3rd quarter ending and the 4th quarter starting         |
+| `Q4`   | 8    |  Quarter 4 | NBA | Game in play during fourth quarter         |
+| `F`    | 9    |  Ended (finished) | | Game ends after the 4th quarter         |
+| `WO`   | 10   |  Waiting for Overtime  | | Break following the 4th Quarter before the start of the first overtime period |
+| `OT`   | 11   |  Overtime | | With option for overtime number to be selected. Game in play during selected overtime period         |
+| `OB`   | 12   | Overtime Break | | Break between Overtime periods         |
+| `FO`   | 13   |  Ended after Overtime (Finished after Overtime) | Game ends after an overtime period         |
+| `I`    | 14   |    Interrupted         | The game is officially interrupted |
+| `A`    | 15   |    Abandoned         | The game is officially abandoned |
+| `C`    | 16   |    Cancelled         | The game is officially cancelled |
+| `TXCC` | 17   |    TX Coverage Cancelled         | TxODDS cancelled coverage of the event |
+| `TXCS` | 18   |    TX Coverage Suspended         | TxOODS suspended coverage of the event |
+| `H1` | 19 | First half | NCAA | Game in play during first half |
+| `H2` | 20 | Second half | NCAA | Game in play during second half |
 
 ### Specify the stat period
 
