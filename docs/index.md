@@ -160,7 +160,7 @@ With staked tokens, you can access the off-chain API services through the follow
    export const KEYPAIR_PATH = './path/to/your/keypair.json';
    ```
 
-### Running Examples
+### Running examples
 
 All example scripts are located in the `./examples/` directory and can be executed using ts-node:
 
@@ -168,17 +168,11 @@ All example scripts are located in the `./examples/` directory and can be execut
 # Purchase tokens
 npx ts-node ./examples/tokens/purchase_tokens.ts
 
-# Stake tokens
-npx ts-node ./examples/tokens/stake.ts
-
 # Run an example script.
 # Note: Some examples contain Id's that can be modified within the file
 npx ts-node ./examples/streaming/stream_odds.ts
 npx ts-node ./examples/snapshots/get_odds_snapshot.ts
 npx ts-node ./examples/validation/validate_odd_onchain.ts
-
-# Unstake tokens
-npx ts-node ./examples/tokens/unstake.ts
 ```
 
 ## Available Examples
@@ -186,26 +180,34 @@ npx ts-node ./examples/tokens/unstake.ts
 ### Token Management
 
 #### `examples/tokens/purchase_tokens.ts`
+
 Demonstrates how to purchase TxOracle subscription tokens using SOL.
+
 1. Executes on-chain token purchase transaction
 2. Transfers tokens from treasury to user's account
 
 ### Data Snapshots
 
 #### `examples/snapshots/get_fixtures_snapshot.ts`
+
 Accesses fixture data via the API.
+
 1. Authenticates and creates API subscription
 2. Retrieves fixtures snapshots for a given date/competitionId
 4. Shows responses from each snapshot endpoint
 
 #### `examples/snapshots/get_odds_snapshot.ts`
+
 Accesses odds data via the API.
+
 1. Authenticates and creates API subscription
 2. Retrieves odds snapshots for a given fixtureId/date/competitionId
 4. Shows responses from each snapshot endpoint
 
 #### `examples/snapshots/get_scores_snapshot.ts`
+
 Accesses scores data via the API.
+
 1. Authenticates and creates API subscription
 2. Retrieves scores snapshots for a given fixtureId/date/competitionId
 4. Shows responses from each snapshot endpoint
@@ -213,13 +215,17 @@ Accesses scores data via the API.
 ### Data Streaming
 
 #### `examples/streaming/stream_odds.ts`
+
 Demonstrates real-time odds streaming using Server-Sent Events (SSE).
+
 1. Authenticates and creates API subscription
 2. Establishes SSE connection to odds stream
 3. Displays live odds messages
 
 #### `examples/streaming/stream_scores.ts`
+
 Demonstrates real-time scores streaming using Server-Sent Events (SSE).
+
 1. Authenticates and creates API subscription
 2. Establishes SSE connection to scores stream
 3. Displays live scores messages
@@ -227,7 +233,9 @@ Demonstrates real-time scores streaming using Server-Sent Events (SSE).
 ### On-Chain Validation
 
 #### `examples/validation/validate_fixtures_onchain.ts`
+
 Validates fixture data using on-chain cryptographic proofs.
+
 1. Authenticates and creates API subscription
 2. Fetches college football fixture data from last Saturday
 3. Retrieves validation proofs from the API
@@ -236,7 +244,9 @@ Validates fixture data using on-chain cryptographic proofs.
 6. Cryptographically proves the fixture
 
 #### `examples/validation/validate_odds_onchain.ts`
+
 Validates odds data using on-chain cryptographic proofs.
+
 1. Authenticates and creates API subscription
 2. Fetches college football fixture data from last Saturday
 3. Retrieves odds validation proofs from the API
@@ -246,7 +256,9 @@ Validates odds data using on-chain cryptographic proofs.
 
 
 #### `examples/validation/validate_scores_onchain.ts`
+
 Validates scores data using on-chain cryptographic proofs.
+
 1. Authenticates and creates API subscription
 2. Fetches college football fixture data from last Saturday
 3. Retrieves stat validation proofs from the API
