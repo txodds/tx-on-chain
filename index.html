@@ -1352,8 +1352,12 @@
 <h2 id="overview">Overview</h2>
 <p>Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:</p>
 <ol>
-<li><strong>Data Access Layer</strong>. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.</li>
-<li>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</li>
+<li>
+<p><strong>Data Access Layer</strong>. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.</p>
+</li>
+<li>
+<p>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</p>
+</li>
 <li>The data is delivered in a request-response or streaming form.</li>
 <li>
 <p>One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase <code>TxODDS subscription tokens</code> and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.</p>
@@ -1361,7 +1365,9 @@
 <li>
 <p><strong>Prediction-based trading</strong> Sophisticated and highly general binary options Trading that allows users to:</p>
 </li>
-<li>submit cryptographically signed College Football and Basketball prediction offers for specified time periods,</li>
+<li>
+<p>submit cryptographically signed College Football and Basketball prediction offers for specified time periods,</p>
+</li>
 <li>receive via stream the resulting notifications to paid subscribers over the Trading stream,</li>
 <li>accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),</li>
 <li>settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.</li>
@@ -1448,7 +1454,7 @@
 <p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwide avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
 <p><a href="assets/txodds-us-football-feed-v1.13.pdf">TxODDS US Football Feed v1.13</a></p>
 <p><a href="assets/txodds-basketball-feed-v1.12.pdf">TxODDS US Baskeball Feed v1.12</a></p>
-<p>In contrast to the B2B offering, (limited) historical access to to data is also included.</p>
+<p>In contrast to the B2B offering, (limited) historical access to data is also included.</p>
 <h2 id="content-in-the-fixtures-and-odds-channels">Content in the <code>fixtures</code> and <code>odds</code> channels</h2>
 <p>The fixtures updates in the <code>fixtures</code> channel represent fixtures' data that became available at the time of publication. The fixtures endpoints are dseigned to provide the best known true information about fixtures available by default at the time of asking or at specific time in the past.</p>
 <p>The <code>odds</code> channel includes fully de-margined stable odds (effectively, probabilities) for the main markets. The notion is stability comes from the TxODDS stable price B2B product that provides the most consistent view of the betting market, taking care of operators' errors, outages, etc.</p>
