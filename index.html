@@ -1350,28 +1350,20 @@
 <h1 id="txodds-oracle-examples">TxODDS Oracle Examples</h1>
 <p>This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology.</p>
 <h2 id="overview">Overview</h2>
-<p>Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use key cases:</p>
-<ol>
-<li>
+<p>Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:</p>
 <p><strong>Data Access Layer</strong>. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.</p>
-</li>
-<li>
-<p>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</p>
-</li>
+<ul>
+<li>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</li>
 <li>The data is delivered in a request-response or streaming form.</li>
-<li>
-<p>One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase <code>TxODDS subscription tokens</code> and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.</p>
-</li>
-<li>
+<li>One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase <code>TxODDS subscription tokens</code> and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.</li>
+</ul>
 <p><strong>Prediction-based trading</strong> Sophisticated and highly general binary options Trading that allows users to:</p>
-</li>
-<li>
-<p>submit cryptographically signed College Football and Basketball prediction offers for specified time periods,</p>
-</li>
+<ul>
+<li>submit cryptographically signed College Football and Basketball prediction offers for specified time periods,</li>
 <li>receive via stream the resulting notifications to paid subscribers over the Trading stream,</li>
 <li>accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),</li>
 <li>settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.</li>
-</ol>
+</ul>
 <p>The following is a basic diagram showing the system in operation.</p>
 <p><img alt="Alt text" src="assets/TxODDS%20Oracle.png?raw=true" title="TxODDS Oracle" /></p>
 <p>The OpenAPI documentation is available at
