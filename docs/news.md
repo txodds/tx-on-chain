@@ -7,7 +7,6 @@
 ### New Feature: P2P Offer Cancellation
 
 * Users can now cancel their open P2P trade offers via a new `/trading/offer/cancel` endpoint.
-* This is an atomic, state-based operation that prevents race conditions with incoming `accept` requests.
 
 ### Improvements
 
