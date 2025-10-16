@@ -2,6 +2,8 @@
 
 This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
 
+The latest news and updates can be found at [News](docs/news.md).
+
 ## Overview
 
 Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:

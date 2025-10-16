@@ -24,7 +24,7 @@ extra_css:
 
 nav:
   - 'Home': 'index.md'
-  # - 'News and changes log'
+  - 'News and changes log': 'news.md'
   # - 'User Guide':
   #   - 'Installation': 'guides/installation.md'
   #   - 'Quick Start': 'guides/quick-start.md'
