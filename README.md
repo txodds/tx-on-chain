@@ -19,7 +19,7 @@ Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It sup
    - submit cryptographically signed College Football and Basketball prediction offers for specified time periods,
    - receive via stream the resulting notifications to paid subscribers over the Trading stream,
    - accept and cryptorgaphically sign the offers (once the trade match is confirmed by the off-chain service, a fully-secure on-chain escrow is created with the matching sides token funds),
-   - settle the trades if they have identified a scores record that proves the trade can be resolved in their favour, with escrow funds released into the winner's account.
+   - if a user has identified a scores record that proves the trade can be resolved in their favour, the user requests the proofs from the off-chain server, and directly settles the trade on-chain, with escrow funds released into the winner's account.
 
 The following is a basic diagram showing the system in operation.
 
