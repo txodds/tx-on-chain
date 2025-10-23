@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Discards previously added action. The action discarded is the action whose Id matches the Id field provided.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "action_discarded",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action type",
+          "title": "Action",
+          "enum": [
+            "action_discarded"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "TVTimeoutActive": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Set to true if there is a TV timeout active. Otherwise an active timeout can be seen in the game state of either participant 1 or participant 2.",
+          "title": "TV Timeout Active",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics",
+          "title": "Player Stats",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "Possession": {
+          "type": [
+            "number"
+          ],
+          "description": "Participant that has the ball. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Possession",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "PossibleChallenge": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Set to true if there is a possible challenge (instant replay), either by a team or a neutral one",
+          "title": "Possible Challenge",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "SkipChildren": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Skipped children actions",
+              "title": "SkipChildren",
+              "examples": [
+                null,
+                true,
+                false
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "required": [
+    "Action",
+    "ConnectionId",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Possession",
+    "Score",
+    "Seq",
+    "Ts"
+  ]
+}
+

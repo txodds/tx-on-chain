@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Reports a player injury situation for a team.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "injury",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "injury"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Team that suffers the injury",
+              "title": "Participant",
+              "examples": [
+                null,
+                1,
+                2
+              ]
+            },
+            "PlayerId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player that was injured. Can be modified via action amend",
+              "title": "PlayerId",
+              "examples": [
+                null,
+                1290003,
+                5020305,
+                3290005
+              ]
+            },
+            "Outcome": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The outcome of the injury for the player, indicating if they can return to the game, or not",
+              "title": "Outcome",
+              "enum": [
+                null,
+                "OnCourt",
+                "OffCourt",
+                "NotReturning"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

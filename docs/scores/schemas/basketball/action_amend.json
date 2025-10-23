@@ -1,0 +1,755 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$defs": {
+    "BasketballTwoPoints": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Two Points Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "AssistConfirmed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Set to true if there has been an assist for this attempt",
+          "title": "Assist Confirmed",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "AssistId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that provided the assist, if applicable",
+          "title": "Assist Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        },
+        "BlockConfirmed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Set to true if there has been a block for this attempt",
+          "title": "Block Confirmed",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "BlockerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that blocked the attempt, if applicable",
+          "title": "Blocker Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Result of the attempt",
+          "title": "Outcome",
+          "enum": [
+            null,
+            "missed",
+            "2pt_made_and_foul",
+            "2pt_made",
+            "3pt_made",
+            "3pt_made_and_foul"
+          ]
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that attempted the field goal",
+          "title": "Player Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballThreePoints": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Three Points Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "AssistConfirmed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Set to true if there has been an assist for this attempt",
+          "title": "Assist Confirmed",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "AssistId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that provided the assist, if applicable",
+          "title": "Assist Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        },
+        "BlockConfirmed": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Set to true if there has been a block for this attempt",
+          "title": "Block Confirmed",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "BlockerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that blocked the attempt, if applicable",
+          "title": "Blocker Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Result of the attempt",
+          "title": "Outcome",
+          "enum": [
+            null,
+            "missed",
+            "2pt_made_and_foul",
+            "2pt_made",
+            "3pt_made",
+            "3pt_made_and_foul"
+          ]
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that attempted the field goal",
+          "title": "Player Id",
+          "examples": [
+            null,
+            3290005,
+            1290003,
+            5020305
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballFoul": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Foul Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "FouledId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that received the foul",
+          "title": "FouledI d",
+          "examples": [
+            null,
+            1290003,
+            3290005,
+            5020305
+          ]
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that made the foul",
+          "title": "PlayerId",
+          "examples": [
+            null,
+            1290003,
+            3290005,
+            5020305
+          ]
+        },
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Type of foul",
+          "title": "Type",
+          "enum": [
+            "flagrant",
+            "shooting",
+            "personal",
+            "technical",
+            "offensive"
+          ]
+        },
+        "TeamFoul": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Does the foul count as a Team foul. If true, it won't be part of the Player statistics",
+          "title": "Type",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballTurnover": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Turnover Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that gets the turnover",
+          "title": "Player Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "TurnoverId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "If the turnout is due to a steal, this has the external id of the player that stole the ball",
+          "title": "Steal Id",
+          "examples": [
+            null,
+            1290003,
+            5020305,
+            3290005
+          ]
+        },
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Turnover reason",
+          "title": "Type",
+          "enum": [
+            null,
+            "steal",
+            "violation",
+            "other",
+            "out_of_bounds"
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballRebound": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Rebound Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "IsPlayerRebound": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Set to true if the rebound is a player rebound",
+          "title": "Is Player Rebound",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that won the rebound",
+          "title": "Player Id",
+          "examples": [
+            null,
+            1290003,
+            3290005,
+            5020305
+          ]
+        },
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Type of rebound",
+          "title": "Type",
+          "enum": [
+            "defensive",
+            "offensive"
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballFreeThrow": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Free Throw Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Outcome of the current free throw",
+          "title": "Outcome",
+          "enum": [
+            "defensiveViolation",
+            "offensiveViolation",
+            "missed",
+            "made"
+          ]
+        },
+        "PlayerId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player that gets the free throws",
+          "title": "Player Id",
+          "examples": [
+            null,
+            5020305,
+            1290003,
+            3290005
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    },
+    "BasketballSubstitution": {
+      "type": [
+        "object"
+      ],
+      "description": "Amend specific info",
+      "title": "Amend Basketball Substitution Action",
+      "properties": {
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Participant": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Team making the substitution",
+          "title": "Participant",
+          "examples": [
+            null,
+            1,
+            2
+          ]
+        },
+        "PlayerInId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player entering the court",
+          "title": "PlayerInId",
+          "examples": [
+            null,
+            3290005,
+            5020305,
+            1290003
+          ]
+        },
+        "PlayerOutId": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "External Id of the player leaving the court",
+          "title": "PlayerOutId",
+          "examples": [
+            null,
+            3290005,
+            5020305,
+            1290003
+          ]
+        },
+        "UpdatePlayersOnCourt": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "If true, it will update the list of players on the court",
+          "title": "UpdatePlayersOnCourt",
+          "examples": [
+            null,
+            true,
+            false
+          ]
+        }
+      },
+      "required": [
+        "Clock"
+      ]
+    }
+  },
+  "type": [
+    "object"
+  ],
+  "description": "Amends an action that was previously sent. The Id field should match the Id of the action to amend. The Action name should match (same action type). Previous is the previous payload sent for the action, so they payload can vary depending on the action being amended. New contains the new values for that action, to replace the previous one. The fields amended are usually fields like PlayerId or Timestamp, that shouldn't have an impact on the game state itself (no changes to score, etc). Important note: the status id associated to this action will match the status id of the action being amended. For example, an amend during Q2 of an action that happened in Q1, will display Q1 in the status id.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "action_amend",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "action_amend"
+          ]
+        },
+        "ActionPlayersOnCourtDelta": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Changes to players currently on court",
+          "title": "Participant players on court",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayersOnCourt"
+        },
+        "ActionPlayerStatsDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to player statistics caused by the action. See `PlayerStats` for the current player statistics of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "ActionScoreDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to the score caused by the action. See `Score` for the current score of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Action": {
+              "type": [
+                "string"
+              ],
+              "description": "Name of the action to amend. It has to match a previously sent action",
+              "title": "Action",
+              "examples": [
+                "3pt_attempt",
+                "rebound",
+                "2pt_attempt",
+                "free_throw_attempt"
+              ]
+            },
+            "Id": {
+              "type": [
+                "number"
+              ],
+              "description": "Id of the action to amend. It has to match a previously sent action",
+              "title": "Id",
+              "examples": [
+                18,
+                68,
+                87,
+                10,
+                69
+              ]
+            },
+            "New": {
+              "type": [
+                "object"
+              ],
+              "description": "New values for the action. The contents will be the same as the `Data` field for the action amended. It will also embed the `Clock` value of the updated action message.",
+              "title": "New",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BasketballTwoPoints"
+                },
+                {
+                  "$ref": "#/$defs/BasketballThreePoints"
+                },
+                {
+                  "$ref": "#/$defs/BasketballFoul"
+                },
+                {
+                  "$ref": "#/$defs/BasketballTurnover"
+                },
+                {
+                  "$ref": "#/$defs/BasketballRebound"
+                },
+                {
+                  "$ref": "#/$defs/BasketballFreeThrow"
+                },
+                {
+                  "$ref": "#/$defs/BasketballSubstitution"
+                }
+              ]
+            },
+            "Previous": {
+              "type": [
+                "object"
+              ],
+              "description": "Old values for the action. The contents will be the same as the `Data` field for the action amended. It will also embed the `Clock` value of the previous action message.",
+              "title": "Previous",
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/BasketballTwoPoints"
+                },
+                {
+                  "$ref": "#/$defs/BasketballThreePoints"
+                },
+                {
+                  "$ref": "#/$defs/BasketballFoul"
+                },
+                {
+                  "$ref": "#/$defs/BasketballTurnover"
+                },
+                {
+                  "$ref": "#/$defs/BasketballRebound"
+                },
+                {
+                  "$ref": "#/$defs/BasketballFreeThrow"
+                },
+                {
+                  "$ref": "#/$defs/BasketballSubstitution"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Action",
+            "Id",
+            "New",
+            "Previous"
+          ]
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "PlayersOnCourt": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Players currently on court for both teams",
+          "title": "Players on Court",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayersOnCourt"
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics.",
+          "title": "Player Stats",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+
