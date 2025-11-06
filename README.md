@@ -1,12 +1,12 @@
-# TxODDS Oracle Examples
+# TxLINE - TxODDS Oracle Examples
 
-This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
+This repository showcases usage of the TxLINE on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
 
 The latest news and updates can be found at [News](docs/news.md).
 
 ## Overview
 
-Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:
+TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:
 
 **Data Access Layer**. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.
 
@@ -185,7 +185,7 @@ npx ts-node ./examples/validation/validate_odd_onchain.ts
 
 #### `examples/tokens/purchase_tokens.ts`
 
-Demonstrates how to purchase TxOracle subscription tokens using SOL.
+Demonstrates how to purchase TxLINE subscription tokens using SOL.
 
 1. Executes on-chain token purchase transaction
 2. Transfers tokens from treasury to user's account
