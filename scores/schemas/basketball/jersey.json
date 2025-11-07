@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Color of a team jerseys for the given participant in this fixture.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "jersey",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "jersey"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Color": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Color of the jersey for the team",
+              "title": "Color",
+              "enum": [
+                null,
+                "red",
+                "navyblue",
+                "skyblue",
+                "green",
+                "white",
+                "black",
+                "yellow",
+                "orange",
+                "grey",
+                "burgundy",
+                "brown",
+                "purple",
+                "blue",
+                "olive",
+                "aqua",
+                "gold"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Participant": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            1,
+            2
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Participant",
+    "Seq",
+    "Ts",
+    "Type"
+  ]
+}
+

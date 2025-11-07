@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#txodds-oracle-examples" class="md-skip">
+        <a href="#txline-txodds-oracle-examples" class="md-skip">
           Skip to content
         </a>
       
@@ -298,6 +298,15 @@
   <a href="#games-coverage" class="md-nav__link">
     <span class="md-ellipsis">
       Games coverage
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#free-tier-stable-price-de-margined-odds-since-7th-november-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      Free-tier stable price de-margined odds (since 7th November 2025)
     </span>
   </a>
   
@@ -966,6 +975,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#free-tier-stable-price-de-margined-odds-since-7th-november-2025" class="md-nav__link">
+    <span class="md-ellipsis">
+      Free-tier stable price de-margined odds (since 7th November 2025)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#content-in-the-scores-channel" class="md-nav__link">
     <span class="md-ellipsis">
       Content in the scores channel
@@ -1569,11 +1587,11 @@
 
 
 
-<h1 id="txodds-oracle-examples">TxODDS Oracle Examples</h1>
-<p>This repository showcases usage of the Tx Oracle on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology.</p>
+<h1 id="txline-txodds-oracle-examples">TxLINE - TxODDS Oracle Examples</h1>
+<p>This repository showcases usage of the TxLINE on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.</p>
 <p>The latest news and updates can be found at <a href="news/">News</a>.</p>
 <h2 id="overview">Overview</h2>
-<p>Tx Oracle is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:</p>
+<p>TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:</p>
 <p><strong>Data Access Layer</strong>. Make proprietary TxODDS data available for any funded blockchain users by linking the on-chain subscribe transactions with issued time-limited API tokens.</p>
 <ul>
 <li>The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.</li>
@@ -1665,6 +1683,22 @@
 <li>ASUN Conference (non-Saturday games)</li>
 </ol>
 <p>All of the above conferences are covered by the same competition <code>NCAA Division I</code> with competition id = 300043.</p>
+<h2 id="free-tier-stable-price-de-margined-odds-since-7th-november-2025">Free-tier stable price de-margined odds (since 7th November 2025)</h2>
+<p>The following endpoints (as documented in the OpenAPI documentation)</p>
+<p><code>https://oracle.txodds.com/api/guest/odds/snapshot</code> 
+<code>https://oracle.txodds.com/api/guest/odds/stream</code> </p>
+<p>only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.</p>
+<p>| Competition ID       | Competition            | Country |
+| :------- | :--------------------- |
+| 7   | Primera División    | Spain |
+| 8 | Premier League     | England
+| 9   | Bundesliga   | Germany |
+| 10  UEFA Champions League    | European Cup |
+| 13   | Serie A        | Italy |
+| 16   | Ligue 1        | France |
+| 18   | UEFA Europa League        | European Cup |
+| 26   | Serie A       | Brazil |
+| 87   | Liga Profesional Argentina       | Argentina |</p>
 <h2 id="content-in-the-scores-channel">Content in the <code>scores</code> channel</h2>
 <p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
 <p><a href="assets/txodds-us-football-feed-v1.13.pdf">TxODDS US Football Feed v1.13</a></p>
@@ -1737,7 +1771,7 @@ npx ts-node ./examples/validation/validate_odd_onchain.ts
 <h2 id="available-examples">Available Examples</h2>
 <h3 id="token-management">Token Management</h3>
 <h4 id="examplestokenspurchase_tokensts"><code>examples/tokens/purchase_tokens.ts</code></h4>
-<p>Demonstrates how to purchase TxOracle subscription tokens using SOL.</p>
+<p>Demonstrates how to purchase TxLINE subscription tokens using SOL.</p>
 <ol>
 <li>Executes on-chain token purchase transaction</li>
 <li>Transfers tokens from treasury to user's account</li>

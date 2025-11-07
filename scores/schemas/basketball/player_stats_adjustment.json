@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Player stats adjustment message.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "player_stats_adjustment",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "player_stats_adjustment"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant1": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for participant 1, by player Id",
+              "title": "Participant1",
+              "patternProperties": {
+                "^[0-9]+$": {
+                  "type": [
+                    "object"
+                  ],
+                  "description": "Player statistics for the referenced player",
+                  "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStats"
+                }
+              }
+            },
+            "Participant2": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for participant 2, by player Id",
+              "title": "Participant2",
+              "patternProperties": {
+                "^[0-9]+$": {
+                  "type": [
+                    "object"
+                  ],
+                  "description": "Player statistics for the referenced player",
+                  "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStats"
+                }
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Participant1",
+            "Participant2"
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics.",
+          "title": "Player Stats",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "PlayerStats",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

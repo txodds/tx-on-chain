@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sets the current game status/period. It can be deleted/canceled. Overtime is signalled with an additional field included only during overtime.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "status",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "status"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "OvertimeNumber": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+              "title": "Overtime Number",
+              "examples": [
+                null,
+                1,
+                2
+              ]
+            },
+            "StatusId": {
+              "type": [
+                "number"
+              ],
+              "description": "The id for the current game status/period.",
+              "title": "Status Id",
+              "examples": [
+                1,
+                2,
+                3,
+                10,
+                18
+              ]
+            },
+            "StatusName": {
+              "type": [
+                "string"
+              ],
+              "description": "The name associated to the status id",
+              "title": "Status Name",
+              "examples": [
+                "NS",
+                "Q1",
+                "Q1B",
+                "Q2",
+                "HT"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "StatusId",
+            "StatusName"
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Possession": {
+          "type": [
+            "number"
+          ],
+          "description": "Participant that has the ball. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Possession",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "PossessionArrow": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Participant that has the possession arrow or null if not specified (NCAA only). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "PossessionArrow",
+          "examples": [
+            1,
+            2,
+            null
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "Ts",
+    "Type"
+  ]
+}

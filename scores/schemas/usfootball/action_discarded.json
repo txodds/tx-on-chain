@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Deletes previously added action. The action discarded is the action whose Id matches the Id field provided.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "action_discarded",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "action_discarded"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "KickoffInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Kick-off information",
+          "title": "KickoffInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/KickoffInfo"
+        },
+        "Parti1State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti1State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Parti2State",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PartiState"
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics",
+          "title": "PlayerStats",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "SkipChildren": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "Skipped children actions",
+              "title": "SkipChildren",
+              "examples": [
+                null,
+                true,
+                false
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "Ts"
+  ]
+}

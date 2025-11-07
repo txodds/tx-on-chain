@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Scores adjustment. In cases when there missed scoring data updates (touchdown, field_goal, etc) or if there were no updates for quarter due to unforeseen circumstances, there could be scores adjustment sent that will update ONLY the main score for a give quarter or overtime. Once that happens, the other stats in the given quarter will not be accurate any more.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "score_adjustment",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "score_adjustment"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant1": {
+              "type": [
+                "object"
+              ],
+              "description": "The score for participant 1",
+              "title": "Participant 1",
+              "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/ScoreParticipant"
+            },
+            "Participant2": {
+              "type": [
+                "object"
+              ],
+              "description": "The score for participant 2",
+              "title": "Participant 2",
+              "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/ScoreParticipant"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Participant1",
+            "Participant2"
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
