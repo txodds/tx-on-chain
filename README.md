@@ -97,11 +97,11 @@ The following endpoints (as documented in the OpenAPI documentation)
 only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.
 
 | Competition ID       | Competition            | Country |
-| :------- | :--------------------- |
+| :------- | :--------------------- | :--- |
 | 7   | Primera División    | Spain |
 | 8 | Premier League     | England
 | 9   | Bundesliga   | Germany |
-| 10  UEFA Champions League    | European Cup |
+| 10  | UEFA Champions League    | European Cup |
 | 13   | Serie A        | Italy |
 | 16   | Ligue 1        | France |
 | 18   | UEFA Europa League        | European Cup |

@@ -9,11 +9,11 @@
 * Users now can access free-of-charge the stable price de-margined odds for the following competitions:
 
 | Competition ID       | Competition            | Country |
-| :------- | :--------------------- |
+| :------- | :--------------------- | :--- |
 | 7   | Primera División    | Spain |
 | 8 | Premier League     | England
 | 9   | Bundesliga   | Germany |
-| 10  UEFA Champions League    | European Cup |
+| 10  | UEFA Champions League    | European Cup |
 | 13   | Serie A        | Italy |
 | 16   | Ligue 1        | France |
 | 18   | UEFA Europa League        | European Cup |
