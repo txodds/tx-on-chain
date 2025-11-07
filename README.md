@@ -87,6 +87,27 @@ Regular season only coverage should become available for
 
 All of the above conferences are covered by the same competition `NCAA Division I` with competition id = 300043.
 
+## Free-tier stable price de-margined odds (since 7th November 2025)
+
+The following endpoints (as documented in the OpenAPI documentation)
+
+`https://oracle.txodds.com/api/guest/odds/snapshot` 
+`https://oracle.txodds.com/api/guest/odds/stream` 
+
+only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.
+
+| Competition ID       | Competition            | Country |
+| :------- | :--------------------- |
+| 7   | Primera División    | Spain |
+| 8 | Premier League     | England
+| 9   | Bundesliga   | Germany |
+| 10  UEFA Champions League    | European Cup |
+| 13   | Serie A        | Italy |
+| 16   | Ligue 1        | France |
+| 18   | UEFA Europa League        | European Cup |
+| 26   | Serie A       | Brazil |
+| 87   | Liga Profesional Argentina       | Argentina |
+
 ## Content in the `scores` channel
 
 The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
