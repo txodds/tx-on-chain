@@ -1688,17 +1688,62 @@
 <p><code>https://oracle.txodds.com/api/guest/odds/snapshot</code> 
 <code>https://oracle.txodds.com/api/guest/odds/stream</code> </p>
 <p>only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.</p>
-<p>| Competition ID       | Competition            | Country |
-| :------- | :--------------------- |
-| 7   | Primera División    | Spain |
-| 8 | Premier League     | England
-| 9   | Bundesliga   | Germany |
-| 10  UEFA Champions League    | European Cup |
-| 13   | Serie A        | Italy |
-| 16   | Ligue 1        | France |
-| 18   | UEFA Europa League        | European Cup |
-| 26   | Serie A       | Brazil |
-| 87   | Liga Profesional Argentina       | Argentina |</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Competition ID</th>
+<th style="text-align: left;">Competition</th>
+<th style="text-align: left;">Country</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">7</td>
+<td style="text-align: left;">Primera División</td>
+<td style="text-align: left;">Spain</td>
+</tr>
+<tr>
+<td style="text-align: left;">8</td>
+<td style="text-align: left;">Premier League</td>
+<td style="text-align: left;">England</td>
+</tr>
+<tr>
+<td style="text-align: left;">9</td>
+<td style="text-align: left;">Bundesliga</td>
+<td style="text-align: left;">Germany</td>
+</tr>
+<tr>
+<td style="text-align: left;">10</td>
+<td style="text-align: left;">UEFA Champions League</td>
+<td style="text-align: left;">European Cup</td>
+</tr>
+<tr>
+<td style="text-align: left;">13</td>
+<td style="text-align: left;">Serie A</td>
+<td style="text-align: left;">Italy</td>
+</tr>
+<tr>
+<td style="text-align: left;">16</td>
+<td style="text-align: left;">Ligue 1</td>
+<td style="text-align: left;">France</td>
+</tr>
+<tr>
+<td style="text-align: left;">18</td>
+<td style="text-align: left;">UEFA Europa League</td>
+<td style="text-align: left;">European Cup</td>
+</tr>
+<tr>
+<td style="text-align: left;">26</td>
+<td style="text-align: left;">Serie A</td>
+<td style="text-align: left;">Brazil</td>
+</tr>
+<tr>
+<td style="text-align: left;">87</td>
+<td style="text-align: left;">Liga Profesional Argentina</td>
+<td style="text-align: left;">Argentina</td>
+</tr>
+</tbody>
+</table>
 <h2 id="content-in-the-scores-channel">Content in the <code>scores</code> channel</h2>
 <p>The <code>scores</code> channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:</p>
 <p><a href="assets/txodds-us-football-feed-v1.13.pdf">TxODDS US Football Feed v1.13</a></p>
