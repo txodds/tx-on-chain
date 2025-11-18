@@ -24,6 +24,7 @@ import {
 import { inspect } from "util";
 import { SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { Offer, OfferTerms } from "./types";
+import { handleSubscription } from "../../utils/subscription";
 
 const predicate = {
   threshold: 11,
@@ -116,44 +117,23 @@ async function main() {
     authTag2,
   ]);
 
-  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury")],
-    program.programId
+  const txSig = await handleSubscription(
+    program,
+    userKeypair,
+    userTokenAccount,
+    TOKEN_MINT,
+    finalPayload,
+    "Trader A"
   );
 
-  const txSig = await program.methods
-    .subscribeWithToken(finalPayload)
-    .accounts({
-      user: userKeypair.publicKey,
-      tokenMint: TOKEN_MINT,
-      oracleState: oracleStatePda,
-      tokenTreasuryVault: tokenTreasuryVaultPda,
-      userTokenAccount: userTokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([userKeypair])
-    .rpc();
-
-  console.log("[Trader A] Subscription successful! Stake is locked.");
-  console.log("[Trader A] Transaction Signature:", txSig);
-
-  const txSig2 = await program.methods
-    .subscribeWithToken(finalPayload2)
-    .accounts({
-      user: user2Keypair.publicKey,
-      tokenMint: TOKEN_MINT,
-      oracleState: oracleStatePda,
-      tokenTreasuryVault: tokenTreasuryVaultPda,
-      userTokenAccount: user2TokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([user2Keypair])
-    .rpc();
-
-  console.log("[Trader B] Subscription successful! Stake is locked.");
-  console.log("[Trader B] Transaction Signature:", txSig2);
+  const txSig2 = await handleSubscription(
+    program,
+    user2Keypair,
+    user2TokenAccount,
+    TOKEN_MINT,
+    finalPayload2,
+    "Trader B"
+  );
 
   const activationUrl = `${BASE_URL}/api/token/activate?txsig=${txSig}&key=${symmetricKey.toString(
     "base64url"

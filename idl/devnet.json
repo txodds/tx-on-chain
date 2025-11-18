@@ -661,6 +661,9 @@
           "writable": true
         },
         {
+          "name": "oracle_state"
+        },
+        {
           "name": "token_treasury_vault",
           "writable": true
         },
@@ -849,8 +852,7 @@
     {
       "name": "subscribe",
       "docs": [
-        "Subscribe to the service by paying in SOL.",
-        "This verifies the user's stake and locks it for the subscription duration."
+        "Subscribe to the service by locking the staked tokens for the subscription duration."
       ],
       "discriminator": [
         254,
@@ -875,24 +877,21 @@
           "name": "token_mint"
         },
         {
-          "name": "recipient",
-          "writable": true
-        },
-        {
           "name": "stake_account",
           "writable": true
         },
         {
           "name": "stake_vault"
-        },
-        {
-          "name": "system_program"
         }
       ],
       "args": [
         {
           "name": "encrypted_payload",
           "type": "bytes"
+        },
+        {
+          "name": "end_ts",
+          "type": "i64"
         }
       ]
     },
@@ -1558,6 +1557,11 @@
       "code": 6038,
       "name": "CalculationError",
       "msg": "Calculation error"
+    },
+    {
+      "code": 6039,
+      "name": "InvalidSubscriptionTs",
+      "msg": "Subscription end Ts invalid"
     }
   ],
   "types": [

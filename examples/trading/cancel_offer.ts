@@ -21,6 +21,7 @@ import {
 } from "../../config";
 import { inspect } from "util";
 import { Offer, OfferTerms } from "./types";
+import { handleSubscription } from "../../utils/subscription";
 
 const predicate = {
   threshold: 11,
@@ -82,27 +83,14 @@ async function main() {
     authTag,
   ]);
 
-  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury")],
-    program.programId
+  const txSig = await handleSubscription(
+    program,
+    userKeypair,
+    userTokenAccount,
+    TOKEN_MINT,
+    finalPayload,
+    "Trader"
   );
-
-  const txSig = await program.methods
-    .subscribeWithToken(finalPayload)
-    .accounts({
-      user: userKeypair.publicKey,
-      tokenMint: TOKEN_MINT,
-      oracleState: oracleStatePda,
-      tokenTreasuryVault: tokenTreasuryVaultPda,
-      userTokenAccount: userTokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([userKeypair])
-    .rpc();
-
-  console.log("[Trader] Subscription successful! Stake is locked.");
-  console.log("[Trader] Transaction Signature:", txSig);
 
   const activationUrl = `${BASE_URL}/api/token/activate?txsig=${txSig}&key=${symmetricKey.toString(
     "base64url"

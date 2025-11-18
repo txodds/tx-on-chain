@@ -2,11 +2,234 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.0.0",
+    "version": "1.1.2",
     "spec": "0.1.0",
     "description": "TxODDS Oracle"
   },
   "instructions": [
+    {
+      "name": "close_oracle",
+      "discriminator": [
+        74,
+        239,
+        49,
+        223,
+        206,
+        52,
+        189,
+        123
+      ],
+      "accounts": [
+        {
+          "name": "oracle_state",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_trade",
+      "docs": [
+        "Create a trade escrow after an off-chain match.",
+        "Requires signatures from both traders and a fee payer.",
+        "Locks both traders' funds in a new program-controlled vault."
+      ],
+      "discriminator": [
+        183,
+        82,
+        24,
+        245,
+        248,
+        30,
+        204,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_a",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_b",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_a_token_account",
+          "writable": true
+        },
+        {
+          "name": "trader_b_token_account",
+          "writable": true
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "stake_a",
+          "type": "u64"
+        },
+        {
+          "name": "stake_b",
+          "type": "u64"
+        },
+        {
+          "name": "trade_terms_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "deposit",
+      "docs": [
+        "Deposit a variable amount of tokens into the user's trading vault.",
+        "Initialize the vault accounts on the first deposit."
+      ],
+      "discriminator": [
+        242,
+        35,
+        198,
+        137,
+        82,
+        225,
+        242,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle_state"
+        },
+        {
+          "name": "trading_vault_account",
+          "writable": true
+        },
+        {
+          "name": "trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "rent"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "fill_order",
+      "discriminator": [
+        232,
+        122,
+        115,
+        25,
+        199,
+        143,
+        136,
+        162
+      ],
+      "accounts": [
+        {
+          "name": "taker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "taker_trading_vault_account"
+        },
+        {
+          "name": "taker_trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "maker_order_account",
+          "writable": true
+        },
+        {
+          "name": "maker_order_vault",
+          "writable": true
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        }
+      ]
+    },
     {
       "name": "initialize",
       "discriminator": [
@@ -177,16 +400,19 @@
       ]
     },
     {
-      "name": "insert_fixture_merkle_root",
+      "name": "insert_fixtures_root",
+      "docs": [
+        "Lazily initialize a ten-daily fixtures account and/or updates a root in an one-hour slot."
+      ],
       "discriminator": [
-        35,
-        113,
-        134,
-        89,
-        16,
-        177,
-        134,
-        94
+        18,
+        70,
+        8,
+        160,
+        75,
+        200,
+        109,
+        235
       ],
       "accounts": [
         {
@@ -198,7 +424,11 @@
           "signer": true
         },
         {
-          "name": "fixture_merkle_root",
+          "name": "ten_daily_fixtures_roots",
+          "docs": [
+            "The address is constrained by the seeds, and we verify the",
+            "discriminator and owner inside the instruction."
+          ],
           "writable": true
         },
         {
@@ -211,11 +441,11 @@
           "type": "u16"
         },
         {
-          "name": "hour_of_day",
-          "type": "u8"
+          "name": "index",
+          "type": "u64"
         },
         {
-          "name": "merkle_root",
+          "name": "root",
           "type": {
             "array": [
               "u8",
@@ -286,10 +516,76 @@
       ]
     },
     {
+      "name": "post_order",
+      "discriminator": [
+        241,
+        172,
+        254,
+        140,
+        77,
+        72,
+        246,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "maker_trading_vault_account"
+        },
+        {
+          "name": "maker_trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "order_account",
+          "writable": true
+        },
+        {
+          "name": "order_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "order_id",
+          "type": "u64"
+        },
+        {
+          "name": "stake",
+          "type": "u64"
+        },
+        {
+          "name": "odds",
+          "type": "u16"
+        },
+        {
+          "name": "trade_terms_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "purchase_subscription_token",
       "docs": [
-        "Allow a user to purchase subscription tokens at a fixed SOL price.",
-        "The users need 1000 tokens for a subscription to work, so they need to pay 10 SOL total"
+        "Allow a user to purchase subscription tokens at a fixed SOL price."
       ],
       "discriminator": [
         252,
@@ -365,6 +661,9 @@
           "writable": true
         },
         {
+          "name": "oracle_state"
+        },
+        {
           "name": "token_treasury_vault",
           "writable": true
         },
@@ -386,6 +685,118 @@
         {
           "name": "amount_of_tokens",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settle_trade",
+      "discriminator": [
+        252,
+        176,
+        98,
+        248,
+        73,
+        123,
+        8,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_scores_merkle_roots"
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "winner_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixture_summary",
+          "type": {
+            "defined": {
+              "name": "ScoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixture_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "main_tree_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "predicate",
+          "type": {
+            "defined": {
+              "name": "TraderPredicate"
+            }
+          }
+        },
+        {
+          "name": "stat_a",
+          "type": {
+            "defined": {
+              "name": "StatTerm"
+            }
+          }
+        },
+        {
+          "name": "stat_b",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "StatTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "op",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "BinaryExpression"
+              }
+            }
+          }
         }
       ]
     },
@@ -441,8 +852,7 @@
     {
       "name": "subscribe",
       "docs": [
-        "Subscribe to the service by paying in SOL.",
-        "This verifies the user's stake and locks it for the subscription duration."
+        "Subscribe to the service by locking the staked tokens for the subscription duration."
       ],
       "discriminator": [
         254,
@@ -464,8 +874,7 @@
           "name": "oracle_state"
         },
         {
-          "name": "recipient",
-          "writable": true
+          "name": "token_mint"
         },
         {
           "name": "stake_account",
@@ -473,9 +882,59 @@
         },
         {
           "name": "stake_vault"
+        }
+      ],
+      "args": [
+        {
+          "name": "encrypted_payload",
+          "type": "bytes"
+        },
+        {
+          "name": "end_ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "subscribe_with_token",
+      "docs": [
+        "Subscribe to the service by paying in Tx tokens."
+      ],
+      "discriminator": [
+        184,
+        57,
+        19,
+        15,
+        241,
+        194,
+        240,
+        220
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "oracle_state"
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
         },
         {
           "name": "system_program"
+        },
+        {
+          "name": "token_program"
         }
       ],
       "args": [
@@ -505,6 +964,9 @@
           "name": "user",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "token_mint"
         },
         {
           "name": "stake_account",
@@ -538,7 +1000,10 @@
       ],
       "accounts": [
         {
-          "name": "fixture_merkle_root"
+          "name": "ten_daily_fixtures_roots",
+          "docs": [
+            "The address is constrained by seeds, ensuring we load the correct PDA."
+          ]
         }
       ],
       "args": [
@@ -584,9 +1049,7 @@
       "name": "validate_fixture_batch",
       "docs": [
         "Verify that a given BatchMetadata object is a valid leaf in the",
-        "main fixture Merkle tree for a specific hourly batch.",
-        "",
-        "This can be used for high-level, *trustless* auditing of batch statistics."
+        "main fixture Merkle tree for a specific hourly batch using the v2 account structure."
       ],
       "discriminator": [
         85,
@@ -600,16 +1063,15 @@
       ],
       "accounts": [
         {
-          "name": "fixture_merkle_root"
+          "name": "ten_daily_fixtures_roots",
+          "docs": [
+            "The address is constrained by seeds, ensuring we load the correct PDA."
+          ]
         }
       ],
       "args": [
         {
-          "name": "_epoch_day",
-          "type": "u16"
-        },
-        {
-          "name": "_hour_of_day",
+          "name": "index",
           "type": "u8"
         },
         {
@@ -697,20 +1159,16 @@
       ]
     },
     {
-      "name": "validate_score_stat_with_predicate",
-      "docs": [
-        "Validate a single key stat from a status event against the on-chain Merkle root,",
-        "and then check it against a trader-submitted predicate."
-      ],
+      "name": "validate_stat",
       "discriminator": [
-        249,
-        52,
-        229,
-        255,
-        86,
-        121,
-        6,
-        93
+        107,
+        197,
+        232,
+        90,
+        191,
+        136,
+        105,
+        185
       ],
       "accounts": [
         {
@@ -721,41 +1179,6 @@
         {
           "name": "ts",
           "type": "i64"
-        },
-        {
-          "name": "stat_to_prove",
-          "type": {
-            "defined": {
-              "name": "ScoreStat"
-            }
-          }
-        },
-        {
-          "name": "predicate",
-          "type": {
-            "defined": {
-              "name": "TraderPredicate"
-            }
-          }
-        },
-        {
-          "name": "stat_proof",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "ProofNode"
-              }
-            }
-          }
-        },
-        {
-          "name": "event_stats_sub_tree_root",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
         },
         {
           "name": "fixture_summary",
@@ -784,24 +1207,95 @@
               }
             }
           }
+        },
+        {
+          "name": "predicate",
+          "type": {
+            "defined": {
+              "name": "TraderPredicate"
+            }
+          }
+        },
+        {
+          "name": "stat_a",
+          "type": {
+            "defined": {
+              "name": "StatTerm"
+            }
+          }
+        },
+        {
+          "name": "stat_b",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "StatTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "op",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "BinaryExpression"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "withdraw",
+      "docs": [
+        "Withdraw tokens and can optionally close the vault accounts to reclaim rent."
+      ],
+      "discriminator": [
+        183,
+        18,
+        70,
+        156,
+        148,
+        109,
+        161,
+        34
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trading_vault_account",
+          "writable": true
+        },
+        {
+          "name": "trading_vault_tokens",
+          "writable": true
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "close_vault",
+          "type": "bool"
         }
       ]
     }
   ],
   "accounts": [
-    {
-      "name": "FixtureMerkleRoot",
-      "discriminator": [
-        72,
-        96,
-        162,
-        32,
-        15,
-        167,
-        9,
-        88
-      ]
-    },
     {
       "name": "OracleState",
       "discriminator": [
@@ -816,6 +1310,19 @@
       ]
     },
     {
+      "name": "Order",
+      "discriminator": [
+        134,
+        173,
+        223,
+        185,
+        77,
+        86,
+        28,
+        51
+      ]
+    },
+    {
       "name": "StakeAccount",
       "discriminator": [
         80,
@@ -826,6 +1333,32 @@
         189,
         192,
         255
+      ]
+    },
+    {
+      "name": "TradeEscrow",
+      "discriminator": [
+        251,
+        124,
+        237,
+        23,
+        18,
+        126,
+        198,
+        49
+      ]
+    },
+    {
+      "name": "TradingVaultAccount",
+      "discriminator": [
+        118,
+        151,
+        34,
+        226,
+        174,
+        188,
+        242,
+        188
       ]
     }
   ],
@@ -949,6 +1482,86 @@
       "code": 6023,
       "name": "InvalidStatProof",
       "msg": "Invalid stats proof for event"
+    },
+    {
+      "code": 6024,
+      "name": "InvalidStatCombination",
+      "msg": "invalid stat combination"
+    },
+    {
+      "code": 6025,
+      "name": "MissingSecondStat",
+      "msg": "Missing second stat"
+    },
+    {
+      "code": 6026,
+      "name": "UnexpectedSecondStat",
+      "msg": "Unexpected second stat"
+    },
+    {
+      "code": 6027,
+      "name": "Overflow",
+      "msg": "Overflow"
+    },
+    {
+      "code": 6028,
+      "name": "TradeNotActive",
+      "msg": "Trade not active"
+    },
+    {
+      "code": 6029,
+      "name": "InvalidTrader",
+      "msg": "Invalid trader"
+    },
+    {
+      "code": 6030,
+      "name": "WinnerMismatch",
+      "msg": "Winner mismatch"
+    },
+    {
+      "code": 6031,
+      "name": "TradeTermsMismatch",
+      "msg": "Trade terms mismatch"
+    },
+    {
+      "code": 6032,
+      "name": "UnauthorizedSettler",
+      "msg": "Unauthorized settler"
+    },
+    {
+      "code": 6033,
+      "name": "FundsBelowMinimumDeposit",
+      "msg": "Funds below minimal deposit amount"
+    },
+    {
+      "code": 6034,
+      "name": "InsufficientUserBalance",
+      "msg": "Insufficient token balance"
+    },
+    {
+      "code": 6035,
+      "name": "ZeroAmount",
+      "msg": "Cannot withdraw zero amount"
+    },
+    {
+      "code": 6036,
+      "name": "VaultNotEmpty",
+      "msg": "Vault not empty"
+    },
+    {
+      "code": 6037,
+      "name": "InsufficientVaultBalance",
+      "msg": "Insufficient vault balance"
+    },
+    {
+      "code": 6038,
+      "name": "CalculationError",
+      "msg": "Calculation error"
+    },
+    {
+      "code": 6039,
+      "name": "InvalidSubscriptionTs",
+      "msg": "Subscription end Ts invalid"
     }
   ],
   "types": [
@@ -972,6 +1585,20 @@
           {
             "name": "overall_batch_end_ts",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BinaryExpression",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Add"
+          },
+          {
+            "name": "Subtract"
           }
         ]
       }
@@ -1078,35 +1705,6 @@
                 32
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "FixtureMerkleRoot",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "epoch_day",
-            "type": "u16"
-          },
-          {
-            "name": "hour_of_day",
-            "type": "u8"
-          },
-          {
-            "name": "merkle_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
           }
         ]
       }
@@ -1267,6 +1865,72 @@
       }
     },
     {
+      "name": "Order",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "order_id",
+            "type": "u64"
+          },
+          {
+            "name": "stake",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_stake",
+            "type": "u64"
+          },
+          {
+            "name": "odds",
+            "type": "u16"
+          },
+          {
+            "name": "trade_terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "OrderState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Open"
+          },
+          {
+            "name": "Filled"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
       "name": "ProofNode",
       "type": {
         "kind": "struct",
@@ -1302,6 +1966,10 @@
           },
           {
             "name": "value",
+            "type": "i32"
+          },
+          {
+            "name": "period",
             "type": "i32"
           }
         ]
@@ -1372,6 +2040,111 @@
           {
             "name": "unlock_ts",
             "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatTerm",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat_to_prove",
+            "type": {
+              "defined": {
+                "name": "ScoreStat"
+              }
+            }
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "stat_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradeEscrow",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_id",
+            "type": "u64"
+          },
+          {
+            "name": "trader_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "trader_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_a",
+            "type": "u64"
+          },
+          {
+            "name": "stake_b",
+            "type": "u64"
+          },
+          {
+            "name": "trade_terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "TradeState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradeState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Resolved"
+          },
+          {
+            "name": "Disputed"
           }
         ]
       }
@@ -1392,6 +2165,22 @@
                 "name": "Comparison"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradingVaultAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }

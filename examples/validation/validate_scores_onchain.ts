@@ -18,6 +18,7 @@ import {
   TOKEN_MINT,
   TxOracleIDL,
 } from "../../config";
+import { handleSubscription } from "../../utils/subscription";
 
 async function main() {
   console.log("Starting scores on-chain validation example");
@@ -58,11 +59,6 @@ async function main() {
     program.programId
   );
 
-  const [tokenTreasuryVaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury")],
-    program.programId
-  );
-
   let apiToken: string = "";
 
   console.log("Creating subscription...");
@@ -78,19 +74,13 @@ async function main() {
     authTag,
   ]);
 
-  const txSignature = await program.methods
-    .subscribeWithToken(finalPayload)
-    .accounts({
-      user: userKeypair.publicKey,
-      tokenMint: TOKEN_MINT,
-      oracleState: oracleStatePda,
-      tokenTreasuryVault: tokenTreasuryVaultPda,
-      userTokenAccount: userTokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .signers([userKeypair])
-    .rpc();
+  const txSignature = await handleSubscription(
+    program,
+    userKeypair,
+    userTokenAccount,
+    TOKEN_MINT,
+    finalPayload
+  );
 
   const activationUrl = `${BASE_URL}/api/token/activate?txsig=${txSignature}&key=${symmetricKey.toString(
     "base64url"
