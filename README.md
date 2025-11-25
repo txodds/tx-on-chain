@@ -311,7 +311,7 @@ This is an example to help with understanding these two time periods.
 ### Example
 
 Prediction might concern the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
-The **claim period** could be set to end of Q2, that is what is known in the TxODDS scores product as HT--the hal-time break in the game.
+The **claim period** could be set to end of Q2, that is what is known in the TxODDS scores product as HT--the half-time break in the game.
 
 Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjusted to become H1 and then the nature of the prediction changes accordingly.
 
