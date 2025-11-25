@@ -301,21 +301,21 @@ Trading is based on predictions of what one or two stats will be in a given phas
 
 Importantly, there are two time periods involved:
 
-1. **Game phase**: the phase of the game where an event that matches the prediction will happen.
+1. **Claim period**: the phase of the game where an event that matches the prediction will happen.
 2. **Stat period**: the phase of the game for which the respective stats are computed.
 
-A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
+A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
 
 This is an example to help with understanding these two time periods.
 
 ### Example
 
 Prediction might concern the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
-The **game phase** could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.
+The **claim period** could be set to end of Q2, that is what is known in the TxODDS scores product as Q2B--the break in the game after Quarter 2.
 
 Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjust to become H1 and then the nature of the prediction changes accordingly.
 
-There is a further important question: what is the difference between a prediction for the **game phase** Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **game phase** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the prediction condition. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
+There is a further important question: what is the difference between a prediction for the **claim period** Q2 and Q2B? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for Q2B, the stats will correspond to the Q2 result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **claim period** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the full set of prediction conditions. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
 
 ## Game phase encoding for US Football
 
