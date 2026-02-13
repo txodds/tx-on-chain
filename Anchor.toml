@@ -17,4 +17,5 @@ wallet = "~/.config/solana/id.json"
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
 purchase_tokens = "yarn run ts-node examples/subscription/purchase_tokens.ts"
+sell_tokens = "yarn run ts-node examples/subscription/sell_tokens.ts"
 usdt_faucet = "yarn run ts-node examples/subscription/fake_usdt_faucet.ts"
