@@ -1,48 +1,32 @@
 import axios from "axios";
 import * as anchor from "@coral-xyz/anchor";
+import { ComputeBudgetProgram, PublicKey, SystemProgram } from "@solana/web3.js";
+import { BN, Program, AnchorProvider } from "@coral-xyz/anchor";
 import {
-  ComputeBudgetProgram,
-  Connection,
-  Keypair,
-  PublicKey,
-} from "@solana/web3.js";
-import { BN } from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import fs from "fs";
+  TOKEN_2022_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { randomBytes, createCipheriv } from "crypto";
-import {
-  KEYPAIR_PATH,
-  RPC_ENDPOINT,
-  BASE_URL,
-  TxOracleIDL,
-  AUTHORITY_PK,
-  TOKEN_MINT,
-} from "../../config";
-import { handleSubscription } from "../../utils/subscription";
+import { Txoracle } from "../../types/txoracle";
+import idl from "../../idl/txoracle.json";
+
+const SUBSCRIPTION_TOKEN_MINT = new PublicKey(
+  idl.constants.find((c) => c.name === "TXLINE_MINT")!.value as string
+);
 
 async function main() {
   console.log("Starting fixture on-chain validation example");
 
-  const userKeypair = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync(KEYPAIR_PATH, "utf8")))
-  );
-
-  const connection = new Connection(RPC_ENDPOINT, "confirmed");
-
-  const PROGRAM_ID = new PublicKey(TxOracleIDL.address);
-
-  const provider = new anchor.AnchorProvider(
-    connection,
-    new anchor.Wallet(userKeypair),
-    { commitment: "confirmed" }
-  );
-
-  const program = new anchor.Program(TxOracleIDL, provider);
+  const provider = AnchorProvider.env();
+  anchor.setProvider(provider);
+  const program = new Program<Txoracle>(idl as Txoracle, provider);
 
   const httpClient = axios.create({
     timeout: 30000,
     headers: { "Content-Type": "application/json" },
-    baseURL: BASE_URL,
+    baseURL: "https://oracle-dev.txodds.com",
   });
 
   console.log("Authenticating...");
@@ -51,17 +35,16 @@ async function main() {
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    userKeypair,
-    TOKEN_MINT,
-    userKeypair.publicKey
+    provider.connection,
+    provider.wallet.payer as any,
+    SUBSCRIPTION_TOKEN_MINT,
+    provider.wallet.publicKey,
+    false,
+    "confirmed",
+    undefined,
+    TOKEN_2022_PROGRAM_ID
   );
   console.log("User Token Account:", userTokenAccount.address.toBase58());
-
-  const [oracleStatePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("oracle_state")],
-    PROGRAM_ID
-  );
 
   let apiToken: string = "";
 
@@ -78,43 +61,44 @@ async function main() {
     authTag,
   ]);
 
-  const txSignature = await handleSubscription(
-    program,
-    userKeypair,
-    userTokenAccount,
-    TOKEN_MINT,
-    finalPayload
+  const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("pricing_matrix")],
+    program.programId
   );
 
-  const activationUrl = `${BASE_URL}/api/token/activate?txsig=${txSignature}&key=${symmetricKey.toString(
-    "base64url"
-  )}&iv=${iv.toString("base64url")}`;
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury_v2")],
+    program.programId
+  );
 
-  const maxRetries = 3;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const activationResponse = await axios.get(activationUrl, {
-        headers: { Authorization: `Bearer ${jwtToken}` },
-        timeout: 15000,
-      });
-      apiToken = activationResponse.data;
+  const tokenTreasuryVault = getAssociatedTokenAddressSync(
+    SUBSCRIPTION_TOKEN_MINT,
+    tokenTreasuryPda,
+    true,
+    TOKEN_2022_PROGRAM_ID
+  );
 
-      if (!apiToken) {
-        throw new Error("No API token received");
-      }
+  const txSignature = await program.methods
+    .subscribeWithToken(1, 1, finalPayload)
+    .accounts({
+      user: provider.wallet.publicKey,
+      pricingMatrix: pricingMatrixPda,
+      tokenMint: SUBSCRIPTION_TOKEN_MINT,
+      userTokenAccount: userTokenAccount.address,
+      tokenTreasuryVault,
+      tokenTreasuryPda,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
 
-      console.log("API token received");
-      break;
-    } catch (error) {
-      console.log(`Activation attempt ${attempt} failed`);
-
-      if (attempt === maxRetries) {
-        throw new Error("Failed to activate subscription after all attempts");
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-  }
+  const activationResponse = await axios.get(
+    `https://oracle-dev.txodds.com/api/token/activate?txsig=${txSignature}&key=${symmetricKey.toString("base64url")}&iv=${iv.toString("base64url")}`,
+    { headers: { Authorization: `Bearer ${jwtToken}` } }
+  );
+  apiToken = activationResponse.data.token || activationResponse.data;
+  console.log("API token received");
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
@@ -141,10 +125,10 @@ async function main() {
       Buffer.from("ten_daily_fixtures_roots"),
       new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2),
     ],
-    PROGRAM_ID
+    program.programId
   );
 
-  const merkleRootAccountInfo = await connection.getAccountInfo(
+  const merkleRootAccountInfo = await provider.connection.getAccountInfo(
     tenDailyFixturesRootsPda
   );
   if (!merkleRootAccountInfo) {
@@ -211,7 +195,6 @@ async function main() {
         units: 10000000,
       }),
     ])
-    .signers([userKeypair])
     .rpc();
 
   console.log(`Transaction signature: ${signature}`);
