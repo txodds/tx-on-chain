@@ -1,0 +1,33 @@
+{
+  "name": "TxLINE utility token",
+  "symbol": "TXLINE",
+  "description": "Utility token for platform subscriptions and trading.",
+  "image": "https://txodds.net/wp-content/uploads/2025/11/690a3622a0726_tx-line.png",
+  "external_url": "https://txodds.net",
+  "attributes": [
+    {
+      "trait_type": "decimals",
+      "value": "6"
+    },
+    {
+      "trait_type": "token standard",
+      "value": "spl token"
+    },
+    {
+      "trait_type": "price per unit",
+      "value": "0.001 usdt"
+    },
+    {
+      "trait_type": "use cases",
+      "value": "data subscriptions, trading"
+    },
+    {
+      "trait_type": "blockchain",
+      "value": "solana"
+    },
+    {
+      "trait_type": "supply type",
+      "value": "tethered to usdt"
+    }
+  ]
+}
