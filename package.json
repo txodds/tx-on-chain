@@ -30,7 +30,7 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "@types/node": "^24.3.1",
+    "@types/node": "^25.2.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

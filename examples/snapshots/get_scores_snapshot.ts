@@ -1,39 +1,34 @@
 import axios from "axios";
 import * as anchor from "@coral-xyz/anchor";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
-import { Program, AnchorProvider, Wallet } from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID, getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
-import fs from "fs";
-import { randomBytes, createCipheriv } from "crypto";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import {
-  AUTHORITY_PK,
-  BASE_URL,
-  KEYPAIR_PATH,
-  RPC_ENDPOINT,
-  TOKEN_MINT,
-  TxOracleIDL,
-} from "../../config";
-import { handleSubscription } from "../../utils/subscription";
+  TOKEN_2022_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import { randomBytes, createCipheriv } from "crypto";
+import { Txoracle } from "../../types/txoracle";
+import idl from "../../idl/txoracle.json";
+
+const SUBSCRIPTION_TOKEN_MINT = new PublicKey(
+  idl.constants.find((c) => c.name === "TXLINE_MINT")!.value as string
+);
+
+const SELECTED_LEAGUES = [500005];
 
 async function main() {
   console.log("Starting scores snapshot example");
 
-  const userKeypair = Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(fs.readFileSync(KEYPAIR_PATH, "utf8")))
-  );
-
-  const connection = new Connection(RPC_ENDPOINT, "confirmed");
-  const wallet = new Wallet(userKeypair);
-  const provider = new AnchorProvider(connection, wallet, {
-    commitment: "confirmed",
-  });
+  const provider = AnchorProvider.env();
   anchor.setProvider(provider);
-  const program = new anchor.Program(TxOracleIDL, provider);
+  const program = new Program<Txoracle>(idl as Txoracle, provider);
 
   const httpClient = axios.create({
     timeout: 30000,
     headers: { "Content-Type": "application/json" },
-    baseURL: BASE_URL,
+    baseURL: "https://oracle-dev.txodds.com",
   });
 
   console.log("Authenticating...");
@@ -42,17 +37,16 @@ async function main() {
   httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
 
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    userKeypair,
-    TOKEN_MINT,
-    userKeypair.publicKey
+    provider.connection,
+    provider.wallet.payer as any,
+    SUBSCRIPTION_TOKEN_MINT,
+    provider.wallet.publicKey,
+    false,
+    "confirmed",
+    undefined,
+    TOKEN_2022_PROGRAM_ID
   );
   console.log("User Token Account:", userTokenAccount.address.toBase58());
-
-  const [oracleStatePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("oracle_state")],
-    program.programId
-  );
 
   let apiToken: string = "";
 
@@ -69,79 +63,57 @@ async function main() {
     authTag,
   ]);
 
-  const txSignature = await handleSubscription(
-    program,
-    userKeypair,
-    userTokenAccount,
-    TOKEN_MINT,
-    finalPayload
+  const keyStr = symmetricKey.toString("base64url");
+  const ivStr = iv.toString("base64url");
+
+  const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("pricing_matrix")],
+    program.programId
   );
 
-  const activationUrl = `${BASE_URL}/api/token/activate?txsig=${txSignature}&key=${symmetricKey.toString(
-    "base64url"
-  )}&iv=${iv.toString("base64url")}`;
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury_v2")],
+    program.programId
+  );
 
-  const maxRetries = 3;
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const activationResponse = await axios.get(activationUrl, {
-        headers: { Authorization: `Bearer ${jwtToken}` },
-        timeout: 15000,
-      });
-      apiToken = activationResponse.data;
+  const tokenTreasuryVault = getAssociatedTokenAddressSync(
+    SUBSCRIPTION_TOKEN_MINT,
+    tokenTreasuryPda,
+    true,
+    TOKEN_2022_PROGRAM_ID
+  );
 
-      if (!apiToken) {
-        throw new Error("No API token received");
-      }
+  const txSignature = await program.methods
+    .subscribeWithToken(3, 1, finalPayload)
+    .accounts({
+      user: provider.wallet.publicKey,
+      pricingMatrix: pricingMatrixPda,
+      tokenMint: SUBSCRIPTION_TOKEN_MINT,
+      userTokenAccount: userTokenAccount.address,
+      tokenTreasuryVault,
+      tokenTreasuryPda,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    })
+    .rpc();
 
-      console.log("API token received");
-      break;
-    } catch (error) {
-      console.log(`Activation attempt ${attempt} failed`);
-
-      if (attempt === maxRetries) {
-        throw new Error("Failed to activate subscription after all attempts");
-      }
-
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-    }
-  }
+  const activationResponse = await axios.post(
+    `https://oracle-dev.txodds.com/api/token/activate?txsig=${txSignature}&key=${keyStr}&iv=${ivStr}`,
+    { leagues: SELECTED_LEAGUES },
+    { headers: { Authorization: `Bearer ${jwtToken}` } }
+  );
+  apiToken = activationResponse.data.token || activationResponse.data;
+  console.log("API token received");
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
-  const today = new Date();
-  const daysSinceSaturday = (today.getDay() + 1) % 7;
-  const lastSaturday = new Date(today);
-  lastSaturday.setDate(today.getDate() - daysSinceSaturday);
-  lastSaturday.setHours(15, 0, 0, 0);
-  const epochDay = Math.floor(lastSaturday.getTime() / (24 * 60 * 60 * 1000));
+  const fixtureId = 17271370;
 
-  console.log(
-    `Last Saturday: ${lastSaturday.toDateString()} (epochDay: ${epochDay})`
-  );
-
-  const fixturesResponse = await httpClient.get("/api/fixtures/snapshot", {
-    params: {
-      competitionId: 500005,
-      startEpochDay: epochDay,
-    },
-  });
-  const fixtures = fixturesResponse.data;
-
-  console.log(`Found ${fixtures.length} fixtures for NCAA Division I FBS`);
-
-  if (!fixtures || fixtures.length === 0) {
-    throw new Error("No fixtures found for NCAA Division I FBS");
-  }
-
-  const fixture = fixtures[0];
-
-  console.log(
-    `Using fixture ${fixture.FixtureId}: ${fixture.Participant1} vs ${fixture.Participant2}`
-  );
+  console.log(`Using fixture ${fixtureId}`);
 
   const snapshotScoresResponse = await httpClient.get(
-    `/api/scores/snapshot/${fixture.FixtureId}`
+    `/api/scores/snapshot/${fixtureId}`
   );
   const snapshotScores = snapshotScoresResponse.data;
 
@@ -150,12 +122,10 @@ async function main() {
     console.log("Sample snapshot scores entry:", snapshotScores[0]);
   }
 
-  console.log(
-    `Getting live scores updates for fixture ${fixture.FixtureId}...`
-  );
+  console.log(`Getting live scores updates for fixture ${fixtureId}...`);
   try {
     const liveScoresResponse = await httpClient.get(
-      `/api/scores/updates/${fixture.FixtureId}`
+      `/api/scores/updates/${fixtureId}`
     );
     const liveScores = liveScoresResponse.data;
 
@@ -164,14 +134,13 @@ async function main() {
       console.log("Latest scores update:", liveScores[0]);
     }
   } catch (error) {
-    console.log(
-      `No live scores updates available for fixture ${fixture.FixtureId}`
-    );
+    console.log(`No live scores updates available for fixture ${fixtureId}`);
   }
 
   try {
-    const hourOfDay = lastSaturday.getHours();
-    const interval = Math.floor(lastSaturday.getMinutes() / 5);
+    const epochDay = 20085;
+    const hourOfDay = 15;
+    const interval = 0;
 
     console.log(
       `Getting scores updates for time period (epochDay: ${epochDay}, hour: ${hourOfDay}, interval: ${interval})...`

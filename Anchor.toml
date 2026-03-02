@@ -1,0 +1,30 @@
+[toolchain]
+
+[features]
+seeds = false
+skip-lint = false
+
+[programs.devnet]
+txoracle = "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+usdt_faucet = "yarn run ts-node examples/subscription/fake_usdt_faucet.ts"
+purchase_tokens = "yarn run ts-node examples/subscription/purchase_tokens.ts"
+sell_tokens = "yarn run ts-node examples/subscription/sell_tokens.ts"
+subscribe = "yarn run ts-node examples/subscription/subscribe.ts"
+subscribe_custom = "yarn run ts-node examples/subscription/subscribe_custom.ts"
+stream_odds = "yarn run ts-node examples/streaming/stream_odds.ts"
+stream_scores = "yarn run ts-node examples/streaming/stream_scores.ts"
+get_fixtures_snapshot = "yarn run ts-node examples/snapshots/get_fixtures_snapshot.ts"
+get_odds_snapshot = "yarn run ts-node examples/snapshots/get_odds_snapshot.ts"
+get_scores_snapshot = "yarn run ts-node examples/snapshots/get_scores_snapshot.ts"
+validate_fixtures_onchain = "yarn run ts-node examples/data_validation/validate_fixtures_onchain.ts"
+validate_odds_onchain = "yarn run ts-node examples/data_validation/validate_odds_onchain.ts"
+validate_scores_onchain = "yarn run ts-node examples/data_validation/validate_scores_onchain.ts"

@@ -9,7 +9,8 @@
     "outDir": "./dist",
     "rootDir": "./",
     "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./types"]
+    "typeRoots": ["./node_modules/@types", "./types"],
+    "types": ["node"]
   },
   "include": ["app/**/*", "types/**/*"],
   "exclude": ["node_modules"]
