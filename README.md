@@ -148,7 +148,7 @@ The following diagram shows how the users typically access data from purchasing 
 
 ### 1. Purchase Tokens
 
-Before accessing the oracle services, you must purchase TxOracle tokens. See `purchase_tokens.ts` for the complete implementation of token purchasing.
+Before accessing the oracle services, you must purchase TxOracle tokens. See `examples/subscription/purchase_tokens.ts` for the complete implementation of token purchasing.
 
 ### 2. Access Off-Chain API
 
@@ -175,29 +175,32 @@ With staked tokens, you can access the off-chain API services through the follow
    npm install
    ```
 
-2. **Configure Settings**
-   Edit `./config.ts` to set up your environment:
-   ```typescript
-   // Set to true for devnet, false for mainnet
-   export const IS_DEVNET = true;
-
-   // Path to your Solana wallet keypair file
-   export const KEYPAIR_PATH = './path/to/your/keypair.json';
-   ```
-
 ### Running examples
 
 All example scripts are located in the `./examples/` directory and can be executed using ts-node:
 
 ```bash
 # Purchase tokens
-npx ts-node ./examples/tokens/purchase_tokens.ts
+ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/tokens/purchase_tokens.ts
 
 # Run an example script.
 # Note: Some examples contain Id's that can be modified within the file
-npx ts-node ./examples/streaming/stream_odds.ts
-npx ts-node ./examples/snapshots/get_odds_snapshot.ts
-npx ts-node ./examples/validation/validate_odd_onchain.ts
+ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/streaming/stream_odds.ts
+ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/snapshots/get_odds_snapshot.ts
+ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/validation/validate_odd_onchain.ts
+```
+
+OR 
+
+```bash
+# Purchase tokens
+anchor run purchase_tokens
+
+# Run an example script.
+# Note: Some examples contain Id's that can be modified within the file
+anchor run stream_odds
+anchor run get_odds_snapshot
+anchor run validate_odds_onchain
 ```
 
 ## Available Examples
