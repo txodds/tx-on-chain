@@ -1,0 +1,28 @@
+name: Deploy docs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        # Install the required mkdocs material theme
+        run: pip install mkdocs-material
+
+      - name: Deploy to github pages
+        # Build and push the documentation to the gh-pages branch
+        run: mkdocs gh-deploy --force
