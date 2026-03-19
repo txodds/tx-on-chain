@@ -8,7 +8,7 @@ export type Txoracle = {
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.3.1",
+    "version": "1.4.1",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE and Data Channels"
   },
@@ -1335,6 +1335,117 @@ export type Txoracle = {
       ]
     },
     {
+      "name": "subscribe",
+      "discriminator": [
+        254,
+        28,
+        191,
+        138,
+        156,
+        179,
+        183,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pricingMatrix"
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "userTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenTreasuryVault",
+          "writable": true
+        },
+        {
+          "name": "tokenTreasuryPda",
+          "docs": [
+            "Hold the PDA that owns the vault"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "serviceLevelId",
+          "type": "u16"
+        },
+        {
+          "name": "weeks",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "subscribeV2",
+      "discriminator": [
+        13,
+        248,
+        232,
+        63,
+        182,
+        236,
+        71,
+        149
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "userTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenTreasuryVault",
+          "writable": true
+        },
+        {
+          "name": "tokenTreasuryPda",
+          "docs": [
+            "Hold the PDA that owns the vault"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "weeks",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "subscribeWithToken",
       "discriminator": [
         184,
@@ -1737,6 +1848,55 @@ export type Txoracle = {
               }
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "withdrawUsdt",
+      "discriminator": [
+        117,
+        75,
+        94,
+        162,
+        178,
+        92,
+        19,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "adminDestination",
+          "writable": true
+        },
+        {
+          "name": "usdtTreasuryVault",
+          "writable": true
+        },
+        {
+          "name": "usdtTreasuryPda"
+        },
+        {
+          "name": "usdtMint"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
         }
       ]
     }
@@ -2201,6 +2361,21 @@ export type Txoracle = {
       "code": 6059,
       "name": "initialRowsLimitExceeded",
       "msg": "Initial rows limit exceeded"
+    },
+    {
+      "code": 6060,
+      "name": "missingStat",
+      "msg": "Missing stat"
+    },
+    {
+      "code": 6061,
+      "name": "proofTooLarge",
+      "msg": "Proof too large"
+    },
+    {
+      "code": 6062,
+      "name": "tradeTooSmall",
+      "msg": "Trade too small"
     }
   ],
   "types": [

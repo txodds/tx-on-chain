@@ -2,7 +2,7 @@
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.3.1",
+    "version": "1.4.1",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE and Data Channels"
   },
@@ -1329,6 +1329,117 @@
       ]
     },
     {
+      "name": "subscribe",
+      "discriminator": [
+        254,
+        28,
+        191,
+        138,
+        156,
+        179,
+        183,
+        53
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "pricing_matrix"
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_pda",
+          "docs": [
+            "Hold the PDA that owns the vault"
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "associated_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "service_level_id",
+          "type": "u16"
+        },
+        {
+          "name": "weeks",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "subscribe_v2",
+      "discriminator": [
+        13,
+        248,
+        232,
+        63,
+        182,
+        236,
+        71,
+        149
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_pda",
+          "docs": [
+            "Hold the PDA that owns the vault"
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "associated_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "weeks",
+          "type": "u8"
+        }
+      ]
+    },
+    {
       "name": "subscribe_with_token",
       "discriminator": [
         184,
@@ -1731,6 +1842,55 @@
               }
             }
           }
+        }
+      ]
+    },
+    {
+      "name": "withdraw_usdt",
+      "discriminator": [
+        117,
+        75,
+        94,
+        162,
+        178,
+        92,
+        19,
+        141
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "admin_destination",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_pda"
+        },
+        {
+          "name": "usdt_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
         }
       ]
     }
@@ -2195,6 +2355,21 @@
       "code": 6059,
       "name": "InitialRowsLimitExceeded",
       "msg": "Initial rows limit exceeded"
+    },
+    {
+      "code": 6060,
+      "name": "MissingStat",
+      "msg": "Missing stat"
+    },
+    {
+      "code": 6061,
+      "name": "ProofTooLarge",
+      "msg": "Proof too large"
+    },
+    {
+      "code": 6062,
+      "name": "TradeTooSmall",
+      "msg": "Trade too small"
     }
   ],
   "types": [

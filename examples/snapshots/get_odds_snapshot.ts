@@ -8,7 +8,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { randomBytes, createCipheriv } from "crypto";
+import * as nacl from "tweetnacl";
 import { Txoracle } from "../../types/txoracle";
 import idl from "../../idl/txoracle.json";
 
@@ -19,7 +19,7 @@ const SUBSCRIPTION_TOKEN_MINT = new PublicKey(
 const SELECTED_LEAGUES = [500005];
 
 async function main() {
-  console.log("Starting odds snapshot example");
+  console.log("Initializing odds snapshot example");
 
   const provider = AnchorProvider.env();
   anchor.setProvider(provider);
@@ -31,10 +31,10 @@ async function main() {
     baseURL: "https://oracle-dev.txodds.com",
   });
 
-  console.log("Authenticating...");
+  console.log("\nAuthenticating with guest token");
   const authResponse = await httpClient.post("/auth/guest/start");
-  const jwtToken = authResponse.data.token;
-  httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
+  const jwt = authResponse.data.token;
+  httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwt}`;
 
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
     provider.connection,
@@ -46,25 +46,7 @@ async function main() {
     undefined,
     TOKEN_2022_PROGRAM_ID
   );
-  console.log("User Token Account:", userTokenAccount.address.toBase58());
-
-  let apiToken: string = "";
-
-  console.log("Creating subscription...");
-
-  const symmetricKey = randomBytes(32);
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-gcm", symmetricKey, iv);
-  let encryptedPayload = cipher.update(jwtToken, "utf8", "hex");
-  encryptedPayload += cipher.final("hex");
-  const authTag = cipher.getAuthTag();
-  const finalPayload = Buffer.concat([
-    Buffer.from(encryptedPayload, "hex"),
-    authTag,
-  ]);
-
-  const keyStr = symmetricKey.toString("base64url");
-  const ivStr = iv.toString("base64url");
+  console.log("User token account:", userTokenAccount.address.toBase58());
 
   const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("pricing_matrix")],
@@ -83,8 +65,9 @@ async function main() {
     TOKEN_2022_PROGRAM_ID
   );
 
-  const txSignature = await program.methods
-    .subscribeWithToken(3, 1, finalPayload)
+  console.log("\nSubscribing on-chain (service level 3, duration 1 week)");
+  const txSig = await program.methods
+    .subscribe(3, 1)
     .accounts({
       user: provider.wallet.publicKey,
       pricingMatrix: pricingMatrixPda,
@@ -98,26 +81,42 @@ async function main() {
     })
     .rpc();
 
-  const activationResponse = await axios.post(
-    `https://oracle-dev.txodds.com/api/token/activate?txsig=${txSignature}&key=${keyStr}&iv=${ivStr}`,
-    { leagues: SELECTED_LEAGUES },
-    { headers: { Authorization: `Bearer ${jwtToken}` } }
+  console.log("Transaction confirmed:", txSig);
+  console.log(
+    `Solana Explorer: https://explorer.solana.com/tx/${txSig}?cluster=devnet`
   );
-  apiToken = activationResponse.data.token || activationResponse.data;
-  console.log("API token received");
+
+  const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
+  const message = new TextEncoder().encode(messageString);
+  const signatureBytes = nacl.sign.detached(message, provider.wallet.payer!.secretKey);
+  const walletSignature = Buffer.from(signatureBytes).toString("base64");
+
+  console.log("Activating API access");
+  const activationResponse = await axios.post(
+    "https://oracle-dev.txodds.com/api/token/activate",
+    {
+      txSig,
+      walletSignature,
+      leagues: SELECTED_LEAGUES,
+    },
+    { headers: { Authorization: `Bearer ${jwt}` } }
+  );
+
+  const apiToken = activationResponse.data.token || activationResponse.data;
+  console.log("API access granted");
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
   const fixtureId = 17271370;
 
-  console.log(`Using fixture ${fixtureId}`);
+  console.log(`\nFetching odds snapshot for fixture ${fixtureId}`);
 
   const fixtureOddsResponse = await httpClient.get(
     `/api/odds/snapshot/${fixtureId}`
   );
   const fixtureOdds = fixtureOddsResponse.data;
 
-  console.log(`Found ${fixtureOdds.length} odds entries`);
+  console.log(`Retrieved ${fixtureOdds.length} odds entries`);
   if (fixtureOdds.length > 0) {
     console.log("Sample odds update:", fixtureOdds[0]);
   }
@@ -127,7 +126,7 @@ async function main() {
   const interval = 0;
 
   console.log(
-    `Getting odds updates for time period (epochDay: ${epochDay}, hour: ${hourOfDay}, interval: ${interval})...`
+    `\nFetching odds updates for time period (epochDay: ${epochDay}, hour: ${hourOfDay}, interval: ${interval})`
   );
   try {
     const updatesResponse = await httpClient.get(
@@ -135,7 +134,7 @@ async function main() {
     );
     const updates = updatesResponse.data;
 
-    console.log(`Found ${updates.length} odds updates for time period`);
+    console.log(`Retrieved ${updates.length} odds updates for time period`);
     if (updates.length > 0) {
       console.log("Sample odds update:\n", updates[0]);
     }
