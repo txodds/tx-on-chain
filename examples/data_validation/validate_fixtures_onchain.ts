@@ -8,7 +8,7 @@ import {
   getOrCreateAssociatedTokenAccount,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { randomBytes, createCipheriv } from "crypto";
+import * as nacl from "tweetnacl";
 import { Txoracle } from "../../types/txoracle";
 import idl from "../../idl/txoracle.json";
 
@@ -16,8 +16,10 @@ const SUBSCRIPTION_TOKEN_MINT = new PublicKey(
   idl.constants.find((c) => c.name === "TXLINE_MINT")!.value as string
 );
 
+const SELECTED_LEAGUES: number[] = [];
+
 async function main() {
-  console.log("Starting fixture on-chain validation example");
+  console.log("Initializing fixture on-chain validation example");
 
   const provider = AnchorProvider.env();
   anchor.setProvider(provider);
@@ -29,10 +31,10 @@ async function main() {
     baseURL: "https://oracle-dev.txodds.com",
   });
 
-  console.log("Authenticating...");
+  console.log("\nAuthenticating with guest token");
   const authResponse = await httpClient.post("/auth/guest/start");
-  const jwtToken = authResponse.data.token;
-  httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwtToken}`;
+  const jwt = authResponse.data.token;
+  httpClient.defaults.headers.common["Authorization"] = `Bearer ${jwt}`;
 
   const userTokenAccount = await getOrCreateAssociatedTokenAccount(
     provider.connection,
@@ -44,22 +46,7 @@ async function main() {
     undefined,
     TOKEN_2022_PROGRAM_ID
   );
-  console.log("User Token Account:", userTokenAccount.address.toBase58());
-
-  let apiToken: string = "";
-
-  console.log("Creating subscription...");
-
-  const symmetricKey = randomBytes(32);
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-gcm", symmetricKey, iv);
-  let encryptedPayload = cipher.update(jwtToken, "utf8", "hex");
-  encryptedPayload += cipher.final("hex");
-  const authTag = cipher.getAuthTag();
-  const finalPayload = Buffer.concat([
-    Buffer.from(encryptedPayload, "hex"),
-    authTag,
-  ]);
+  console.log("User token account:", userTokenAccount.address.toBase58());
 
   const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("pricing_matrix")],
@@ -78,8 +65,9 @@ async function main() {
     TOKEN_2022_PROGRAM_ID
   );
 
-  const txSignature = await program.methods
-    .subscribeWithToken(1, 1, finalPayload)
+  console.log("\nSubscribing on-chain (service level 1, duration 1 week)");
+  const txSig = await program.methods
+    .subscribe(1, 1)
     .accounts({
       user: provider.wallet.publicKey,
       pricingMatrix: pricingMatrixPda,
@@ -93,18 +81,35 @@ async function main() {
     })
     .rpc();
 
-  const activationResponse = await axios.get(
-    `https://oracle-dev.txodds.com/api/token/activate?txsig=${txSignature}&key=${symmetricKey.toString("base64url")}&iv=${iv.toString("base64url")}`,
-    { headers: { Authorization: `Bearer ${jwtToken}` } }
+  console.log("Transaction confirmed:", txSig);
+  console.log(
+    `Solana Explorer: https://explorer.solana.com/tx/${txSig}?cluster=devnet`
   );
-  apiToken = activationResponse.data.token || activationResponse.data;
-  console.log("API token received");
+
+  const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
+  const message = new TextEncoder().encode(messageString);
+  const signatureBytes = nacl.sign.detached(message, provider.wallet.payer!.secretKey);
+  const walletSignature = Buffer.from(signatureBytes).toString("base64");
+
+  console.log("Activating API access");
+  const activationResponse = await axios.post(
+    "https://oracle-dev.txodds.com/api/token/activate",
+    {
+      txSig,
+      walletSignature,
+      leagues: SELECTED_LEAGUES,
+    },
+    { headers: { Authorization: `Bearer ${jwt}` } }
+  );
+
+  const apiToken = activationResponse.data.token || activationResponse.data;
+  console.log("API access granted");
 
   httpClient.defaults.headers.common["X-Api-Token"] = apiToken;
 
   const fixtureId = 17271370;
 
-  console.log(`Getting fixture validation for fixture ${fixtureId}...`);
+  console.log(`\nFetching fixture validation data for fixture ${fixtureId}`);
   const validationResponse = await httpClient.get("/api/fixtures/validation", {
     params: {
       fixtureId,
@@ -112,7 +117,7 @@ async function main() {
   });
   const validation = validationResponse.data;
 
-  console.log("Fixture validation data received");
+  console.log("Validation data retrieved");
 
   const validationEpochDay = new BN(
     Math.floor(validation.snapshot.Ts / (24 * 60 * 60 * 1000))
@@ -184,7 +189,7 @@ async function main() {
     isRightSibling: node.isRightSibling,
   }));
 
-  console.log("Executing on-chain fixture validation...");
+  console.log("\nExecuting on-chain fixture validation");
   const signature = await program.methods
     .validateFixture(snapshot, summary, subTreeProof, mainTreeProof)
     .accounts({
@@ -197,7 +202,10 @@ async function main() {
     ])
     .rpc();
 
-  console.log(`Transaction signature: ${signature}`);
+  console.log("Validation transaction confirmed:", signature);
+  console.log(
+    `Solana Explorer: https://explorer.solana.com/tx/${signature}?cluster=devnet`
+  );
 }
 
 if (require.main === module) {

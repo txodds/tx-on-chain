@@ -10,18 +10,18 @@ import {
 import { Txoracle } from "../../types/txoracle";
 import idl from "../../idl/txoracle.json";
 import axios from "axios";
-import { randomBytes, createCipheriv } from "crypto";
+import * as nacl from "tweetnacl";
 
 const SUBSCRIPTION_TOKEN_MINT = new PublicKey(
   idl.constants.find((c) => c.name === "TXLINE_MINT")!.value as string
 );
 
-const SERVICE_LEVEL_ID = 3; // Change this to select service tier (row with custom league bundle)
-const DURATION_WEEKS = 1; // Subscription duration
-const SELECTED_LEAGUES = [500001]; // League IDs to subscribe to
+const SERVICE_LEVEL_ID = 3;           // Change this to select service tier (row with custom league bundle)
+const DURATION_WEEKS = 1;             // Subscription duration
+const SELECTED_LEAGUES = [500001];    // League IDs to subscribe to
 
 async function main() {
-  console.log("Starting subscription with tokens (custom leagues)");
+  console.log("Initializing subscription example with custom leagues");
 
   const provider = AnchorProvider.env();
   anchor.setProvider(provider);
@@ -40,7 +40,7 @@ async function main() {
     TOKEN_2022_PROGRAM_ID
   );
 
-  console.log("User Token Account:", userTokenAccount.address.toBase58());
+  console.log("User token account:", userTokenAccount.address.toBase58());
 
   // Set up PDAs
   const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
@@ -75,37 +75,23 @@ async function main() {
   console.table(tableData);
 
   // Get JWT token from auth service
+  console.log("\nAuthenticating with guest token");
   const authResponse = await axios.post("https://oracle-dev.txodds.com/auth/guest/start");
   const jwt = authResponse.data.token;
-  console.log(jwt);
-
-  // Encrypt JWT for on-chain storage
-  const symmetricKey = randomBytes(32);
-  const iv = randomBytes(16);
-  const cipher = createCipheriv("aes-256-gcm", symmetricKey, iv);
-  let encryptedPayload = cipher.update(jwt, "utf8", "hex");
-  encryptedPayload += cipher.final("hex");
-  const finalPayload = Buffer.concat([
-    Buffer.from(encryptedPayload, "hex"),
-    cipher.getAuthTag(),
-  ]);
-
-  const keyStr = symmetricKey.toString("base64url");
-  const ivStr = iv.toString("base64url");
 
   // Check user balance before subscription
   const balanceBefore = await provider.connection.getTokenAccountBalance(
     userTokenAccount.address
   );
-  console.log(`\nToken balance before: ${balanceBefore.value.uiAmount}`);
+  console.log(`Token balance before subscription: ${balanceBefore.value.uiAmount}`);
 
   // Subscribe on-chain
   console.log(
-    `\n=== Subscribing: Level ${SERVICE_LEVEL_ID}, Duration ${DURATION_WEEKS} weeks ===`
+    `\nSubscribing on-chain (service level ${SERVICE_LEVEL_ID}, duration ${DURATION_WEEKS} weeks)`
   );
 
   const txSig = await program.methods
-    .subscribeWithToken(SERVICE_LEVEL_ID, DURATION_WEEKS, finalPayload)
+    .subscribe(SERVICE_LEVEL_ID, DURATION_WEEKS)
     .accounts({
       user: provider.wallet.publicKey,
       pricingMatrix: pricingMatrixPda,
@@ -119,49 +105,57 @@ async function main() {
     })
     .rpc();
 
-  console.log("On-chain subscription successful!");
-  console.log("Transaction signature:", txSig);
+  console.log("Transaction confirmed:", txSig);
   console.log(
-    `View on Solana Explorer: https://explorer.solana.com/tx/${txSig}?cluster=devnet`
+    `Solana Explorer: https://explorer.solana.com/tx/${txSig}?cluster=devnet`
   );
 
   // Check balances after subscription
   const balanceAfter = await provider.connection.getTokenAccountBalance(
     userTokenAccount.address
   );
-  console.log(`Token balance after: ${balanceAfter.value.uiAmount}`);
+  console.log(`Token balance after subscription: ${balanceAfter.value.uiAmount}`);
 
   const vaultBalance = await provider.connection.getTokenAccountBalance(
     tokenTreasuryVault
   );
   console.log(`Treasury vault balance: ${vaultBalance.value.uiAmount}`);
 
-  console.log("\n=== Activating with custom league selection ===");
+  // Construct a strict message binding the payment, the intent, and the session
+  const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
+  const message = new TextEncoder().encode(messageString);
+  const signatureBytes = nacl.sign.detached(message, provider.wallet.payer!.secretKey);
+  const walletSignature = Buffer.from(signatureBytes).toString("base64");
+
+  console.log("\nActivating API access with custom league selection");
   console.log(`Selected leagues: ${SELECTED_LEAGUES.join(", ")}`);
 
   try {
     const activationResponse = await axios.post(
-      `https://oracle-dev.txodds.com/api/token/activate?txsig=${txSig}&key=${keyStr}&iv=${ivStr}`,
-      { leagues: SELECTED_LEAGUES },
+      "https://oracle-dev.txodds.com/api/token/activate",
+      {
+        txSig,
+        walletSignature,
+        leagues: SELECTED_LEAGUES,
+      },
       { headers: { Authorization: `Bearer ${jwt}` } }
     );
 
     const apiToken = activationResponse.data.token || activationResponse.data;
 
-    console.log("\n=== ✅ SUBSCRIPTION COMPLETE ===");
-    console.log("\n🔑 Your API Credentials:");
+    console.log("\nSubscription complete");
+    console.log("\nAPI Credentials:");
     console.log("─".repeat(60));
     console.log(`JWT Token:  ${jwt}`);
     console.log(`API Token:  ${apiToken}`);
     console.log("─".repeat(60));
-    console.log("\nUse these tokens to authenticate API requests.");
+    console.log("\nUse these tokens to authenticate API requests");
   } catch (error: any) {
-    console.error("\n❌ Activation failed:", error.response?.data || error.message);
-    console.log("\n⚠️  On-chain subscription succeeded but off-chain activation failed.");
-    console.log("You may need to activate manually with:");
+    console.error("\nAPI activation failed:", error.response?.data || error.message);
+    console.log("\nNote: On-chain subscription succeeded but API activation failed");
+    console.log("Manual activation parameters:");
     console.log(`  Transaction: ${txSig}`);
-    console.log(`  Key: ${keyStr}`);
-    console.log(`  IV: ${ivStr}`);
+    console.log(`  Wallet Signature: ${walletSignature}`);
     console.log(`  Leagues: ${JSON.stringify(SELECTED_LEAGUES)}`);
   }
 }
