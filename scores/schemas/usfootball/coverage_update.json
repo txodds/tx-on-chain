@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Match coverage type update.",
+  "title": "coverage_update",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "coverage_update"
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "CoverageTypeId": {
+              "type": [
+                "number"
+              ],
+              "description": "Coverage Type Id",
+              "title": "CoverageTypeId",
+              "examples": [
+                0,
+                1,
+                2
+              ]
+            },
+            "CoverageType": {
+              "type": [
+                "string"
+              ],
+              "description": "Coverage Type Name",
+              "title": "CoverageType",
+              "enum": [
+                "Call",
+                "Venue",
+                "TV/Stream"
+              ]
+            },
+            "Latency": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Latency in seconds",
+              "title": "Latency",
+              "enum": [
+                null,
+                60
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

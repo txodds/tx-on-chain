@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sent when a team makes a substitution.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "substitution",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "substitution"
+          ]
+        },
+        "ActionPlayersOnCourtDelta": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Changes to players currently on court",
+          "title": "Participant players on court",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayersOnCourt"
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Team making the substitution",
+              "title": "Participant",
+              "examples": [
+                null,
+                1,
+                2
+              ]
+            },
+            "PlayerInId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player entering the court",
+              "title": "PlayerInId",
+              "examples": [
+                null,
+                3290005,
+                5020305,
+                1290003
+              ]
+            },
+            "PlayerOutId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player being replaced",
+              "title": "PlayerOutId",
+              "examples": [
+                null,
+                3290005,
+                5020305,
+                1290003
+              ]
+            },
+            "UpdatePlayersOnCourt": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "If true, this substitution will update the list of players in court",
+              "title": "UpdatePlayersOnCourt",
+              "examples": [
+                false,
+                true,
+                null
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Participant"
+          ]
+        },
+        "PlayersOnCourt": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Players currently on court for both teams",
+          "title": "Players on Court",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayersOnCourt"
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

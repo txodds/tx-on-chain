@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sent when there is a turnover, along the reason that it happened. Can be modified via action amend.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "turnover",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "turnover"
+          ]
+        },
+        "ActionPlayerStatsDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to player statistics caused by the action. See `PlayerStats` for the current player statistics of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "ActionScoreDelta": {
+          "type": [
+            "object"
+          ],
+          "description": "Shows the change to the score caused by the action. See `Score` for the current score of the game.",
+          "title": "Action Score Delta",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "PlayerId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player that gets the turnover",
+              "title": "Player Id",
+              "examples": [
+                null,
+                1290003,
+                5020305,
+                3290005
+              ]
+            },
+            "StealId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "If the turnout is due to a steal, this has the external id of the player that stole the ball",
+              "title": "Steal Id",
+              "examples": [
+                null,
+                1290003,
+                5020305,
+                3290005
+              ]
+            },
+            "Type": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Turnover reason",
+              "title": "Type",
+              "enum": [
+                null,
+                "steal",
+                "violation",
+                "other",
+                "out_of_bounds"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Participant": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            null,
+            1,
+            2
+          ]
+        },
+        "Possession": {
+          "type": [
+            "number"
+          ],
+          "description": "Participant that has the ball. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Possession",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Possession",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

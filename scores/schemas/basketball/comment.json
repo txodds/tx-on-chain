@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "A message sent by the reporter. Contains pre-made messages or custom text.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "comment",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "comment"
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Active": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "If true, the current message information is still valid. If  false, the message is no longer valid and should be ignored.",
+              "title": "Active",
+              "examples": [
+                null,
+                false,
+                true
+              ]
+            },
+            "Severity": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Indicates how important is the comment. An `action_invalid` comment means a previous action has been discarded, but that action was too far in the past, and the state (scores) have not been adjusted. It is likely, although not mandatory, that a score adjustment may follow soon. Warnings are to be paid more attention than Info, as they may indicate issues with the game.",
+              "title": "Severity",
+              "enum": [
+                null,
+                "info",
+                "warning",
+                "action_invalid"
+              ]
+            },
+            "Text": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The message sent. Usually one of the enum below, but could be free text in some cases",
+              "title": "Text",
+              "examples": [
+                null,
+                "Action has been marked as invalid",
+                "Home Team Coach Ejected",
+                "Away Team Coach Ejected",
+                "The game stopped due to a serious injury",
+                "The game start is delayed",
+                "The game interrupted",
+                "Water-drinking break"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "Ts"
+  ]
+}
+

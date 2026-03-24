@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "A connection has been terminated. The field ConnectionType identifies the type of user that disconnected.",
+  "title": "disconnected",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "disconnected"
+          ]
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "ConnectionServerId": {
+          "type": [
+            "string"
+          ],
+          "description": "Internal Id of the server",
+          "title": "ConnectionServerId",
+          "examples": [
+            "38c32bb2-6767-40e5-bfbe-2d0f8eebbdcd",
+            "57d1f1c1-cb81-4a1d-9c77-bd4a6f58d562",
+            "5d69a54c-3298-4c9c-b9fe-a428952b3f39",
+            "922bebee-8da1-4a9e-b012-3ee21445c159",
+            "d9f2d158-1a4e-4e77-9571-7cc4f0a5f3f7"
+          ]
+        },
+        "ConnectionType": {
+          "type": [
+            "string"
+          ],
+          "description": "The type of user that closed the connection",
+          "title": "ConnectionType",
+          "examples": [
+            "analyst",
+            "reporter"
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Confirmed",
+    "ConnectionId",
+    "ConnectionServerId",
+    "ConnectionType",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "Ts"
+  ]
+}
