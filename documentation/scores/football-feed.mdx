@@ -1,0 +1,92 @@
+---
+title: "American Football Feed"
+description: "TxODDS US Football Feed documentation"
+---
+
+## Coverage
+
+As of mid-September 2025, the following US college football competitions are fully covered with detailed play-by-play information:
+
+| Competition ID | League Name          |
+|----------------|----------------------|
+| 550001         | NCAA Division I FCS  |
+| 10005930       | NCAA Extra Matches   |
+| 500005         | NCAA Division I FBS  |
+| 10005302       | NCAA Division I (W)  |
+
+## On-Chain Specifications
+
+These specifications define how football game phases and statistics are encoded for on-chain operations, including cryptographic validation and trading settlement.
+
+### Game Phase Encoding
+
+**Standard Phases:**
+
+| Name   | ID  | Description                                    |
+|--------|-----|------------------------------------------------|
+| NS     | 1   | Not started                                    |
+| Q1     | 2   | Quarter 1 in play                              |
+| Q1B    | 3   | Quarter 1 break                                |
+| Q2     | 4   | Quarter 2 in play                              |
+| HT     | 5   | Halftime                                       |
+| Q3     | 6   | Quarter 3 in play                              |
+| Q3B    | 7   | Quarter 3 break                                |
+| Q4     | 8   | Quarter 4 in play                              |
+| F      | 9   | Ended (finished)                               |
+| WO     | 10  | Waiting for Overtime                           |
+| OT     | 11  | Overtime                                       |
+| OB     | 12  | Overtime Break                                 |
+| FO     | 13  | Ended after Overtime                           |
+| I      | 14  | Interrupted                                    |
+| A      | 15  | Abandoned                                      |
+| C      | 16  | Cancelled                                      |
+| TXCC   | 17  | TX Coverage Cancelled                          |
+| TXCS   | 18  | TX Coverage Suspended                          |
+
+**Overtime Phases:**
+
+| Name  | ID    | Description        |
+|-------|-------|--------------------|
+| OT1   | 1011  | Overtime 1         |
+| OB1   | 1012  | Overtime 1 break   |
+| OT2   | 2011  | Overtime 2         |
+| OB2   | 2012  | Overtime 2 break   |
+| ...   | ...   | (continues to OT12)|
+
+### Stat Period Encoding
+
+Stats are encoded with a formula: `(half * 1000 OR quarter * 10000) + base_key`
+
+These encodings are used for on-chain validation proofs and trading settlement.
+
+**Full Game Stats (Keys 1-16):**
+
+| Key | Statistic                               |
+|-----|-----------------------------------------|
+| 1   | Participant 1 Total Score               |
+| 2   | Participant 2 Total Score               |
+| 3   | Participant 1 Total Touchdowns          |
+| 4   | Participant 2 Total Touchdowns          |
+| 5   | Participant 1 Total Field Goals         |
+| 6   | Participant 2 Total Field Goals         |
+| 7-16 | (Additional scoring stats)             |
+
+**Period-Specific Stats** - Add period multiplier to base keys:
+- **First Half (H1)**: Add 1000 (e.g., key 1001 = Participant 1 1st Half Score)
+- **Second Half (H2)**: Add 2000 (e.g., key 2001 = Participant 1 2nd Half Score)
+- **Quarter 1**: Add 10000 (e.g., key 10001 = Participant 1 Q1 Score)
+- **Quarter 2**: Add 20000 (e.g., key 20001 = Participant 1 Q2 Score)
+- **Quarter 3**: Add 30000 (e.g., key 30001 = Participant 1 Q3 Score)
+- **Quarter 4**: Add 40000 (e.g., key 40001 = Participant 1 Q4 Score)
+
+**Usage:** These encodings are required when validating score data against on-chain Merkle roots, creating trading offers, or settling trades with cryptographic proofs.
+
+## Documentation
+
+<Card
+  title="Download US Football Feed v1.13 PDF"
+  icon="file-pdf"
+  href="https://txodds.github.io/tx-on-chain/assets/txodds-us-football-feed-v1.13.pdf"
+>
+  Complete documentation for the TxODDS US Football data feed
+</Card>

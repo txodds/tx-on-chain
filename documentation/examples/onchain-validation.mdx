@@ -1,0 +1,166 @@
+---
+title: "On-Chain Validation"
+description: "Validate scores data using cryptographic Merkle proofs"
+---
+
+## Scores Validation
+
+Validate scores data against on-chain Merkle roots using cryptographic proofs.
+
+```typescript
+import { PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
+
+const fixtureId = 17271370;
+const seq = 401;
+const statKey = 1;
+const statKey2 = 2;
+
+// Fetch validation data from API
+const validationResponse = await httpClient.get(
+  "/api/scores/stat-validation",
+  {
+    params: {
+      fixtureId,
+      seq,
+      statKey,
+      statKey2
+    },
+  }
+);
+const validation = validationResponse.data;
+
+// Find the daily scores roots PDA
+const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
+const [dailyScoresRootsPda] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("daily_scores_roots"),
+    new BN(epochDay).toArrayLike(Buffer, "le", 2),
+  ],
+  program.programId
+);
+
+// Prepare stat to prove
+const statToProve = {
+  statToProve: {
+    key: validation.statToProve.key,
+    value: validation.statToProve.value,
+    period: validation.statToProve.period,
+  },
+  eventStatRoot: validation.eventStatRoot,
+  statProof: validation.statProof.map((node) => ({
+    hash: node.hash,
+    isRightSibling: node.isRightSibling,
+  })),
+};
+
+// Define predicate (comparison threshold)
+const predicate = {
+  threshold: 11,
+  comparison: { lessThan: {} },
+};
+
+// Prepare proofs
+const fixtureProof = validation.subTreeProof.map((node) => ({
+  hash: node.hash,
+  isRightSibling: node.isRightSibling,
+}));
+
+const mainTreeProof = validation.mainTreeProof.map((node) => ({
+  hash: node.hash,
+  isRightSibling: node.isRightSibling,
+}));
+
+const fixtureSummary = {
+  fixtureId: new BN(validation.summary.fixtureId),
+  updateStats: {
+    updateCount: validation.summary.updateStats.updateCount,
+    minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
+    maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
+  },
+  eventsSubTreeRoot: validation.summary.eventStatsSubTreeRoot,
+};
+
+// Execute on-chain validation
+const signature = await program.methods
+  .validateStat(
+    new BN(validation.ts),
+    fixtureSummary,
+    fixtureProof,
+    mainTreeProof,
+    predicate,
+    statToProve,
+    null,  // No second stat
+    null   // No operator
+  )
+  .accounts({
+    dailyScoresMerkleRoots: dailyScoresRootsPda,
+  })
+  .preInstructions([
+    ComputeBudgetProgram.setComputeUnitLimit({
+      units: 10000000,
+    }),
+  ])
+  .rpc();
+
+console.log("Validation confirmed:", signature);
+console.log(`Validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value}`);
+```
+
+## Two-Stat Validation
+
+Validate a comparison between two stats (e.g., score difference).
+
+```typescript
+// Prepare second stat
+const stat2 = {
+  statToProve: validation.statToProve2,
+  eventStatRoot: validation.eventStatRoot,
+  statProof: validation.statProof2.map((node) => ({
+    hash: node.hash,
+    isRightSibling: node.isRightSibling,
+  })),
+};
+
+// Define operation (subtract stat2 from stat1)
+const op = { subtract: {} };
+
+// Define predicate for comparison
+const predicate2 = {
+  threshold: 5,
+  comparison: { lessThan: {} },
+};
+
+// Execute two-stat validation
+const signature2 = await program.methods
+  .validateStat(
+    new BN(validation.ts),
+    fixtureSummary,
+    fixtureProof,
+    mainTreeProof,
+    predicate2,
+    statToProve,
+    stat2,  // Second stat
+    op      // Operation
+  )
+  .accounts({
+    dailyScoresMerkleRoots: dailyScoresRootsPda,
+  })
+  .preInstructions([
+    ComputeBudgetProgram.setComputeUnitLimit({
+      units: 10000000,
+    }),
+  ])
+  .rpc();
+
+console.log("Two-stat validation confirmed:", signature2);
+```
+
+## Validation Use Cases
+
+On-chain validation enables trustless verification of:
+
+- **Trading Settlement** - Prove score outcomes for bet settlement
+- **Conditional Logic** - Execute smart contract logic based on verified game stats
+- **Dispute Resolution** - Provide cryptographic proof of game data
+- **Automated Markets** - Settle prediction markets with on-chain verification

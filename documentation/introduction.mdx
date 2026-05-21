@@ -1,0 +1,55 @@
+---
+title: "Introduction"
+description: "TxLINE - Hybrid on-chain/off-chain sports data and validation system"
+---
+
+## Overview
+
+TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system that provides cryptographically verifiable sports data with on-chain validation.
+
+### Key Features
+
+**Data Access Layer**: Proprietary TxODDS data available for funded blockchain users through time-limited API tokens linked to on-chain subscription transactions.
+
+- Data is canonicalized so all fixtures, odds, and scores are provably unique
+- On-chain validation using cryptographic proofs based on Merkle roots
+- Delivered in request-response or streaming form
+- One-week subscriptions secured through cryptographic protocol
+
+**Data Channels**:
+- **Fixtures**: Snapshots and updates whenever fixture metadata changes
+- **Odds**: TxODDS stable de-margined prices for extensive sports coverage
+- **Scores**: Fully detailed play-by-play data for US College Football and Basketball
+
+### How It Works
+
+Data is distributed in real-time to paying blockchain customers via request-response or streaming. Simultaneously, batches accumulated over time intervals (5 minutes for odds/scores, 1 hour for fixtures) are cryptographically signed with Merkle roots published on-chain in perpetuity.
+
+The `txoracle` Solana program enables cryptographic verification that any published data was genuinely contained in the referenced batch, providing mathematical certainty of data authenticity.
+
+### Configurations
+
+<Tabs>
+  <Tab title="Solana MainNet">
+    Production environment with live matches and low-latency delivery.
+
+    ```
+    API: https://oracle.txodds.com/api/
+    Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
+    Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
+    ```
+  </Tab>
+  <Tab title="Solana DevNet">
+    Integration testing environment with match re-runs.
+
+    ```
+    API: https://oracle-dev.txodds.com/api/
+    Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
+    Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
+    ```
+  </Tab>
+</Tabs>
+
+## Get Started
+
+Follow the [Quickstart Guide](/documentation/quickstart) to begin accessing the TxLINE API.

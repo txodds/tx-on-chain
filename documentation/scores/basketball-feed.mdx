@@ -1,0 +1,111 @@
+---
+title: "Basketball Feed"
+description: "TxODDS US Basketball Feed documentation"
+---
+
+## Coverage
+
+As of mid-September 2025, the following US college basketball conferences are fully covered with detailed play-by-play information:
+
+### Full Coverage
+
+| Competition ID | Conference |
+|----------------|------------|
+| 300043 | SEC |
+| 300043 | Big Ten |
+| 300043 | Big 12 |
+| 300043 | Big East |
+| 300043 | ACC |
+| 300043 | Mountain West |
+| 300043 | West Coast Conference |
+| 300043 | Atlantic 10 |
+| 300043 | Conference USA |
+| 300043 | Missouri Valley |
+| 300043 | American |
+| 300043 | Big West |
+| 300043 | Southern Conference |
+| 300043 | Ivy League |
+| 300043 | Mid-American Conference |
+| 300043 | Horizon League |
+| 300043 | Western Athletic Conference |
+
+### Regular Season Only
+
+| Competition ID | Conference |
+|----------------|------------|
+| 300043 | Summit League |
+| 300043 | Big South Conference |
+| 300043 | Southland Conference |
+| 300043 | Coastal Athletic Association |
+| 300043 | Sun Belt |
+| 300043 | MAAC |
+| 300043 | America East |
+| 300043 | SWAC Conference |
+| 300043 | Patriot League |
+| 300043 | ASUN Conference |
+
+## On-Chain Specifications
+
+These specifications define how basketball game phases and statistics are encoded for on-chain operations, including cryptographic validation and trading settlement.
+
+### Game Phase Encoding
+
+| Name  | ID  | Description             | Competition Type |
+|-------|-----|-------------------------|------------------|
+| NS    | 1   | Not started             | All              |
+| Q1    | 2   | Quarter 1               | NBA              |
+| Q1B   | 3   | Quarter 1 break         | NBA              |
+| Q2    | 4   | Quarter 2               | NBA              |
+| HT    | 5   | Halftime                | All              |
+| Q3    | 6   | Quarter 3               | NBA              |
+| Q3B   | 7   | Quarter 3 break         | NBA              |
+| Q4    | 8   | Quarter 4               | NBA              |
+| F     | 9   | Ended                   | All              |
+| WO    | 10  | Waiting for Overtime    | All              |
+| OT    | 11  | Overtime                | All              |
+| OB    | 12  | Overtime Break          | All              |
+| FO    | 13  | Ended after Overtime    | All              |
+| H1    | 19  | First half              | NCAA             |
+| H2    | 20  | Second half             | NCAA             |
+
+### Stat Period Encoding
+
+Stats are encoded with a formula: `(half * 1000 OR quarter * 10000) + base_key`
+
+These encodings are used for on-chain validation proofs and trading settlement.
+
+**Full Game Stats (Keys 1-36):**
+
+| Key | Statistic                          |
+|-----|------------------------------------|
+| 1   | Participant 1 Total Score          |
+| 2   | Participant 2 Total Score          |
+| 3   | Participant 1 Total Fouls          |
+| 4   | Participant 2 Total Fouls          |
+| 5   | Participant 1 Total Personal Fouls |
+| 6   | Participant 2 Total Personal Fouls |
+| 7   | Participant 1 Total Blocks         |
+| 8   | Participant 2 Total Blocks         |
+| 9   | Participant 1 Total Rebounds       |
+| 10  | Participant 2 Total Rebounds       |
+| 11-36 | (Additional stats including throws, points, assists, etc.) |
+
+**Period-Specific Stats** - Add period multiplier to base keys:
+- **First Half (H1)**: Add 1000
+- **Second Half (H2)**: Add 2000
+- **Quarter 1**: Add 10000
+- **Quarter 2**: Add 20000
+- **Quarter 3**: Add 30000
+- **Quarter 4**: Add 40000
+
+**Usage:** These encodings are required when validating score data against on-chain Merkle roots, creating trading offers, or settling trades with cryptographic proofs.
+
+## Documentation
+
+<Card
+  title="Download US Basketball Feed v1.12 PDF"
+  icon="file-pdf"
+  href="https://txodds.github.io/tx-on-chain/assets/txodds-basketball-feed-v1.12.pdf"
+>
+  Complete documentation for the TxODDS US Basketball data feed
+</Card>

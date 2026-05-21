@@ -1,0 +1,119 @@
+---
+title: "Quickstart"
+description: "Get started with the TxLINE API in minutes"
+---
+
+## Purchase Subscription Tokens
+
+In order to purchase subscription tokens, your wallet will need to be funded with USDT. If you don't have USDT on Solana, you can swap for it using [Jupiter](https://jup.ag/) or another exchange.
+
+Once you have USDT in your Solana wallet, you can purchase TxODDS subscription tokens using the on-chain program.
+
+```typescript
+const usdtAmount = new anchor.BN(1_000_000); // 1 USDT
+
+const txSignature = await program.methods
+  .purchaseSubscriptionTokenUsdt(usdtAmount)
+  .accounts({
+    buyer: provider.wallet.publicKey,
+    usdtMint: USDT_MINT,
+    buyerUsdtAccount: buyerUsdtAccount.address,
+    usdtTreasuryVault: usdtTreasuryVault,
+    usdtTreasuryPda: usdtTreasuryPda,
+    subscriptionTokenMint: SUBSCRIPTION_TOKEN_MINT,
+    tokenTreasuryVault: tokenTreasuryVault,
+    tokenTreasuryPda: tokenTreasuryPda,
+    buyerTokenAccount: buyerTokenAccount.address,
+    tokenProgram: TOKEN_PROGRAM_ID,
+    token2022Program: TOKEN_2022_PROGRAM_ID,
+    systemProgram: SystemProgram.programId,
+    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  })
+  .rpc();
+```
+
+## Subscribe On-Chain
+
+Subscribe to the TxLINE by staking your subscription tokens. Choose between a standard bundle or custom league selection.
+
+<Tabs>
+  <Tab title="Standard Bundle">
+    ```typescript
+    const SERVICE_LEVEL_ID = 1;
+    const DURATION_WEEKS = 1;
+    const SELECTED_LEAGUES: number[] = []; // Standard bundle
+
+    const txSig = await program.methods
+      .subscribe(SERVICE_LEVEL_ID, DURATION_WEEKS)
+      .accounts({
+        user: provider.wallet.publicKey,
+        pricingMatrix: pricingMatrixPda,
+        tokenMint: SUBSCRIPTION_TOKEN_MINT,
+        userTokenAccount: userTokenAccount.address,
+        tokenTreasuryVault,
+        tokenTreasuryPda,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    ```
+  </Tab>
+  <Tab title="Custom Leagues">
+    ```typescript
+    const SERVICE_LEVEL_ID = 3;
+    const DURATION_WEEKS = 1;
+    const SELECTED_LEAGUES = [500001]; // Your league IDs
+
+    const txSig = await program.methods
+      .subscribe(SERVICE_LEVEL_ID, DURATION_WEEKS)
+      .accounts({
+        user: provider.wallet.publicKey,
+        pricingMatrix: pricingMatrixPda,
+        tokenMint: SUBSCRIPTION_TOKEN_MINT,
+        userTokenAccount: userTokenAccount.address,
+        tokenTreasuryVault,
+        tokenTreasuryPda,
+        tokenProgram: TOKEN_2022_PROGRAM_ID,
+        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+    ```
+  </Tab>
+</Tabs>
+
+## Activate Your API Token
+
+After subscribing on-chain, activate your API access by signing the transaction and calling the activation endpoint.
+
+```typescript
+// Get guest JWT
+const authResponse = await axios.post("https://oracle-dev.txodds.com/auth/guest/start");
+const jwt = authResponse.data.token;
+
+// Sign the subscription transaction
+const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
+const message = new TextEncoder().encode(messageString);
+const signatureBytes = nacl.sign.detached(message, provider.wallet.payer!.secretKey);
+const walletSignature = Buffer.from(signatureBytes).toString("base64");
+
+// Activate API access
+const activationResponse = await axios.post(
+  "https://oracle-dev.txodds.com/api/token/activate",
+  {
+    txSig,
+    walletSignature,
+    leagues: SELECTED_LEAGUES,
+  },
+  { headers: { Authorization: `Bearer ${jwt}` } }
+);
+
+const apiToken = activationResponse.data.token || activationResponse.data;
+```
+
+You're now ready to use the API! Use the `jwt` and `apiToken` to authenticate your requests.
+
+## Next Steps
+
+View the complete [API Reference](/api-reference/authentication/guest-start) to explore all available endpoints.

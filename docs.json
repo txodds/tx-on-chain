@@ -7,10 +7,11 @@
     "light": "#FF5723",
     "dark": "#FF5723"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "https://txodds.github.io/tx-on-chain/assets/logo/favicon.svg",
   "api": {
     "baseUrl": "https://oracle.txodds.com"
   },
+  "openapi": "https://txline.txodds.com/docs/docs.yaml",
   "navigation": {
     "tabs": [
       {
@@ -62,57 +63,12 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "API reference",
-        "groups": [
-          {
-            "group": "Authentication",
-            "pages": [
-              "api-reference/authentication/guest-start",
-              "api-reference/authentication/token-activate",
-              "api-reference/authentication/token-extend"
-            ]
-          },
-          {
-            "group": "Fixtures",
-            "pages": [
-              "api-reference/fixtures/guest-snapshot",
-              "api-reference/fixtures/snapshot",
-              "api-reference/fixtures/updates",
-              "api-reference/fixtures/validation",
-              "api-reference/fixtures/batch-validation"
-            ]
-          },
-          {
-            "group": "Odds",
-            "pages": [
-              "api-reference/odds/guest-snapshot",
-              "api-reference/odds/guest-stream",
-              "api-reference/odds/snapshot",
-              "api-reference/odds/updates-by-fixture",
-              "api-reference/odds/updates-by-time",
-              "api-reference/odds/stream",
-              "api-reference/odds/validation"
-            ]
-          },
-          {
-            "group": "Scores",
-            "pages": [
-              "api-reference/scores/snapshot",
-              "api-reference/scores/updates-by-fixture",
-              "api-reference/scores/updates-by-time",
-              "api-reference/scores/stream",
-              "api-reference/scores/stat-validation"
-            ]
-          }
-        ]
       }
     ]
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "https://txodds.github.io/tx-on-chain/assets/logo/light.svg",
+    "dark": "https://txodds.github.io/tx-on-chain/assets/logo/dark.svg"
   },
   "navbar": {
     "links": [

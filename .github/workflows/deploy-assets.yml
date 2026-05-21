@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/assets/**'
+      - 'assets/**'
 
 permissions:
   contents: write
@@ -20,6 +20,6 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/assets
+          publish_dir: ./assets
           destination_dir: assets
           force_orphan: true

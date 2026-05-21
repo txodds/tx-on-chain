@@ -1,0 +1,45 @@
+---
+title: "Mainnet"
+description: "MainNet IDL for TxLINE programs"
+---
+
+## Interface Definition Language
+
+IDL (Interface Definition Language) files define the structure and interface of the TxLINE Solana programs. Use these files to interact with the on-chain programs using Anchor.
+
+```json
+{
+  "version": "0.1.0",
+  "name": "txoracle",
+  "instructions": [],
+  "accounts": [],
+  "types": [],
+  "constants": [
+    {
+      "name": "TXLINE_MINT",
+      "type": "string",
+      "value": "\"sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx\""
+    },
+    {
+      "name": "USDT_MINT",
+      "type": "string",
+      "value": "\"Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB\""
+    }
+  ]
+}
+```
+
+**Program ID:** `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA`
+
+## Usage
+
+To use this IDL with Anchor:
+
+```typescript
+import { Program, AnchorProvider } from "@coral-xyz/anchor";
+import { Txoracle } from "./types/txoracle";
+import idl from "./idl/txoracle.json";
+
+const provider = AnchorProvider.env();
+const program = new Program<Txoracle>(idl as Txoracle, provider);
+```
