@@ -1,0 +1,149 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "TxLINE Documentation",
+  "colors": {
+    "primary": "#FF5723",
+    "light": "#FF5723",
+    "dark": "#FF5723"
+  },
+  "favicon": "/favicon.svg",
+  "api": {
+    "baseUrl": "https://oracle.txodds.com"
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": [
+              "documentation/introduction",
+              "documentation/quickstart",
+              "documentation/subscription-tiers"
+            ]
+          },
+          {
+            "group": "Odds",
+            "pages": [
+              "documentation/odds/odds-overview",
+              "documentation/odds/odds-coverage"
+            ]
+          },
+          {
+            "group": "Scores",
+            "pages": [
+              "documentation/scores/overview",
+              "documentation/scores/football-feed",
+              "documentation/scores/basketball-feed"
+            ]
+          },
+          {
+            "group": "Solana Programs",
+            "pages": [
+              "documentation/programs/addresses",
+              "documentation/programs/mainnet",
+              "documentation/programs/devnet"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "documentation/examples/fetching-snapshots",
+              "documentation/examples/streaming-data",
+              "documentation/examples/onchain-validation"
+            ]
+          },
+          {
+            "group": "Legal",
+            "pages": [
+              "documentation/legal/terms-and-conditions"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API reference",
+        "groups": [
+          {
+            "group": "Authentication",
+            "pages": [
+              "api-reference/authentication/guest-start",
+              "api-reference/authentication/token-activate",
+              "api-reference/authentication/token-extend"
+            ]
+          },
+          {
+            "group": "Fixtures",
+            "pages": [
+              "api-reference/fixtures/guest-snapshot",
+              "api-reference/fixtures/snapshot",
+              "api-reference/fixtures/updates",
+              "api-reference/fixtures/validation",
+              "api-reference/fixtures/batch-validation"
+            ]
+          },
+          {
+            "group": "Odds",
+            "pages": [
+              "api-reference/odds/guest-snapshot",
+              "api-reference/odds/guest-stream",
+              "api-reference/odds/snapshot",
+              "api-reference/odds/updates-by-fixture",
+              "api-reference/odds/updates-by-time",
+              "api-reference/odds/stream",
+              "api-reference/odds/validation"
+            ]
+          },
+          {
+            "group": "Scores",
+            "pages": [
+              "api-reference/scores/snapshot",
+              "api-reference/scores/updates-by-fixture",
+              "api-reference/scores/updates-by-time",
+              "api-reference/scores/stream",
+              "api-reference/scores/stat-validation"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Support",
+        "href": "mailto:hi@mintlify.com"
+      }
+    ]
+  },
+  "contextual": {
+    "options": [
+     "copy",
+     "view",
+     "chatgpt",
+     "claude",
+     "perplexity",
+     "mcp",
+     "cursor",
+     "vscode"
+   ]
+  },
+  "footer": {
+    "socials": {
+      "x": "https://x.com/txoddsofficial",
+      "github": "https://github.com/txodds"
+    }
+  },
+  "background": {
+    "decoration": "grid"
+  },
+  "appearance": {
+    "default": "system"
+  }
+}
