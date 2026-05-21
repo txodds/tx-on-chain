@@ -1,0 +1,2393 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://txodds.com/schemas/basketball/common.json",
+  "type": [
+    "object"
+  ],
+  "description": "Format of fields that can appear in all Fixture Actions",
+  "title": "Common Fields Schema",
+  "properties": {
+    "ConnectionId": {
+      "type": [
+        "number"
+      ],
+      "description": "Internal ID of the connection",
+      "title": "Connection Id",
+      "examples": [
+        12,
+        13,
+        9,
+        1,
+        18
+      ]
+    },
+    "FixtureId": {
+      "type": [
+        "number"
+      ],
+      "description": "The normative Id of the fixture",
+      "title": "Fixture Id",
+      "examples": [
+        10461989,
+        10190463,
+        10260031,
+        10026403,
+        10471436
+      ]
+    },
+    "GlobalSeq": {
+      "type": [
+        "number"
+      ],
+      "description": "Global update sequence. When tracking event sequence numbers, use `Seq` instead.",
+      "title": "Seq",
+      "examples": [
+        152,
+        60,
+        74,
+        40,
+        8
+      ]
+    },
+    "Id": {
+      "type": [
+        "number"
+      ],
+      "description": "Action ID. Messages for the same action will have the same action ID. For example, an unconfirmed action followed by a confirmation",
+      "title": "Id",
+      "examples": [
+        36,
+        18,
+        57,
+        68,
+        99
+      ]
+    },
+    "Seq": {
+      "type": [
+        "number"
+      ],
+      "description": "Update sequence number for a fixture",
+      "title": "Seq",
+      "examples": [
+        52,
+        60,
+        74,
+        40,
+        48
+      ]
+    },
+    "ServerId": {
+      "type": [
+        "string"
+      ],
+      "description": "Internal ID of the server that handled the action",
+      "title": "Server Id",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+      "examples": [
+        "e42898ee-2051-4d1e-8817-afc3f7cc156c",
+        "227264fb-4132-4e49-9121-3165c753002e"
+      ]
+    },
+    "TracingInfo": {
+      "type": [
+        "object"
+      ],
+      "description": "Observability information for the action. Relevant if issues are reported.",
+      "title": "Tracing Information"
+    },
+    "Ts": {
+      "type": [
+        "number"
+      ],
+      "description": "Timestamp of the update",
+      "title": "Ts",
+      "examples": [
+        1732878668797,
+        1732878371314,
+        1732878438368,
+        1732878219489,
+        1732879081689
+      ]
+    },
+    "Type": {
+      "type": [
+        "string"
+      ],
+      "description": "Sport Type",
+      "title": "Type",
+      "enum": [
+        "Basketball"
+      ]
+    },
+    "UserId": {
+      "type": [
+        "string"
+      ],
+      "description": "Internal ID of the user that sent the action",
+      "title": "Server Id",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+      "examples": [
+        "e42898ee-2051-4d1e-8817-afc3f7cc156c",
+        "227264fb-4132-4e49-9121-3165c753002e"
+      ]
+    },
+    "StatusId": {
+      "type": [
+        "number"
+      ],
+      "description": "The ID for the current game period. See [StatusId](#status-id)",
+      "title": "Status Id",
+      "examples": [
+        19,
+        6,
+        1,
+        15,
+        17
+      ]
+    },
+    "OvertimeNumber": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Optional. If we are on Overtime, this will have the number of the current overtime period in which this event is happening",
+      "title": "Overtime Number",
+      "examples": [
+        null,
+        2
+      ]
+    },
+    "VirtualFixture": {
+      "type": [
+        "null",
+        "boolean"
+      ],
+      "description": "If true, the fixture is a virtual fixture, used to replay events of an existing fixture for test purposes.",
+      "title": "VirtualFixture",
+      "examples": [
+        null,
+        false,
+        true
+      ]
+    }
+  },
+  "$defs": {
+    "Clock": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Game clock",
+      "title": "Clock",
+      "properties": {
+        "Running": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Is the clock currently running?",
+          "title": "Running",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Seconds": {
+          "type": [
+            "number"
+          ],
+          "description": "Time in seconds left in the current period. At the start it is the full time for the period (for example, 15 minutes would be 900 seconds). The value decreases with every new action until the end of the period.",
+          "title": "Seconds",
+          "examples": [
+            0,
+            302,
+            400,
+            734,
+            900
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Running",
+        "Seconds"
+      ]
+    },
+    "PlayerData": {
+      "type": [
+        "object"
+      ],
+      "description": "Data about a player in a team",
+      "title": "Player Data",
+      "properties": {
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player country of origin",
+          "title": "Country",
+          "examples": [
+            null,
+            "Dominican Republic",
+            "England",
+            "Spain",
+            "USA"
+          ]
+        },
+        "dateOfBirth": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player date of birth",
+          "title": "Date of Birth",
+          "examples": [
+            null,
+            "1987−02−20",
+            "1999−12−03",
+            "2003−06−11"
+          ]
+        },
+        "entityStatus": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player status",
+          "title": "Player status",
+          "examples": []
+        },
+        "entityVersion": {
+          "type": [
+            "number"
+          ],
+          "description": "Player information version",
+          "title": "Version",
+          "examples": [
+            0,
+            5,
+            8
+          ]
+        },
+        "gender": {
+          "type": [
+            "string"
+          ],
+          "description": "Gender of the player",
+          "title": "Gender",
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "id": {
+          "type": [
+            "string"
+          ],
+          "description": "Player UUID",
+          "title": "Id",
+          "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+          "examples": [
+            "227264fb-4132-4e49-9121-3165c753002e",
+            "443653c4-32ae-401e-b5ef-97db6fa3ed86"
+          ]
+        },
+        "normativeId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player normative Id",
+          "title": "Normative Id",
+          "examples": [
+            1752,
+            4268,
+            4707
+          ]
+        },
+        "preferredName": {
+          "type": [
+            "string"
+          ],
+          "description": "Player name (Last Name, First Name) in normalised Latin chars",
+          "title": "Player Name",
+          "examples": [
+            "Baker, Brandon",
+            "Gallian, John",
+            "Kornet, Luke"
+          ]
+        },
+        "sportId": {
+          "type": [
+            "string"
+          ],
+          "description": "Sport Id",
+          "title": "Sport Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "team": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player team Id",
+          "title": "Team Id",
+          "examples": [
+            null,
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "updateDateMillis": {
+          "type": [
+            "number"
+          ],
+          "description": "Player update timestamp",
+          "title": "Update timestamp",
+          "examples": [
+            1732878222979,
+            1732878726834
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "entityVersion",
+        "gender",
+        "id",
+        "normativeId",
+        "preferredName",
+        "sportId",
+        "updateDateMillis"
+      ]
+    },
+    "PlayerLineupData": {
+      "type": [
+        "object"
+      ],
+      "description": "Lineup information for a team",
+      "title": "Player Lineup Data",
+      "properties": {
+        "fixturePlayerId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player Id in the fixture, used to reference a player in events",
+          "title": "Fixture Player Id",
+          "examples": [
+            1187,
+            1975,
+            5629
+          ]
+        },
+        "player": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player information",
+          "title": "Player",
+          "$ref": "#/$defs/PlayerData"
+        },
+        "positionId": {
+          "type": [
+            "number"
+          ],
+          "description": "Position Id in the fixture",
+          "title": "Position Id",
+          "examples": [
+            11,
+            34,
+            37
+          ]
+        },
+        "rosterNumber": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Roster number",
+          "title": "Number",
+          "examples": [
+            null,
+            "0",
+            "00",
+            "09",
+            "9",
+            "18"
+          ]
+        },
+        "starter": {
+          "type": [
+            "boolean"
+          ],
+          "description": "The player is part of the starting team",
+          "title": "Starter",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "starred": {
+          "type": [
+            "boolean"
+          ],
+          "description": "The player has a star in the lineups",
+          "title": "Starred",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "statusId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player Status",
+          "title": "Status",
+          "examples": [
+            3,
+            7
+          ]
+        },
+        "unitId": {
+          "type": [
+            "number"
+          ],
+          "description": "Unit Id",
+          "title": "Unit",
+          "examples": [
+            2,
+            5
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "positionId",
+        "statusId",
+        "unitId"
+      ]
+    },
+    "LineupData": {
+      "type": [
+        "object"
+      ],
+      "description": "Lineup information for a team",
+      "title": "Lineup Data",
+      "properties": {
+        "entityStatus": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Team status",
+          "title": "Team status",
+          "examples": []
+        },
+        "entityVersion": {
+          "type": [
+            "number"
+          ],
+          "description": "Team information version",
+          "title": "Version",
+          "examples": [
+            0,
+            5,
+            8
+          ]
+        },
+        "gender": {
+          "type": [
+            "string"
+          ],
+          "description": "Information about the gender of the team (which gendered competitions it is playing in)",
+          "title": "Team Gender",
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "id": {
+          "type": [
+            "string"
+          ],
+          "description": "Team UUID",
+          "title": "Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "227264fb-4132-4e49-9121-3165c753002e",
+            "443653c4-32ae-401e-b5ef-97db6fa3ed86"
+          ]
+        },
+        "lineups": {
+          "type": [
+            "array"
+          ],
+          "description": "Player lineup information",
+          "title": "Player lineup",
+          "items": {
+            "type": [
+              "object"
+            ],
+            "$ref": "#/$defs/PlayerLineupData"
+          }
+        },
+        "normativeId": {
+          "type": [
+            "number"
+          ],
+          "description": "Team normative Id",
+          "title": "Normative Id",
+          "examples": [
+            4268,
+            4707
+          ]
+        },
+        "preferredName": {
+          "type": [
+            "string"
+          ],
+          "description": "Team name",
+          "title": "Team Name",
+          "examples": [
+            "Boston Celtics",
+            "Chicago Bulls"
+          ]
+        },
+        "sportId": {
+          "type": [
+            "string"
+          ],
+          "description": "Sport Id",
+          "title": "Sport Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "updateDateMillis": {
+          "type": [
+            "number"
+          ],
+          "description": "Team update timestamp",
+          "title": "Update timestamp",
+          "examples": [
+            1732878222979,
+            1732878726834
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "entityVersion",
+        "gender",
+        "id",
+        "lineups",
+        "normativeId",
+        "preferredName",
+        "sportId",
+        "updateDateMillis"
+      ]
+    },
+    "PartiState": {
+      "type": [
+        "object"
+      ],
+      "description": "Information about a team during this game",
+      "title": "Participant State",
+      "properties": {
+        "ActiveTimeout": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Set to true if the team is currently using one of their timeouts",
+          "title": "ActiveTimeout",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "AttackingBasket": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Set to true if the team is attacking basket",
+          "title": "AttackingBasket",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Challenges": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of challenges the team has available, to trigger an instant replay review.",
+          "title": "Challenges",
+          "examples": [
+            0,
+            1,
+            2
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "ActiveTimeout",
+        "AttackingBasket",
+        "Challenges"
+      ]
+    },
+    "Score": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+      "title": "Score",
+      "properties": {
+        "Participant1": {
+          "type": [
+            "object"
+          ],
+          "description": "Score for participant 1. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1",
+          "$ref": "#/$defs/ScoreParticipant",
+          "examples": [
+            {
+              "Period": {
+                "3": {
+                  "2pts_attempts": 27,
+                  "2pts_made": 10,
+                  "2pts_missed": 4,
+                  "3pts_attempts": 6,
+                  "3pts_made": 7,
+                  "3pts_missed": 7,
+                  "Assists": 16,
+                  "Blocks": 2,
+                  "Fouls": 0,
+                  "FreeThrows_attempts": 34,
+                  "FreeThrows_made": 5,
+                  "FreeThrows_missed": 2,
+                  "PersonalFouls": 3,
+                  "Rebounds": 6,
+                  "Score": 91,
+                  "Steals": 8,
+                  "Turnovers": 5,
+                  "UsedTimeouts": 3
+                }
+              },
+              "Total": {
+                "2pts_attempts": 27,
+                "2pts_made": 10,
+                "2pts_missed": 4,
+                "3pts_attempts": 6,
+                "3pts_made": 7,
+                "3pts_missed": 7,
+                "Assists": 16,
+                "Blocks": 2,
+                "Fouls": 0,
+                "FreeThrows_attempts": 34,
+                "FreeThrows_made": 5,
+                "FreeThrows_missed": 2,
+                "PersonalFouls": 3,
+                "Rebounds": 6,
+                "Score": 91,
+                "Steals": 8,
+                "Turnovers": 5,
+                "UsedTimeouts": 3
+              }
+            },
+            {},
+            {
+              "HT": {
+                "2pts_attempts": 80,
+                "2pts_made": 28,
+                "2pts_missed": 18,
+                "3pts_attempts": 63,
+                "3pts_made": 44,
+                "3pts_missed": 19,
+                "Assists": 24,
+                "Blocks": 8,
+                "Fouls": 11,
+                "FreeThrows_attempts": 56,
+                "FreeThrows_made": 8,
+                "FreeThrows_missed": 5,
+                "PersonalFouls": 2,
+                "Rebounds": 11,
+                "Score": 75,
+                "Steals": 9,
+                "Turnovers": 18,
+                "UsedTimeouts": 2
+              },
+              "Period": {
+                "1": {
+                  "2pts_attempts": 44,
+                  "2pts_made": 26,
+                  "2pts_missed": 11,
+                  "3pts_attempts": 37,
+                  "3pts_made": 31,
+                  "3pts_missed": 13,
+                  "Assists": 21,
+                  "Blocks": 7,
+                  "Fouls": 9,
+                  "FreeThrows_attempts": 25,
+                  "FreeThrows_made": 4,
+                  "FreeThrows_missed": 0,
+                  "PersonalFouls": 2,
+                  "Rebounds": 7,
+                  "Score": 46,
+                  "Steals": 1,
+                  "Turnovers": 12,
+                  "UsedTimeouts": 1
+                },
+                "2": {
+                  "2pts_attempts": 68,
+                  "2pts_made": 5,
+                  "2pts_missed": 7,
+                  "3pts_attempts": 58,
+                  "3pts_made": 24,
+                  "3pts_missed": 13,
+                  "Assists": 12,
+                  "Blocks": 9,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 46,
+                  "FreeThrows_made": 4,
+                  "FreeThrows_missed": 6,
+                  "PersonalFouls": 2,
+                  "Rebounds": 7,
+                  "Score": 87,
+                  "Steals": 17,
+                  "Turnovers": 6,
+                  "UsedTimeouts": 5
+                },
+                "3": {
+                  "2pts_attempts": 57,
+                  "2pts_made": 23,
+                  "2pts_missed": 5,
+                  "3pts_attempts": 7,
+                  "3pts_made": 23,
+                  "3pts_missed": 15,
+                  "Assists": 20,
+                  "Blocks": 10,
+                  "Fouls": 1,
+                  "FreeThrows_attempts": 39,
+                  "FreeThrows_made": 8,
+                  "FreeThrows_missed": 3,
+                  "PersonalFouls": 3,
+                  "Rebounds": 14,
+                  "Score": 148,
+                  "Steals": 13,
+                  "Turnovers": 8,
+                  "UsedTimeouts": 4
+                },
+                "4": {
+                  "2pts_attempts": 3,
+                  "2pts_made": 10,
+                  "2pts_missed": 5,
+                  "3pts_attempts": 16,
+                  "3pts_made": 10,
+                  "3pts_missed": 4,
+                  "Assists": 11,
+                  "Blocks": 6,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 8,
+                  "FreeThrows_made": 3,
+                  "FreeThrows_missed": 0,
+                  "PersonalFouls": 4,
+                  "Rebounds": 2,
+                  "Score": 20,
+                  "Steals": 0,
+                  "Turnovers": 3,
+                  "UsedTimeouts": 4
+                }
+              },
+              "Total": {
+                "2pts_attempts": 172,
+                "2pts_made": 64,
+                "2pts_missed": 28,
+                "3pts_attempts": 118,
+                "3pts_made": 88,
+                "3pts_missed": 45,
+                "Assists": 64,
+                "Blocks": 32,
+                "Fouls": 14,
+                "FreeThrows_attempts": 118,
+                "FreeThrows_made": 19,
+                "FreeThrows_missed": 9,
+                "PersonalFouls": 11,
+                "Rebounds": 30,
+                "Score": 301,
+                "Steals": 31,
+                "Turnovers": 29,
+                "UsedTimeouts": 14
+              }
+            },
+            {
+              "HT": {
+                "2pts_attempts": 80,
+                "2pts_made": 28,
+                "2pts_missed": 18,
+                "3pts_attempts": 63,
+                "3pts_made": 44,
+                "3pts_missed": 19,
+                "Assists": 24,
+                "Blocks": 8,
+                "Fouls": 11,
+                "FreeThrows_attempts": 56,
+                "FreeThrows_made": 8,
+                "FreeThrows_missed": 5,
+                "PersonalFouls": 2,
+                "Rebounds": 11,
+                "Score": 75,
+                "Steals": 9,
+                "Turnovers": 18,
+                "UsedTimeouts": 2
+              },
+              "Period": {
+                "1": {
+                  "2pts_attempts": 44,
+                  "2pts_made": 26,
+                  "2pts_missed": 11,
+                  "3pts_attempts": 37,
+                  "3pts_made": 31,
+                  "3pts_missed": 13,
+                  "Assists": 21,
+                  "Blocks": 7,
+                  "Fouls": 9,
+                  "FreeThrows_attempts": 25,
+                  "FreeThrows_made": 4,
+                  "FreeThrows_missed": 0,
+                  "PersonalFouls": 2,
+                  "Rebounds": 7,
+                  "Score": 46,
+                  "Steals": 1,
+                  "Turnovers": 12,
+                  "UsedTimeouts": 1
+                },
+                "2": {
+                  "2pts_attempts": 68,
+                  "2pts_made": 5,
+                  "2pts_missed": 7,
+                  "3pts_attempts": 58,
+                  "3pts_made": 24,
+                  "3pts_missed": 13,
+                  "Assists": 12,
+                  "Blocks": 9,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 46,
+                  "FreeThrows_made": 4,
+                  "FreeThrows_missed": 6,
+                  "PersonalFouls": 2,
+                  "Rebounds": 7,
+                  "Score": 87,
+                  "Steals": 17,
+                  "Turnovers": 6,
+                  "UsedTimeouts": 5
+                },
+                "3": {
+                  "2pts_attempts": 30,
+                  "2pts_made": 13,
+                  "2pts_missed": 1,
+                  "3pts_attempts": 1,
+                  "3pts_made": 16,
+                  "3pts_missed": 8,
+                  "Assists": 4,
+                  "Blocks": 8,
+                  "Fouls": 1,
+                  "FreeThrows_attempts": 5,
+                  "FreeThrows_made": 3,
+                  "FreeThrows_missed": 1,
+                  "PersonalFouls": 0,
+                  "Rebounds": 8,
+                  "Score": 57,
+                  "Steals": 5,
+                  "Turnovers": 3,
+                  "UsedTimeouts": 1
+                },
+                "4": {
+                  "2pts_attempts": 3,
+                  "2pts_made": 10,
+                  "2pts_missed": 5,
+                  "3pts_attempts": 16,
+                  "3pts_made": 10,
+                  "3pts_missed": 4,
+                  "Assists": 11,
+                  "Blocks": 6,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 8,
+                  "FreeThrows_made": 3,
+                  "FreeThrows_missed": 0,
+                  "PersonalFouls": 4,
+                  "Rebounds": 2,
+                  "Score": 20,
+                  "Steals": 0,
+                  "Turnovers": 3,
+                  "UsedTimeouts": 4
+                }
+              },
+              "Total": {
+                "2pts_attempts": 145,
+                "2pts_made": 54,
+                "2pts_missed": 24,
+                "3pts_attempts": 112,
+                "3pts_made": 81,
+                "3pts_missed": 38,
+                "Assists": 48,
+                "Blocks": 30,
+                "Fouls": 14,
+                "FreeThrows_attempts": 84,
+                "FreeThrows_made": 14,
+                "FreeThrows_missed": 7,
+                "PersonalFouls": 8,
+                "Rebounds": 24,
+                "Score": 210,
+                "Steals": 23,
+                "Turnovers": 24,
+                "UsedTimeouts": 11
+              }
+            },
+            {
+              "Period": {
+                "3": {
+                  "2pts_attempts": 27,
+                  "2pts_made": 10,
+                  "2pts_missed": 4,
+                  "3pts_attempts": 6,
+                  "3pts_made": 7,
+                  "3pts_missed": 7,
+                  "Assists": 16,
+                  "Blocks": 2,
+                  "Fouls": 0,
+                  "FreeThrows_attempts": 34,
+                  "FreeThrows_made": 5,
+                  "FreeThrows_missed": 2,
+                  "PersonalFouls": 3,
+                  "Rebounds": 6,
+                  "Score": 91,
+                  "Steals": 8,
+                  "Turnovers": 5,
+                  "UsedTimeouts": 3
+                },
+                "4": {
+                  "2pts_attempts": 37,
+                  "2pts_made": 7,
+                  "2pts_missed": 1,
+                  "3pts_attempts": 27,
+                  "3pts_made": 1,
+                  "3pts_missed": 0,
+                  "Assists": 11,
+                  "Blocks": 6,
+                  "Fouls": 8,
+                  "FreeThrows_attempts": 9,
+                  "FreeThrows_made": 5,
+                  "FreeThrows_missed": 0,
+                  "PersonalFouls": 1,
+                  "Rebounds": 2,
+                  "Score": 6,
+                  "Steals": 5,
+                  "Turnovers": 4,
+                  "UsedTimeouts": 4
+                }
+              },
+              "Total": {
+                "2pts_attempts": 64,
+                "2pts_made": 17,
+                "2pts_missed": 5,
+                "3pts_attempts": 33,
+                "3pts_made": 8,
+                "3pts_missed": 7,
+                "Assists": 27,
+                "Blocks": 8,
+                "Fouls": 8,
+                "FreeThrows_attempts": 43,
+                "FreeThrows_made": 10,
+                "FreeThrows_missed": 2,
+                "PersonalFouls": 4,
+                "Rebounds": 8,
+                "Score": 97,
+                "Steals": 13,
+                "Turnovers": 9,
+                "UsedTimeouts": 7
+              }
+            }
+          ]
+        },
+        "Participant2": {
+          "type": [
+            "object"
+          ],
+          "description": "Score for participant 2. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2",
+          "$ref": "#/$defs/ScoreParticipant",
+          "examples": [
+            {},
+            {
+              "Period": {
+                "4": {
+                  "2pts_attempts": 30,
+                  "2pts_made": 1,
+                  "2pts_missed": 4,
+                  "3pts_attempts": 36,
+                  "3pts_made": 7,
+                  "3pts_missed": 3,
+                  "Assists": 5,
+                  "Blocks": 5,
+                  "Fouls": 3,
+                  "FreeThrows_attempts": 5,
+                  "FreeThrows_made": 3,
+                  "FreeThrows_missed": 3,
+                  "PersonalFouls": 2,
+                  "Rebounds": 3,
+                  "Score": 31,
+                  "Steals": 9,
+                  "Turnovers": 8,
+                  "UsedTimeouts": 3
+                }
+              },
+              "Total": {
+                "2pts_attempts": 30,
+                "2pts_made": 1,
+                "2pts_missed": 4,
+                "3pts_attempts": 36,
+                "3pts_made": 7,
+                "3pts_missed": 3,
+                "Assists": 5,
+                "Blocks": 5,
+                "Fouls": 3,
+                "FreeThrows_attempts": 5,
+                "FreeThrows_made": 3,
+                "FreeThrows_missed": 3,
+                "PersonalFouls": 2,
+                "Rebounds": 3,
+                "Score": 31,
+                "Steals": 9,
+                "Turnovers": 8,
+                "UsedTimeouts": 3
+              }
+            },
+            {
+              "OT": {
+                "2": {
+                  "2pts_attempts": 17,
+                  "2pts_made": 3,
+                  "2pts_missed": 7,
+                  "3pts_attempts": 18,
+                  "3pts_made": 17,
+                  "3pts_missed": 9,
+                  "Assists": 4,
+                  "Blocks": 8,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 2,
+                  "FreeThrows_made": 2,
+                  "FreeThrows_missed": 6,
+                  "PersonalFouls": 0,
+                  "Rebounds": 4,
+                  "Score": 22,
+                  "Steals": 3,
+                  "Turnovers": 9,
+                  "UsedTimeouts": 1
+                }
+              },
+              "OTTotal": {
+                "2pts_attempts": 17,
+                "2pts_made": 3,
+                "2pts_missed": 7,
+                "3pts_attempts": 18,
+                "3pts_made": 17,
+                "3pts_missed": 9,
+                "Assists": 4,
+                "Blocks": 8,
+                "Fouls": 2,
+                "FreeThrows_attempts": 2,
+                "FreeThrows_made": 2,
+                "FreeThrows_missed": 6,
+                "PersonalFouls": 0,
+                "Rebounds": 4,
+                "Score": 22,
+                "Steals": 3,
+                "Turnovers": 9,
+                "UsedTimeouts": 1
+              },
+              "Total": {
+                "2pts_attempts": 17,
+                "2pts_made": 3,
+                "2pts_missed": 7,
+                "3pts_attempts": 18,
+                "3pts_made": 17,
+                "3pts_missed": 9,
+                "Assists": 4,
+                "Blocks": 8,
+                "Fouls": 2,
+                "FreeThrows_attempts": 2,
+                "FreeThrows_made": 2,
+                "FreeThrows_missed": 6,
+                "PersonalFouls": 0,
+                "Rebounds": 4,
+                "Score": 22,
+                "Steals": 3,
+                "Turnovers": 9,
+                "UsedTimeouts": 1
+              }
+            },
+            {
+              "OT": {
+                "2": {
+                  "2pts_attempts": 17,
+                  "2pts_made": 3,
+                  "2pts_missed": 7,
+                  "3pts_attempts": 18,
+                  "3pts_made": 17,
+                  "3pts_missed": 9,
+                  "Assists": 4,
+                  "Blocks": 8,
+                  "Fouls": 2,
+                  "FreeThrows_attempts": 2,
+                  "FreeThrows_made": 2,
+                  "FreeThrows_missed": 6,
+                  "PersonalFouls": 0,
+                  "Rebounds": 4,
+                  "Score": 22,
+                  "Steals": 3,
+                  "Turnovers": 9,
+                  "UsedTimeouts": 1
+                }
+              },
+              "OTTotal": {
+                "2pts_attempts": 17,
+                "2pts_made": 3,
+                "2pts_missed": 7,
+                "3pts_attempts": 18,
+                "3pts_made": 17,
+                "3pts_missed": 9,
+                "Assists": 4,
+                "Blocks": 8,
+                "Fouls": 2,
+                "FreeThrows_attempts": 2,
+                "FreeThrows_made": 2,
+                "FreeThrows_missed": 6,
+                "PersonalFouls": 0,
+                "Rebounds": 4,
+                "Score": 22,
+                "Steals": 3,
+                "Turnovers": 9,
+                "UsedTimeouts": 1
+              },
+              "Period": {
+                "4": {
+                  "2pts_attempts": 30,
+                  "2pts_made": 1,
+                  "2pts_missed": 4,
+                  "3pts_attempts": 36,
+                  "3pts_made": 7,
+                  "3pts_missed": 3,
+                  "Assists": 5,
+                  "Blocks": 5,
+                  "Fouls": 3,
+                  "FreeThrows_attempts": 5,
+                  "FreeThrows_made": 3,
+                  "FreeThrows_missed": 3,
+                  "PersonalFouls": 2,
+                  "Rebounds": 3,
+                  "Score": 31,
+                  "Steals": 9,
+                  "Turnovers": 8,
+                  "UsedTimeouts": 3
+                }
+              },
+              "Total": {
+                "2pts_attempts": 47,
+                "2pts_made": 4,
+                "2pts_missed": 11,
+                "3pts_attempts": 54,
+                "3pts_made": 24,
+                "3pts_missed": 12,
+                "Assists": 9,
+                "Blocks": 13,
+                "Fouls": 5,
+                "FreeThrows_attempts": 7,
+                "FreeThrows_made": 5,
+                "FreeThrows_missed": 9,
+                "PersonalFouls": 2,
+                "Rebounds": 7,
+                "Score": 53,
+                "Steals": 12,
+                "Turnovers": 17,
+                "UsedTimeouts": 4
+              }
+            },
+            {
+              "HT": {
+                "2pts_attempts": 70,
+                "2pts_made": 33,
+                "2pts_missed": 17,
+                "3pts_attempts": 14,
+                "3pts_made": 42,
+                "3pts_missed": 16,
+                "Assists": 28,
+                "Blocks": 14,
+                "Fouls": 4,
+                "FreeThrows_attempts": 34,
+                "FreeThrows_made": 21,
+                "FreeThrows_missed": 10,
+                "PersonalFouls": 4,
+                "Rebounds": 16,
+                "Score": 242,
+                "Steals": 17,
+                "Turnovers": 9,
+                "UsedTimeouts": 2
+              },
+              "OT": {
+                "3": {
+                  "2pts_attempts": 38,
+                  "2pts_made": 10,
+                  "2pts_missed": 5,
+                  "3pts_attempts": 19,
+                  "3pts_made": 9,
+                  "3pts_missed": 6,
+                  "Assists": 13,
+                  "Blocks": 2,
+                  "Fouls": 3,
+                  "FreeThrows_attempts": 31,
+                  "FreeThrows_made": 9,
+                  "FreeThrows_missed": 8,
+                  "PersonalFouls": 2,
+                  "Rebounds": 5,
+                  "Score": 72,
+                  "Steals": 3,
+                  "Turnovers": 7,
+                  "UsedTimeouts": 1
+                }
+              },
+              "OTTotal": {
+                "2pts_attempts": 38,
+                "2pts_made": 10,
+                "2pts_missed": 5,
+                "3pts_attempts": 19,
+                "3pts_made": 9,
+                "3pts_missed": 6,
+                "Assists": 13,
+                "Blocks": 2,
+                "Fouls": 3,
+                "FreeThrows_attempts": 31,
+                "FreeThrows_made": 9,
+                "FreeThrows_missed": 8,
+                "PersonalFouls": 2,
+                "Rebounds": 5,
+                "Score": 72,
+                "Steals": 3,
+                "Turnovers": 7,
+                "UsedTimeouts": 1
+              },
+              "Period": {
+                "1": {
+                  "2pts_attempts": 52,
+                  "2pts_made": 15,
+                  "2pts_missed": 10,
+                  "3pts_attempts": 14,
+                  "3pts_made": 24,
+                  "3pts_missed": 9,
+                  "Assists": 28,
+                  "Blocks": 10,
+                  "Fouls": 3,
+                  "FreeThrows_attempts": 24,
+                  "FreeThrows_made": 16,
+                  "FreeThrows_missed": 9,
+                  "PersonalFouls": 0,
+                  "Rebounds": 12,
+                  "Score": 144,
+                  "Steals": 10,
+                  "Turnovers": 8,
+                  "UsedTimeouts": 2
+                },
+                "2": {
+                  "2pts_attempts": 56,
+                  "2pts_made": 37,
+                  "2pts_missed": 13,
+                  "3pts_attempts": 10,
+                  "3pts_made": 37,
+                  "3pts_missed": 12,
+                  "Assists": 12,
+                  "Blocks": 5,
+                  "Fouls": 4,
+                  "FreeThrows_attempts": 35,
+                  "FreeThrows_made": 7,
+                  "FreeThrows_missed": 8,
+                  "PersonalFouls": 7,
+                  "Rebounds": 7,
+                  "Score": 100,
+                  "Steals": 16,
+                  "Turnovers": 3,
+                  "UsedTimeouts": 2
+                },
+                "3": {
+                  "2pts_attempts": 18,
+                  "2pts_made": 19,
+                  "2pts_missed": 5,
+                  "3pts_attempts": 16,
+                  "3pts_made": 0,
+                  "3pts_missed": 1,
+                  "Assists": 14,
+                  "Blocks": 5,
+                  "Fouls": 7,
+                  "FreeThrows_attempts": 11,
+                  "FreeThrows_made": 7,
+                  "FreeThrows_missed": 5,
+                  "PersonalFouls": 3,
+                  "Rebounds": 5,
+                  "Score": 95,
+                  "Steals": 8,
+                  "Turnovers": 4,
+                  "UsedTimeouts": 2
+                }
+              },
+              "Total": {
+                "2pts_attempts": 164,
+                "2pts_made": 81,
+                "2pts_missed": 33,
+                "3pts_attempts": 59,
+                "3pts_made": 70,
+                "3pts_missed": 28,
+                "Assists": 67,
+                "Blocks": 22,
+                "Fouls": 17,
+                "FreeThrows_attempts": 101,
+                "FreeThrows_made": 39,
+                "FreeThrows_missed": 30,
+                "PersonalFouls": 12,
+                "Rebounds": 29,
+                "Score": 411,
+                "Steals": 37,
+                "Turnovers": 22,
+                "UsedTimeouts": 7
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Participant1",
+        "Participant2"
+      ]
+    },
+    "ScoreParticipant": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information for a participant",
+      "title": "Score for Participant in Period",
+      "properties": {
+        "HT": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score up to halftime",
+          "title": "Half Time Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "OT": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Overtime score, the key indicating the overtime number and will have as many keys as there were overtimes in the game",
+          "title": "Overtime Score",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Overtime score for the corresponding overtime",
+              "$ref": "#/$defs/ScoreParticipantPeriod"
+            }
+          }
+        },
+        "OTTotal": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Total overtime score: the sum of scores in all overtimes",
+          "title": "Total Overtime Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Period": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score during a period, the key indicating the period number, with as many keys as periods in the game. For example, an NBA, WNBA, or NCAAW game will have 4 periods. A NCAA game will only have 2 periods.",
+          "title": "Period Score",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Score for the period",
+              "$ref": "#/$defs/ScoreParticipantPeriod"
+            }
+          }
+        },
+        "Total": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Total score: sum of all periods and overtimes",
+          "title": "Total Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        }
+      },
+      "examples": [
+        {},
+        {
+          "Period": {
+            "4": {
+              "2pts_attempts": 30,
+              "2pts_made": 1,
+              "2pts_missed": 4,
+              "3pts_attempts": 36,
+              "3pts_made": 7,
+              "3pts_missed": 3,
+              "Assists": 5,
+              "Blocks": 5,
+              "Fouls": 3,
+              "FreeThrows_attempts": 5,
+              "FreeThrows_made": 3,
+              "FreeThrows_missed": 3,
+              "PersonalFouls": 2,
+              "Rebounds": 3,
+              "Score": 31,
+              "Steals": 9,
+              "Turnovers": 8,
+              "UsedTimeouts": 3
+            }
+          },
+          "Total": {
+            "2pts_attempts": 30,
+            "2pts_made": 1,
+            "2pts_missed": 4,
+            "3pts_attempts": 36,
+            "3pts_made": 7,
+            "3pts_missed": 3,
+            "Assists": 5,
+            "Blocks": 5,
+            "Fouls": 3,
+            "FreeThrows_attempts": 5,
+            "FreeThrows_made": 3,
+            "FreeThrows_missed": 3,
+            "PersonalFouls": 2,
+            "Rebounds": 3,
+            "Score": 31,
+            "Steals": 9,
+            "Turnovers": 8,
+            "UsedTimeouts": 3
+          }
+        },
+        {
+          "OT": {
+            "2": {
+              "2pts_attempts": 17,
+              "2pts_made": 3,
+              "2pts_missed": 7,
+              "3pts_attempts": 18,
+              "3pts_made": 17,
+              "3pts_missed": 9,
+              "Assists": 4,
+              "Blocks": 8,
+              "Fouls": 2,
+              "FreeThrows_attempts": 2,
+              "FreeThrows_made": 2,
+              "FreeThrows_missed": 6,
+              "PersonalFouls": 0,
+              "Rebounds": 4,
+              "Score": 22,
+              "Steals": 3,
+              "Turnovers": 9,
+              "UsedTimeouts": 1
+            }
+          },
+          "OTTotal": {
+            "2pts_attempts": 17,
+            "2pts_made": 3,
+            "2pts_missed": 7,
+            "3pts_attempts": 18,
+            "3pts_made": 17,
+            "3pts_missed": 9,
+            "Assists": 4,
+            "Blocks": 8,
+            "Fouls": 2,
+            "FreeThrows_attempts": 2,
+            "FreeThrows_made": 2,
+            "FreeThrows_missed": 6,
+            "PersonalFouls": 0,
+            "Rebounds": 4,
+            "Score": 22,
+            "Steals": 3,
+            "Turnovers": 9,
+            "UsedTimeouts": 1
+          },
+          "Total": {
+            "2pts_attempts": 17,
+            "2pts_made": 3,
+            "2pts_missed": 7,
+            "3pts_attempts": 18,
+            "3pts_made": 17,
+            "3pts_missed": 9,
+            "Assists": 4,
+            "Blocks": 8,
+            "Fouls": 2,
+            "FreeThrows_attempts": 2,
+            "FreeThrows_made": 2,
+            "FreeThrows_missed": 6,
+            "PersonalFouls": 0,
+            "Rebounds": 4,
+            "Score": 22,
+            "Steals": 3,
+            "Turnovers": 9,
+            "UsedTimeouts": 1
+          }
+        },
+        {
+          "OT": {
+            "2": {
+              "2pts_attempts": 17,
+              "2pts_made": 3,
+              "2pts_missed": 7,
+              "3pts_attempts": 18,
+              "3pts_made": 17,
+              "3pts_missed": 9,
+              "Assists": 4,
+              "Blocks": 8,
+              "Fouls": 2,
+              "FreeThrows_attempts": 2,
+              "FreeThrows_made": 2,
+              "FreeThrows_missed": 6,
+              "PersonalFouls": 0,
+              "Rebounds": 4,
+              "Score": 22,
+              "Steals": 3,
+              "Turnovers": 9,
+              "UsedTimeouts": 1
+            }
+          },
+          "OTTotal": {
+            "2pts_attempts": 17,
+            "2pts_made": 3,
+            "2pts_missed": 7,
+            "3pts_attempts": 18,
+            "3pts_made": 17,
+            "3pts_missed": 9,
+            "Assists": 4,
+            "Blocks": 8,
+            "Fouls": 2,
+            "FreeThrows_attempts": 2,
+            "FreeThrows_made": 2,
+            "FreeThrows_missed": 6,
+            "PersonalFouls": 0,
+            "Rebounds": 4,
+            "Score": 22,
+            "Steals": 3,
+            "Turnovers": 9,
+            "UsedTimeouts": 1
+          },
+          "Period": {
+            "4": {
+              "2pts_attempts": 30,
+              "2pts_made": 1,
+              "2pts_missed": 4,
+              "3pts_attempts": 36,
+              "3pts_made": 7,
+              "3pts_missed": 3,
+              "Assists": 5,
+              "Blocks": 5,
+              "Fouls": 3,
+              "FreeThrows_attempts": 5,
+              "FreeThrows_made": 3,
+              "FreeThrows_missed": 3,
+              "PersonalFouls": 2,
+              "Rebounds": 3,
+              "Score": 31,
+              "Steals": 9,
+              "Turnovers": 8,
+              "UsedTimeouts": 3
+            }
+          },
+          "Total": {
+            "2pts_attempts": 47,
+            "2pts_made": 4,
+            "2pts_missed": 11,
+            "3pts_attempts": 54,
+            "3pts_made": 24,
+            "3pts_missed": 12,
+            "Assists": 9,
+            "Blocks": 13,
+            "Fouls": 5,
+            "FreeThrows_attempts": 7,
+            "FreeThrows_made": 5,
+            "FreeThrows_missed": 9,
+            "PersonalFouls": 2,
+            "Rebounds": 7,
+            "Score": 53,
+            "Steals": 12,
+            "Turnovers": 17,
+            "UsedTimeouts": 4
+          }
+        },
+        {
+          "HT": {
+            "2pts_attempts": 70,
+            "2pts_made": 33,
+            "2pts_missed": 17,
+            "3pts_attempts": 14,
+            "3pts_made": 42,
+            "3pts_missed": 16,
+            "Assists": 28,
+            "Blocks": 14,
+            "Fouls": 4,
+            "FreeThrows_attempts": 34,
+            "FreeThrows_made": 21,
+            "FreeThrows_missed": 10,
+            "PersonalFouls": 4,
+            "Rebounds": 16,
+            "Score": 242,
+            "Steals": 17,
+            "Turnovers": 9,
+            "UsedTimeouts": 2
+          },
+          "OT": {
+            "3": {
+              "2pts_attempts": 38,
+              "2pts_made": 10,
+              "2pts_missed": 5,
+              "3pts_attempts": 19,
+              "3pts_made": 9,
+              "3pts_missed": 6,
+              "Assists": 13,
+              "Blocks": 2,
+              "Fouls": 3,
+              "FreeThrows_attempts": 31,
+              "FreeThrows_made": 9,
+              "FreeThrows_missed": 8,
+              "PersonalFouls": 2,
+              "Rebounds": 5,
+              "Score": 72,
+              "Steals": 3,
+              "Turnovers": 7,
+              "UsedTimeouts": 1
+            }
+          },
+          "OTTotal": {
+            "2pts_attempts": 38,
+            "2pts_made": 10,
+            "2pts_missed": 5,
+            "3pts_attempts": 19,
+            "3pts_made": 9,
+            "3pts_missed": 6,
+            "Assists": 13,
+            "Blocks": 2,
+            "Fouls": 3,
+            "FreeThrows_attempts": 31,
+            "FreeThrows_made": 9,
+            "FreeThrows_missed": 8,
+            "PersonalFouls": 2,
+            "Rebounds": 5,
+            "Score": 72,
+            "Steals": 3,
+            "Turnovers": 7,
+            "UsedTimeouts": 1
+          },
+          "Period": {
+            "1": {
+              "2pts_attempts": 52,
+              "2pts_made": 15,
+              "2pts_missed": 10,
+              "3pts_attempts": 14,
+              "3pts_made": 24,
+              "3pts_missed": 9,
+              "Assists": 28,
+              "Blocks": 10,
+              "Fouls": 3,
+              "FreeThrows_attempts": 24,
+              "FreeThrows_made": 16,
+              "FreeThrows_missed": 9,
+              "PersonalFouls": 0,
+              "Rebounds": 12,
+              "Score": 144,
+              "Steals": 10,
+              "Turnovers": 8,
+              "UsedTimeouts": 2
+            },
+            "2": {
+              "2pts_attempts": 56,
+              "2pts_made": 37,
+              "2pts_missed": 13,
+              "3pts_attempts": 10,
+              "3pts_made": 37,
+              "3pts_missed": 12,
+              "Assists": 12,
+              "Blocks": 5,
+              "Fouls": 4,
+              "FreeThrows_attempts": 35,
+              "FreeThrows_made": 7,
+              "FreeThrows_missed": 8,
+              "PersonalFouls": 7,
+              "Rebounds": 7,
+              "Score": 100,
+              "Steals": 16,
+              "Turnovers": 3,
+              "UsedTimeouts": 2
+            },
+            "3": {
+              "2pts_attempts": 18,
+              "2pts_made": 19,
+              "2pts_missed": 5,
+              "3pts_attempts": 16,
+              "3pts_made": 0,
+              "3pts_missed": 1,
+              "Assists": 14,
+              "Blocks": 5,
+              "Fouls": 7,
+              "FreeThrows_attempts": 11,
+              "FreeThrows_made": 7,
+              "FreeThrows_missed": 5,
+              "PersonalFouls": 3,
+              "Rebounds": 5,
+              "Score": 95,
+              "Steals": 8,
+              "Turnovers": 4,
+              "UsedTimeouts": 2
+            }
+          },
+          "Total": {
+            "2pts_attempts": 164,
+            "2pts_made": 81,
+            "2pts_missed": 33,
+            "3pts_attempts": 59,
+            "3pts_made": 70,
+            "3pts_missed": 28,
+            "Assists": 67,
+            "Blocks": 22,
+            "Fouls": 17,
+            "FreeThrows_attempts": 101,
+            "FreeThrows_made": 39,
+            "FreeThrows_missed": 30,
+            "PersonalFouls": 12,
+            "Rebounds": 29,
+            "Score": 411,
+            "Steals": 37,
+            "Turnovers": 22,
+            "UsedTimeouts": 7
+          }
+        }
+      ],
+      "additionalProperties": false
+    },
+    "ScoreParticipantPeriod": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information for a participant in a given period",
+      "title": "Score for Participant in Period",
+      "properties": {
+        "2pts_attempts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 2pt field goals attempted",
+          "title": "Two Points Attempts",
+          "examples": [
+            0,
+            6,
+            25,
+            150
+          ]
+        },
+        "2pts_made": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 2pt field goals made",
+          "title": "Two Points Made",
+          "examples": [
+            0,
+            4,
+            60,
+            100
+          ]
+        },
+        "2pts_missed": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 2pt field goals missed",
+          "title": "Two Points Missed",
+          "examples": [
+            0,
+            5,
+            30,
+            90
+          ]
+        },
+        "3pts_attempts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 3pt field goals attempted",
+          "title": "Three Points Attempts",
+          "examples": [
+            0,
+            6,
+            25,
+            150
+          ]
+        },
+        "3pts_made": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 3pt field goals made",
+          "title": "Three Points Made",
+          "examples": [
+            0,
+            4,
+            60,
+            100
+          ]
+        },
+        "3pts_missed": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 3pt field goals missed",
+          "title": "Three Points Missed",
+          "examples": [
+            0,
+            5,
+            30,
+            90
+          ]
+        },
+        "Assists": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of assists",
+          "title": "Assists",
+          "examples": [
+            0,
+            5,
+            12,
+            30
+          ]
+        },
+        "Blocks": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of blocks",
+          "title": "Blocks",
+          "examples": [
+            0,
+            5,
+            12,
+            30
+          ]
+        },
+        "Fouls": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of fouls",
+          "title": "Fouls",
+          "examples": [
+            0,
+            5,
+            12,
+            30
+          ]
+        },
+        "FreeThrows_attempts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of free throw attempts",
+          "title": "Free Throws Attempts",
+          "examples": [
+            0,
+            6,
+            20,
+            80
+          ]
+        },
+        "FreeThrows_made": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of free throw made",
+          "title": "Free Throws Made",
+          "examples": [
+            0,
+            5,
+            16,
+            60
+          ]
+        },
+        "FreeThrows_missed": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of free throw missed",
+          "title": "Free Throws Missed",
+          "examples": [
+            0,
+            3,
+            12,
+            47
+          ]
+        },
+        "PersonalFouls": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of personal fouls",
+          "title": "Personal Fouls",
+          "examples": [
+            0,
+            3,
+            5
+          ]
+        },
+        "Rebounds": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of rebounds",
+          "title": "Rebounds",
+          "examples": [
+            0,
+            3,
+            13,
+            26
+          ]
+        },
+        "Score": {
+          "type": [
+            "number"
+          ],
+          "description": "Score for the period",
+          "title": "Score",
+          "examples": [
+            0,
+            23,
+            77,
+            122
+          ]
+        },
+        "Steals": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of steals",
+          "title": "Steals",
+          "examples": [
+            0,
+            3,
+            12
+          ]
+        },
+        "Turnovers": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of turnovers",
+          "title": "Turnovers",
+          "examples": [
+            0,
+            7,
+            18
+          ]
+        },
+        "UsedTimeouts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of timeouts the team has used ",
+          "title": "Used Timeouts",
+          "examples": [
+            0,
+            1,
+            4,
+            7
+          ]
+        }
+      },
+      "examples": [
+        {
+          "2pts_attempts": 164,
+          "2pts_made": 81,
+          "2pts_missed": 33,
+          "3pts_attempts": 59,
+          "3pts_made": 70,
+          "3pts_missed": 28,
+          "Assists": 67,
+          "Blocks": 22,
+          "Fouls": 17,
+          "FreeThrows_attempts": 101,
+          "FreeThrows_made": 39,
+          "FreeThrows_missed": 30,
+          "PersonalFouls": 12,
+          "Rebounds": 29,
+          "Score": 411,
+          "Steals": 37,
+          "Turnovers": 22,
+          "UsedTimeouts": 7
+        },
+        {
+          "2pts_attempts": 56,
+          "2pts_made": 37,
+          "2pts_missed": 13,
+          "3pts_attempts": 10,
+          "3pts_made": 37,
+          "3pts_missed": 12,
+          "Assists": 12,
+          "Blocks": 5,
+          "Fouls": 4,
+          "FreeThrows_attempts": 35,
+          "FreeThrows_made": 7,
+          "FreeThrows_missed": 8,
+          "PersonalFouls": 7,
+          "Rebounds": 7,
+          "Score": 100,
+          "Steals": 16,
+          "Turnovers": 3,
+          "UsedTimeouts": 2
+        },
+        {
+          "2pts_attempts": 38,
+          "2pts_made": 10,
+          "2pts_missed": 5,
+          "3pts_attempts": 19,
+          "3pts_made": 9,
+          "3pts_missed": 6,
+          "Assists": 13,
+          "Blocks": 2,
+          "Fouls": 3,
+          "FreeThrows_attempts": 31,
+          "FreeThrows_made": 9,
+          "FreeThrows_missed": 8,
+          "PersonalFouls": 2,
+          "Rebounds": 5,
+          "Score": 72,
+          "Steals": 3,
+          "Turnovers": 7,
+          "UsedTimeouts": 1
+        }
+      ],
+      "additionalProperties": false,
+      "required": [
+        "2pts_attempts",
+        "2pts_made",
+        "2pts_missed",
+        "3pts_attempts",
+        "3pts_made",
+        "3pts_missed",
+        "Assists",
+        "Blocks",
+        "Fouls",
+        "FreeThrows_attempts",
+        "FreeThrows_made",
+        "FreeThrows_missed",
+        "PersonalFouls",
+        "Rebounds",
+        "Score",
+        "Steals",
+        "Turnovers",
+        "UsedTimeouts"
+      ]
+    },
+    "PlayerStatsForParticipants": {
+      "type": [
+        "object"
+      ],
+      "description": "Player statistics for both participants",
+      "title": "Player Statistics",
+      "properties": {
+        "Participant1": {
+          "type": [
+            "object"
+          ],
+          "description": "Player statistics for participant 1, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant1",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for the referenced player",
+              "$ref": "#/$defs/PlayerStats"
+            }
+          }
+        },
+        "Participant2": {
+          "type": [
+            "object"
+          ],
+          "description": "Player statistics for participant 2, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant2",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for the referenced player",
+              "$ref": "#/$defs/PlayerStats"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Participant1",
+        "Participant2"
+      ]
+    },
+    "PlayerStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Player statistics, usually indexed by the player id",
+      "title": "Player Statistics",
+      "properties": {
+        "assists": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of assists",
+          "title": "Assists",
+          "examples": [
+            0,
+            1,
+            2
+          ]
+        },
+        "blocks": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of blocks",
+          "title": "Blocks",
+          "examples": [
+            0,
+            2,
+            5
+          ]
+        },
+        "fouls": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of fouls",
+          "title": "Fouls",
+          "examples": [
+            0,
+            5,
+            7
+          ]
+        },
+        "foulsAgainst": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of fouls against",
+          "title": "Fouls Against",
+          "examples": [
+            0,
+            4,
+            9
+          ]
+        },
+        "freeThrows": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of free throws",
+          "title": "Free Throws",
+          "examples": [
+            0,
+            2,
+            6
+          ]
+        },
+        "personalFouls": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of personal fouls",
+          "title": "Personal fouls",
+          "examples": [
+            0,
+            2,
+            4
+          ]
+        },
+        "pts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of points",
+          "title": "Points",
+          "examples": [
+            0,
+            9,
+            20,
+            100
+          ]
+        },
+        "rebounds": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of rebounds",
+          "title": "Rebounds",
+          "examples": [
+            0,
+            2,
+            4
+          ]
+        },
+        "steals": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of steals",
+          "title": "Steals",
+          "examples": [
+            0,
+            2,
+            4
+          ]
+        },
+        "threePts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 3pt field goals made",
+          "title": "Three Points",
+          "examples": [
+            0,
+            2,
+            4,
+            10
+          ]
+        },
+        "turnovers": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of turnovers",
+          "title": "Turnovers",
+          "examples": [
+            0,
+            2,
+            4
+          ]
+        },
+        "twoPts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 2pt field goals made",
+          "title": "Two Points",
+          "examples": [
+            0,
+            2,
+            4,
+            10
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "assists",
+        "blocks",
+        "fouls",
+        "foulsAgainst",
+        "freeThrows",
+        "personalFouls",
+        "pts",
+        "rebounds",
+        "steals",
+        "threePts",
+        "turnovers",
+        "twoPts"
+      ]
+    },
+    "PlayersOnCourt": {
+      "type": [
+        "object"
+      ],
+      "description": "Player on court for both participants",
+      "title": "Players on Court",
+      "properties": {
+        "Participant1": {
+          "type": [
+            "object"
+          ],
+          "description": "Players on court for participant 1, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant1",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "number"
+              ],
+              "description": "Flag is 1 if player is on court, 0 if not",
+              "$ref": "#/$defs/PlayerOnCourtFlag"
+            }
+          }
+        },
+        "Participant2": {
+          "type": [
+            "object"
+          ],
+          "description": "Players on court for participant 2, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant2",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "number"
+              ],
+              "description": "Flag is 1 if player is on court, 0 if not",
+              "$ref": "#/$defs/PlayerOnCourtFlag"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Participant1",
+        "Participant2"
+      ]
+    },
+    "PlayerOnCourtFlag": {
+      "type": [
+        "number"
+      ],
+      "description": "Numeric value. It is 1 if the corresponding player is on court, 0 if they are not",
+      "title": "Player on court flag",
+      "examples": [
+        0,
+        1
+      ]
+    }
+  }
+}
+

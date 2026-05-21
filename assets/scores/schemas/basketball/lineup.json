@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sent when the lineup is confirmed.",
+  "title": "lineup",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "lineup"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "HasSecondaryData": {
+          "type": [
+            "null",
+            "boolean"
+          ],
+          "description": "If true, the game has secondary data enabled",
+          "title": "HasSecondaryData",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "PlayersOnCourt": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Players on court for both teams at the start of the fixture",
+          "title": "Players on Court",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayersOnCourt"
+        },
+        "StartersConfirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "if true, the starter players for both participants are confirmed",
+          "title": "StartersConfirmed",
+          "examples": [
+            false,
+            true
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

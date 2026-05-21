@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "After scoring a touchdown the team attempts to run a play from scrimmage over the opponents goal line.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "2pt_conversion_attempt",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "2pt_conversion_attempt"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "Participant": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "PossibleEvent": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Possible events happening during the game, not associated to a particular team. To be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen",
+          "title": "Possible Event",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PossibleEvent"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Down",
+    "FixtureId",
+    "Id",
+    "Participant",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

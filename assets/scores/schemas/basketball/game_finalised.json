@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Game finalised.",
+  "title": "game_finalised",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "game_finalised"
+          ]
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics.",
+          "title": "Player Stats",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PlayerStatsForParticipants"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
