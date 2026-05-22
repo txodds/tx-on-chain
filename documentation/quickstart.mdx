@@ -89,7 +89,7 @@ After subscribing on-chain, activate your API access by signing the transaction 
 
 ```typescript
 // Get guest JWT
-const authResponse = await axios.post("https://oracle-dev.txodds.com/auth/guest/start");
+const authResponse = await axios.post("https://txline.txodds.com/auth/guest/start");
 const jwt = authResponse.data.token;
 
 // Sign the subscription transaction
@@ -100,7 +100,7 @@ const walletSignature = Buffer.from(signatureBytes).toString("base64");
 
 // Activate API access
 const activationResponse = await axios.post(
-  "https://oracle-dev.txodds.com/api/token/activate",
+  "https://txline.txodds.com/api/token/activate",
   {
     txSig,
     walletSignature,

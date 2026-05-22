@@ -8,7 +8,7 @@ description: "Real-time odds and scores updates via Server-Sent Events"
 Connect to the odds stream for real-time updates.
 
 ```typescript
-const streamUrl = "https://oracle-dev.txodds.com/api/odds/stream";
+const streamUrl = "https://txline.txodds.com/api/odds/stream";
 const streamResponse = await fetch(streamUrl, {
   headers: {
     Authorization: `Bearer ${jwt}`,
@@ -54,7 +54,7 @@ try {
 Connect to the scores stream for real-time updates.
 
 ```typescript
-const streamUrl = "https://oracle-dev.txodds.com/api/scores/stream";
+const streamUrl = "https://txline.txodds.com/api/scores/stream";
 const streamResponse = await fetch(streamUrl, {
   headers: {
     Authorization: `Bearer ${jwt}`,
