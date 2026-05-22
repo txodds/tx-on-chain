@@ -12,7 +12,7 @@ TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It suppor
 
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
-   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxODDS subscription tokens` and pay (at the time of writing) a fixed amount of tokens for one-week long access to proprietary data.
+   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxL` and pay (at the time of writing) a fixed amount of TxL for one-week long access to proprietary data.
 
 **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
 
@@ -26,8 +26,8 @@ The following is a basic diagram showing the system in operation.
 ![Alt text](docs/assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
 The OpenAPI documentation is available at
-   - https://oracle-dev.txodds.com/docs for Solana DevNet use.
-   - https://oracle.txodds.com/docs for Solana MainNet use.
+   - https://txline-dev.txodds.com/docs for Solana DevNet use.
+   - https://txline.txodds.com/docs for Solana MainNet use.
 
 The data the Oracle system is currently offering includes
 - fixture snapshots/updates: every time any key metadata for a fixture changes, an update becomes available;
@@ -142,7 +142,7 @@ Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
 
 ## Access Flow
 
-The following diagram shows how the users typically access data from purchasing the subscription tokens to issuing off-chain calls.
+The following diagram shows how the users typically access data from purchasing TxL to issuing off-chain calls.
 
 ![Alt text](docs/assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
@@ -152,10 +152,10 @@ Before accessing the oracle services, you must purchase TxOracle tokens. See `ex
 
 ### 2. Access Off-Chain API
 
-With staked tokens, you can access the off-chain API services through the following request flow:
+With TxL, you can access the off-chain API services through the following request flow:
 
 1. **Guest Authentication** - Make a `POST /auth/guest/start` request to receive a JWT token
-2. **Create Subscription** - Execute an on-chain `subscribe_with_token` transaction with encrypted JWT payload, which will transfer the price of the subscription in Tx tokens to the TxODDS token treasury.
+2. **Create Subscription** - Execute an on-chain `subscribe_with_token` transaction with encrypted JWT payload, which will transfer the price of the subscription in TxL to the TxODDS treasury.
 3. **Token Activation** - Make a `GET /api/token/activate` request with the transaction signature and encryption parameters to receive your API access token
 4. **API Access** - Use the API token in subsequent requests to all off-chain services
 
@@ -209,7 +209,7 @@ anchor run validate_odds_onchain
 
 #### `examples/tokens/purchase_tokens.ts`
 
-Demonstrates how to purchase TxLINE subscription tokens using SOL.
+Demonstrates how to purchase TxL using SOL.
 
 1. Executes on-chain token purchase transaction
 2. Transfers tokens from treasury to user's account
