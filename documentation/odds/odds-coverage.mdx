@@ -1,16 +1,7 @@
 ---
 title: "StablePrice Feed"
-description: "Soccer leagues covered by free-tier stable price odds"
+description: "Leagues covered by the odds feed"
 ---
-
-## Free-Tier Stable Price Odds
-
-Since November 7, 2025, the following endpoints provide free access to de-margined odds with 60-second delay:
-
-- `GET /guest/odds/snapshot/{fixtureId}`
-- `GET /guest/odds/stream`
-
-These endpoints only require a JWT token (no subscription needed) and cover the following competitions:
 
 ### Soccer
 
@@ -21,18 +12,6 @@ These endpoints only require a JWT token (no subscription needed) and cover the 
 >
   Complete list of all supported soccer leagues
 </Card>
-
-| Competition ID | Competition             | Country      |
-|----------------|-------------------------|--------------|
-| 7              | Primera División        | Spain        |
-| 8              | Premier League          | England      |
-| 9              | Bundesliga              | Germany      |
-| 10             | UEFA Champions League   | European Cup |
-| 13             | Serie A                 | Italy        |
-| 16             | Ligue 1                 | France       |
-| 18             | UEFA Europa League      | European Cup |
-| 26             | Serie A                 | Brazil       |
-| 87             | Liga Profesional Argentina | Argentina |
 
 ### NCAAB (College Basketball)
 
@@ -48,7 +27,3 @@ These endpoints only require a JWT token (no subscription needed) and cover the 
 | 10005930       | NCAA Extra Matches   |
 | 500005         | NCAA Division I FBS  |
 | 10005302       | NCAA Division I (W)  |
-
-## Odds Channel Content
-
-Fully de-margined stable odds (probabilities) for main markets. Stability comes from the TxODDS stable price product that provides consistent market views, accounting for operators' errors and outages.
