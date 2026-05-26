@@ -21,6 +21,7 @@
             "group": "Getting started",
             "pages": [
               "documentation/quickstart",
+              "documentation/worldcup",
               "documentation/subscription-tiers"
             ]
           },
