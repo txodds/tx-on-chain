@@ -43,8 +43,7 @@
             "group": "Solana Programs",
             "pages": [
               "documentation/programs/addresses",
-              "documentation/programs/mainnet",
-              "documentation/programs/devnet"
+              "documentation/programs/mainnet"
             ]
           },
           {
