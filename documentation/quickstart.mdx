@@ -19,29 +19,58 @@ TxLINE provides cryptographically verifiable sports data through a hybrid Solana
 
 In order to purchase TxL, your wallet will need to be funded with USDT. If you don't have USDT on Solana, you can swap for it using [Jupiter](https://jup.ag/) or another exchange.
 
-Once you have USDT in your Solana wallet, you can purchase TxL using the on-chain program.
+TxL purchases use a 2-step process: request a quote from the backend, then verify and sign the transaction locally.
+
+### Step 1: Request Purchase Quote
 
 ```typescript
-const usdtAmount = new anchor.BN(1_000_000); // 1 USDT
+// Get guest JWT
+const authResponse = await axios.post("https://txline.txodds.com/auth/guest/start");
+const jwt = authResponse.data.token;
 
-const txSignature = await program.methods
-  .purchaseSubscriptionTokenUsdt(usdtAmount)
-  .accounts({
-    buyer: provider.wallet.publicKey,
-    usdtMint: USDT_MINT,
-    buyerUsdtAccount: buyerUsdtAccount.address,
-    usdtTreasuryVault: usdtTreasuryVault,
-    usdtTreasuryPda: usdtTreasuryPda,
-    subscriptionTokenMint: SUBSCRIPTION_TOKEN_MINT,
-    tokenTreasuryVault: tokenTreasuryVault,
-    tokenTreasuryPda: tokenTreasuryPda,
-    buyerTokenAccount: buyerTokenAccount.address,
-    tokenProgram: TOKEN_PROGRAM_ID,
-    token2022Program: TOKEN_2022_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+// Request purchase quote
+const txlineAmount = 50; // Amount of TxL tokens to purchase
+
+const quoteResponse = await fetch("https://txline.txodds.com/api/guest/purchase/quote", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${jwt}`
+  },
+  body: JSON.stringify({
+    buyerPubkey: wallet.publicKey.toBase58(),
+    txlineAmount: txlineAmount
   })
-  .rpc();
+});
+
+const quoteData = await quoteResponse.json();
+console.log(`Base Cost: ${quoteData.baseUsdtCost} USDT`);
+console.log(`Premium Fee: ${quoteData.feeUsdtAmount} USDT`);
+console.log(`Total: ${quoteData.totalUsdtCharged} USDT`);
+```
+
+### Step 2: Verify and Sign Transaction
+
+```typescript
+// Deserialize the transaction from the quote
+const txBuffer = Buffer.from(quoteData.transactionBase64, "base64");
+const transaction = anchor.web3.Transaction.from(txBuffer);
+
+// Verify transaction safety locally (recommended)
+// This ensures the transaction matches what you requested
+
+// Sign the transaction
+transaction.partialSign(wallet);
+
+// Broadcast to Solana
+const txSignature = await connection.sendRawTransaction(transaction.serialize(), {
+  skipPreflight: false,
+  preflightCommitment: "confirmed"
+});
+
+// Confirm transaction
+await connection.confirmTransaction(txSignature, "confirmed");
+console.log("Purchase successful:", txSignature);
 ```
 
 <Note>
