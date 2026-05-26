@@ -5,44 +5,14 @@ description: "Get started with the TxLINE API in minutes"
 
 ## Overview
 
-TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system that provides cryptographically verifiable sports data with on-chain validation.
-
-### Key Features
-
-**Data Access Layer**: Proprietary TxODDS data available for funded blockchain users through time-limited API tokens linked to on-chain subscription transactions.
-
-- Data is canonicalized so all fixtures, odds, and scores are provably unique
-- On-chain validation using cryptographic proofs based on Merkle roots
-- Delivered in request-response or streaming form
-- One-week subscriptions secured through cryptographic protocol
-
-**Data Channels**:
-- **Fixtures**: Snapshots and updates whenever fixture metadata changes
-- **Odds**: TxODDS stable de-margined prices for extensive sports coverage
-- **Scores**: Fully detailed play-by-play data for US College Football and Basketball
-
-### How It Works
-
-Data is distributed in real-time to paying blockchain customers via request-response or streaming. Simultaneously, batches accumulated over time intervals (5 minutes for odds/scores, 1 hour for fixtures) are cryptographically signed with Merkle roots published on-chain in perpetuity.
-
-The `txoracle` Solana program enables cryptographic verification that any published data was genuinely contained in the referenced batch, providing mathematical certainty of data authenticity.
-
-### Configuration
-
-Production environment with live matches and low-latency delivery.
-
-```
-API: https://txline.txodds.com/api/
-Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
-Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
-```
+TxLINE provides cryptographically verifiable sports data through a hybrid Solana on-chain and TxODDS off-chain system. Access fixtures, odds, and scores with time-limited API tokens secured by on-chain subscriptions.
 
 ---
 
 ## Getting Started
 
 <Info>
-**Want to try for free?** Check out our [World Cup Free Tier](/documentation/world-cup-quickstart) for instant access to EPL and World Cup data with no payment required.
+**Want to try for free?** Check out our [World Cup Free Tier](/documentation/worldcup) for instant access to EPL and World Cup data with no payment required.
 </Info>
 
 ## Purchase TxL
@@ -162,6 +132,6 @@ You're now ready to use the API! Use the `jwt` and `apiToken` to authenticate yo
 
 ## Next Steps
 
-- View the complete [API Reference](/api-reference/authentication/guest-start) to explore all available endpoints
+- View the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) to explore all available endpoints
 - Check out [Subscription Tiers](/documentation/subscription-tiers) for pricing and plan options
-- Try the [World Cup Free Tier](/documentation/world-cup-quickstart) for instant free access
+- Try the [World Cup Free Tier](/documentation/worldcup) for instant free access
