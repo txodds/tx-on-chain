@@ -19,7 +19,6 @@
           {
             "group": "Getting started",
             "pages": [
-              "documentation/introduction",
               "documentation/quickstart",
               "documentation/subscription-tiers"
             ]
