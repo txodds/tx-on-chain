@@ -9,9 +9,6 @@
     "dark": "#FF5723"
   },
   "favicon": "https://txodds.github.io/tx-on-chain/assets/logo/favicon.svg",
-  "api": {
-    "baseUrl": "https://txline.txodds.com"
-  },
   "navigation": {
     "tabs": [
       {
@@ -72,14 +69,6 @@
   "logo": {
     "light": "https://txodds.github.io/tx-on-chain/assets/logo/light.svg",
     "dark": "https://txodds.github.io/tx-on-chain/assets/logo/dark.svg"
-  },
-  "navbar": {
-    "links": [
-      {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
-      }
-    ]
   },
   "contextual": {
     "options": [
