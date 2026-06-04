@@ -79,10 +79,10 @@ TxODDS may refuse purchase requests and ask for KYC (Know Your Customer) verific
 
 ## Subscribe On-Chain
 
-Subscribe to the TxLINE by paying with TxL. Choose between the free tier, custom league selection, or full access for real-time odds and scores.
+Subscribe to the TxLINE by paying with TxL. Choose between a standard subscription or a custom league selection.
 
 <Tabs>
-  <Tab title="Free Tier">
+  <Tab title="Standard Subscription">
     ```typescript
     const SERVICE_LEVEL_ID = 1;
     const DURATION_WEEKS = 1;
@@ -123,26 +123,6 @@ Subscribe to the TxLINE by paying with TxL. Choose between the free tier, custom
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
       })
-      .rpc();
-    ```
-  </Tab>
-  <Tab title="Full Access">
-    ```typescript
-    const DURATION_WEEKS = 4; // Minimum 4 weeks
-
-    const txSig = await program.methods
-      .subscribeV2(DURATION_WEEKS)
-      .accounts({
-        user: user.publicKey,
-        tokenMint: tokenMint,
-        userTokenAccount: userTokenAccount.address,
-        tokenTreasuryVault: tokenTreasuryVault,
-        tokenTreasuryPda: tokenTreasuryPda,
-        tokenProgram: TOKEN_2022_PROGRAM_ID,
-        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        systemProgram: anchor.web3.SystemProgram.programId,
-      })
-      .signers([user])
       .rpc();
     ```
   </Tab>
