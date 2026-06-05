@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Signals the current play has finished. Provides updated scrimmage line information upon confirmation (in regards to the next down).\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "end_play",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "end_play"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "Data": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Number": {
+              "type": [
+                "number"
+              ],
+              "description": "Current down number (0-4)",
+              "title": "Number",
+              "examples": [
+                0,
+                1,
+                2,
+                3,
+                4
+              ]
+            },
+            "YardsToEndzone": {
+              "type": [
+                "number"
+              ],
+              "description": "Yards left to the end zone of the opponent",
+              "title": "Yards To End Zone",
+              "examples": [
+                0,
+                5,
+                20
+              ]
+            },
+            "YardsToGo": {
+              "type": [
+                "number"
+              ],
+              "description": "Yards left to acquire in the current down",
+              "title": "Yards To Go",
+              "examples": [
+                0,
+                5,
+                10
+              ]
+            },
+            "ScrimmageLine": {
+              "type": [
+                "number"
+              ],
+              "description": "The position of the scrimmage line. Values: 0 - 50",
+              "title": "Scrimmage Line",
+              "examples": [
+                0,
+                2,
+                15,
+                45,
+                50
+              ]
+            },
+            "Possession": {
+              "type": [
+                "number"
+              ],
+              "description": "Referenced participant number (`1` for `Participant1`, and `2` for `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+              "title": "Possession",
+              "examples": [
+                1,
+                2
+              ]
+            },
+            "Side": {
+              "type": [
+                "string"
+              ],
+              "description": "The side of the pitch where the scrimmage line is place ",
+              "title": "Side",
+              "enum": [
+                "offensive",
+                "defensive"
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Number",
+            "YardsToGo",
+            "ScrimmageLine",
+            "Possession",
+            "Side"
+          ]
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "FollowsAction": {
+          "type": [
+            "number"
+          ],
+          "description": "Action ID of a previous action that originated this action. It is used to indicate actions that may need to be discarded as a unit",
+          "title": "Follows Action",
+          "examples": [
+            35,
+            17,
+            56,
+            67,
+            98
+          ]
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "KickoffInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Kick-off information",
+          "title": "KickoffInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/KickoffInfo"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "InPlayInfo",
+    "KickoffInfo",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
