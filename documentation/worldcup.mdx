@@ -1,17 +1,18 @@
 ---
 title: "World Cup Free Tier"
-description: "Access EPL and World Cup data for free with TxLINE's complimentary tier"
+description: "Access World Cup and International Friendlies data for free with TxLINE's complimentary tiers"
 ---
 
 ## Start Building with Free World Cup Data
 
-Experience the power of TxLINE's real-time sports data API with our complimentary free tier. Get instant access to EPL and World Cup data with no payment required, no credit card needed, and no commitment.
+Experience the power of TxLINE's sports data API with our complimentary free tiers. Get instant access to World Cup and International Friendlies data with no payment required, no credit card needed, and no commitment. Choose between 60-second delayed data or real-time data - both completely free!
 
 ## What's Included
 
 <CardGroup cols={2}>
-  <Card title="EPL + World Cup Data" icon="trophy">
-    Complete access to English Premier League and World Cup matches with 60-second delay.
+  <Card title="Two Free Tiers Available" icon="trophy">
+    **Service Level 1**: World Cup & Int Friendlies with 60-second delay
+    **Service Level 12**: World Cup & Int Friendlies in real-time
   </Card>
   <Card title="Historical Replay" icon="clock-rotate-left">
     Full access to historical data for past matches and events analysis.
@@ -53,16 +54,17 @@ const provider = new anchor.AnchorProvider(
 
 ### Step 2: Subscribe to Free Tier
 
-Subscribe to service level ID 0 for free access. No TxL tokens required!
+Choose between two free service levels - no TxL tokens required!
 
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SystemProgram } from "@solana/web3.js";
 
-// Free tier configuration
-const SERVICE_LEVEL_ID = 1; // Free tier: EPL + World Cup
-const DURATION_WEEKS = 4; // Subscribe for 4 week at a time
+// Free tier configuration - choose one:
+const SERVICE_LEVEL_ID = 1;  // World Cup & Int Friendlies (60-second delay)
+// const SERVICE_LEVEL_ID = 12; // World Cup & Int Friendlies (Real-time)
+const DURATION_WEEKS = 4; // Subscribe for 4 weeks at a time
 const SELECTED_LEAGUES: number[] = []; // Empty for standard bundle
 
 // Subscribe on-chain
@@ -85,7 +87,7 @@ console.log("Subscription transaction:", txSig);
 ```
 
 <Note>
-**No Payment Required**: Since this is the free tier (ID 0), you won't be charged any TxL tokens. The transaction simply registers your subscription on-chain.
+**No Payment Required**: Both free tiers (ID 1 with 60-second delay and ID 12 real-time) require no TxL tokens. The transaction simply registers your subscription on-chain.
 </Note>
 
 ### Step 3: Activate Your API Access
@@ -133,7 +135,7 @@ console.log("API Token activated successfully!");
 
 ### Step 4: Make Your First API Call
 
-You're all set! Start fetching World Cup and EPL data using your API token.
+You're all set! Start fetching World Cup and International Friendlies data using your API token.
 
 Check out the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) for all available endpoints including:
 
@@ -153,7 +155,7 @@ Love the free tier? Upgrade to unlock:
   <Card title="Real-Time Data" icon="bolt">
     Zero delay live data for time-sensitive applications
   </Card>
-  <Card title="100+ Leagues" icon="trophy">
+  <Card title="1000+ Leagues" icon="trophy">
     Access to all major leagues worldwide
   </Card>
   <Card title="Custom Leagues" icon="sliders">
@@ -161,13 +163,13 @@ Love the free tier? Upgrade to unlock:
   </Card>
 </CardGroup>
 
-View our [Subscription Tiers](/subscription-tiers) to see all available options. Paid tiers start from just **125,000 TxL ($125) per week**.
+View our [Subscription Tiers](/subscription-tiers) to see all available options. Paid tiers start from just **500,000 TxL ($500) per 28 days**.
 
 ## Frequently Asked Questions
 
 <AccordionGroup>
   <Accordion title="Do I need to renew my free subscription?">
-    Yes, free tier subscriptions are valid for 1 week at a time. Simply re-subscribe when your access expires. There's no cost to renew.
+    Yes, free tier subscriptions are valid for 4 weeks (28 days) at a time. Simply re-subscribe when your access expires. There's no cost to renew.
   </Accordion>
 
   <Accordion title="Can I upgrade from free tier to paid?">
