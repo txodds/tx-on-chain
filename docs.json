@@ -33,6 +33,8 @@
             "group": "Scores",
             "pages": [
               "documentation/scores/overview",
+              "documentation/scores/schedule",
+              "documentation/scores/soccer-feed",
               "documentation/scores/football-feed",
               "documentation/scores/basketball-feed"
             ]
