@@ -3,74 +3,67 @@ title: "On-Chain Validation"
 description: "Validate scores data using cryptographic Merkle proofs"
 ---
 
-## Scores Validation
+<Info>
+**Prerequisites**: Complete the [Quickstart](/quickstart) guide to set up authentication and subscriptions
+</Info>
 
-Validate scores data against on-chain Merkle roots using cryptographic proofs.
+<Info>
+**API Endpoints**: Use `https://txline.txodds.com/api/` for mainnet or `https://txline-dev.txodds.com/api/` for devnet
+</Info>
+
+## Overview
+
+This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform both single-stat and two-stat validations.
+
+## Setup
 
 ```typescript
+import * as anchor from "@coral-xyz/anchor";
 import { PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
+import * as config from '../common/config';
+import * as users from '../common/users';
 
-const fixtureId = 17271370;
-const seq = 401;
-const statKey = 1;
-const statKey2 = 2;
+const provider = anchor.AnchorProvider.env();
+anchor.setProvider(provider);
+const program = anchor.workspace.Txoracle as anchor.Program<Txoracle>;
+```
 
+## Fetching Scores Data
+
+Retrieve a snapshot of scores for a specific fixture:
+
+```typescript
+const fixtureId = 17952170;
+const response = await users.apiClient.get(`/scores/snapshot/${fixtureId}?asOf=${Date.now()}`);
+console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
+```
+
+Search for recent score updates:
+
+```typescript
+const now = new Date();
+const targetTime = new Date(now.getTime() - (5 * 300000)); // 25 minutes ago
+const epochDay = Math.floor(targetTime.getTime() / 86400000);
+const hourOfDay = targetTime.getUTCHours();
+const interval = Math.floor(targetTime.getUTCMinutes() / 5);
+
+const updateUrl = `${config.API_BASE_URL}/scores/updates/${epochDay}/${hourOfDay}/${interval}`;
+const updates = await users.apiClient.get(updateUrl);
+console.log(`Updates found:`, updates.data);
+```
+
+## Single-Stat Validation
+
+Validate a single statistic against on-chain Merkle roots:
+
+```typescript
 // Fetch validation data from API
-const validationResponse = await httpClient.get(
-  "/api/scores/stat-validation",
-  {
-    params: {
-      fixtureId,
-      seq,
-      statKey,
-      statKey2
-    },
-  }
-);
-const validation = validationResponse.data;
+const url = `/scores/stat-validation?fixtureId=17952170&seq=941&statKey=1002`;
+const response = await users.apiClient.get(url);
+const validation = response.data;
 
-// Find the daily scores roots PDA
-const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
-const [dailyScoresRootsPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_scores_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2),
-  ],
-  program.programId
-);
-
-// Prepare stat to prove
-const statToProve = {
-  statToProve: {
-    key: validation.statToProve.key,
-    value: validation.statToProve.value,
-    period: validation.statToProve.period,
-  },
-  eventStatRoot: validation.eventStatRoot,
-  statProof: validation.statProof.map((node) => ({
-    hash: node.hash,
-    isRightSibling: node.isRightSibling,
-  })),
-};
-
-// Define predicate (comparison threshold)
-const predicate = {
-  threshold: 11,
-  comparison: { lessThan: {} },
-};
-
-// Prepare proofs
-const fixtureProof = validation.subTreeProof.map((node) => ({
-  hash: node.hash,
-  isRightSibling: node.isRightSibling,
-}));
-
-const mainTreeProof = validation.mainTreeProof.map((node) => ({
-  hash: node.hash,
-  isRightSibling: node.isRightSibling,
-}));
-
+// Prepare fixture summary
 const fixtureSummary = {
   fixtureId: new BN(validation.summary.fixtureId),
   updateStats: {
@@ -81,79 +74,184 @@ const fixtureSummary = {
   eventsSubTreeRoot: validation.summary.eventStatsSubTreeRoot,
 };
 
-// Execute on-chain validation
-const signature = await program.methods
-  .validateStat(
-    new BN(validation.ts),
-    fixtureSummary,
-    fixtureProof,
-    mainTreeProof,
-    predicate,
-    statToProve,
-    null,  // No second stat
-    null   // No operator
-  )
-  .accounts({
-    dailyScoresMerkleRoots: dailyScoresRootsPda,
-  })
-  .preInstructions([
-    ComputeBudgetProgram.setComputeUnitLimit({
-      units: 10000000,
-    }),
-  ])
-  .rpc();
+// Prepare Merkle proofs
+const fixtureProof = validation.subTreeProof.map((node: any) => ({
+  hash: node.hash,
+  isRightSibling: node.isRightSibling,
+}));
 
-console.log("Validation confirmed:", signature);
-console.log(`Validated: ${statToProve.statToProve.key} = ${statToProve.statToProve.value}`);
-```
+const mainTreeProof = validation.mainTreeProof.map((node: any) => ({
+  hash: node.hash,
+  isRightSibling: node.isRightSibling,
+}));
 
-## Two-Stat Validation
-
-Validate a comparison between two stats (e.g., score difference).
-
-```typescript
-// Prepare second stat
-const stat2 = {
-  statToProve: validation.statToProve2,
+// Prepare stat to validate
+const stat1 = {
+  statToProve: validation.statToProve,
   eventStatRoot: validation.eventStatRoot,
-  statProof: validation.statProof2.map((node) => ({
+  statProof: validation.statProof.map((node: any) => ({
     hash: node.hash,
     isRightSibling: node.isRightSibling,
   })),
 };
 
-// Define operation (subtract stat2 from stat1)
-const op = { subtract: {} };
+// Define validation predicate
+const predicate = {
+  threshold: 0,
+  comparison: { greaterThan: {} },
+};
 
-// Define predicate for comparison
+// Find the daily scores PDA
+const targetTs = validation.summary.updateStats.minTimestamp;
+const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
+
+const [dailyScoresPda] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("daily_scores_roots"),
+    new BN(epochDay).toBuffer("le", 2),
+  ],
+  program.programId
+);
+
+// Execute validation using view (read-only simulation)
+const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+  units: 1_400_000
+});
+
+try {
+  const isValid = await program.methods
+    .validateStat(
+      new BN(targetTs),
+      fixtureSummary,
+      fixtureProof,
+      mainTreeProof,
+      predicate,
+      stat1,
+      null,  // No second stat
+      null   // No operator
+    )
+    .accounts({
+      dailyScoresMerkleRoots: dailyScoresPda
+    })
+    .preInstructions([computeBudgetIx])
+    .view();
+
+  if (isValid) {
+    console.log("On-chain stat validation passed");
+  } else {
+    console.log("On-chain stat validation rejected the predicate");
+  }
+} catch (err) {
+  console.error("Validation simulation failed:", err);
+}
+```
+
+## Two-Stat Validation
+
+Validate a comparison between two stats (e.g., score difference). This example builds on the single-stat validation above:
+
+```typescript
+// Fetch validation data including a second stat
+const url2 = `/scores/stat-validation?fixtureId=17952170&seq=941&statKey=1002&statKey2=1003`;
+const response2 = await users.apiClient.get(url2);
+const validation2 = response2.data;
+
+// Prepare second stat (stat1 is already defined above)
+const stat2 = {
+  statToProve: validation2.statToProve2,
+  eventStatRoot: validation2.eventStatRoot,
+  statProof: validation2.statProof2.map((node: any) => ({
+    hash: node.hash,
+    isRightSibling: node.isRightSibling,
+  })),
+};
+
+// Define operation and predicate
+const op = { subtract: {} };
 const predicate2 = {
   threshold: 5,
   comparison: { lessThan: {} },
 };
 
-// Execute two-stat validation
-const signature2 = await program.methods
+// Execute two-stat validation (reuses variables from single-stat example)
+const isValid2 = await program.methods
   .validateStat(
-    new BN(validation.ts),
+    new BN(targetTs),
     fixtureSummary,
     fixtureProof,
     mainTreeProof,
     predicate2,
-    statToProve,
-    stat2,  // Second stat
-    op      // Operation
+    stat1,
+    stat2,
+    op
   )
   .accounts({
-    dailyScoresMerkleRoots: dailyScoresRootsPda,
+    dailyScoresMerkleRoots: dailyScoresPda,
   })
-  .preInstructions([
-    ComputeBudgetProgram.setComputeUnitLimit({
-      units: 10000000,
-    }),
-  ])
-  .rpc();
+  .preInstructions([computeBudgetIx])
+  .view();
 
-console.log("Two-stat validation confirmed:", signature2);
+console.log("Two-stat validation result:", isValid2);
+```
+
+## Real-Time Scores Streaming
+
+Subscribe to real-time scores updates with automatic JWT renewal:
+
+```typescript
+import { EventSource } from 'eventsource';
+
+const streamUrl = `${config.API_BASE_URL}/scores/stream`;
+
+const eventSource = new EventSource(streamUrl, {
+  fetch: async (input, init) => {
+    let response = await fetch(input, {
+      ...init,
+      headers: {
+        ...init?.headers,
+        'Accept-Encoding': 'deflate',
+        'Authorization': `Bearer ${users.authState.jwt}`,
+        'X-Api-Token': users.authState.apiToken,
+      },
+    });
+
+    // Renew JWT if expired
+    if (response.status === 403 || response.status === 401) {
+      const newJwt = await users.renewJwt();
+      response = await fetch(input, {
+        ...init,
+        headers: {
+          ...init?.headers,
+          'Authorization': `Bearer ${newJwt}`,
+          'X-Api-Token': users.authState.apiToken,
+        },
+      });
+    }
+
+    return response;
+  },
+});
+
+eventSource.onmessage = (event) => {
+  console.log('Received scores update:', event.data);
+};
+
+eventSource.onopen = () => {
+  console.log('Stream connected');
+};
+
+eventSource.onerror = (err) => {
+  console.error('Stream error:', err);
+};
+```
+
+## JWT Token Renewal
+
+The API client automatically handles JWT expiration and renewal. After a JWT expires (typically 1 month), the next request will intercept the 403 response, automatically renew the JWT, and retry the original request.
+
+```typescript
+// Any API call will automatically renew the JWT if expired
+const response = await users.apiClient.get(`/scores/snapshot/${fixtureId}?asOf=${Date.now()}`);
 ```
 
 ## Validation Use Cases
@@ -164,3 +262,4 @@ On-chain validation enables trustless verification of:
 - **Conditional Logic** - Execute smart contract logic based on verified game stats
 - **Dispute Resolution** - Provide cryptographic proof of game data
 - **Automated Markets** - Settle prediction markets with on-chain verification
+- **Score Differentials** - Validate margins and score differences for complex betting scenarios
