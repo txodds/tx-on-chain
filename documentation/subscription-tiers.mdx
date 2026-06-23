@@ -15,25 +15,57 @@ TxLINE offers flexible data access subscriptions, each available with configurab
 **What's Included**: All subscriptions include Scores and StablePrice Odds
 </Info>
 
-| ID | Bundle | Delay | Price/28 Days |
-|---------|--------|-------|------------|
-| 1 | World Cup & Int Friendlies | 60 seconds | Free |
-| 12 | World Cup & Int Friendlies | Real-time | Free |
-| 2 | 10 Leagues | 60 seconds | 500,000 TxL ($500) |
-| 3 | 25 Leagues | 60 seconds | 750,000 TxL ($750) |
-| 4 | 50 Leagues | 60 seconds | 1,000,000 TxL ($1,000) |
-| 5 | 100 Leagues | 60 seconds | 1,250,000 TxL ($1,250) |
-| 6 | All Leagues| 60 seconds | 2,500,000 TxL ($2,500) |
-| 7 | 10 Leagues | Real-time | 5,000,000 TxL ($5,000) |
-| 8 | 25 Leagues | Real-time | 7,500,000 TxL ($7,500) |
-| 9 | 50 Leagues | Real-time | 10,000,000 TxL ($10,000) |
-| 10 | 100 Leagues | Real-time | 12,500,000 TxL ($12,500) |
-| 11 | All Leagues | Real-time | 25,000,000 TxL ($25,000) |
+<Tabs>
+  <Tab title="Devnet">
+    | ID | Bundle | Delay | Price/28 Days |
+    |---------|--------|-------|------------|
+    | 1 | World Cup & Int Friendlies | 60 seconds | Free |
+  </Tab>
 
+  <Tab title="Mainnet">
+    | ID | Bundle | Delay | Price/28 Days |
+    |---------|--------|-------|------------|
+    | 1 | World Cup & Int Friendlies | 60 seconds | Free |
+    | 12 | World Cup & Int Friendlies | Real-time | Free |
+    | 2 | 10 Leagues | 60 seconds | 500,000 TxL ($500) |
+    | 3 | 25 Leagues | 60 seconds | 750,000 TxL ($750) |
+    | 4 | 50 Leagues | 60 seconds | 1,000,000 TxL ($1,000) |
+    | 5 | 100 Leagues | 60 seconds | 1,250,000 TxL ($1,250) |
+    | 6 | All Leagues| 60 seconds | 2,500,000 TxL ($2,500) |
+    | 7 | 10 Leagues | Real-time | 5,000,000 TxL ($5,000) |
+    | 8 | 25 Leagues | Real-time | 7,500,000 TxL ($7,500) |
+    | 9 | 50 Leagues | Real-time | 10,000,000 TxL ($10,000) |
+    | 10 | 100 Leagues | Real-time | 12,500,000 TxL ($12,500) |
+    | 11 | All Leagues | Real-time | 25,000,000 TxL ($25,000) |
+  </Tab>
+</Tabs>
 
 <Info>
 **Subscription Duration**: Subscriptions must be purchased in multiples of 4 weeks (28 days). Minimum term is 4 weeks.
 </Info>
+
+## Confirm
+
+You can verify the current pricing directly from the on-chain program:
+
+```typescript
+const [pricingMatrixPda] = anchor.web3.PublicKey.findProgramAddressSync(
+  [Buffer.from("pricing_matrix")],
+  program.programId
+);
+
+const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
+
+matrix.rows.forEach((row) => {
+  console.log({
+    serviceLevel: row.rowId,
+    tokensPerWeek: row.pricePerWeekToken,
+    samplingInterval: row.samplingIntervalSec,
+    leagueBundle: row.leagueBundleId,
+    marketBundle: row.marketBundleId
+  });
+});
+```
 
 <Info>
 **Pricing subject to change**: Pricing structure may be updated at any time. Active subscriptions will honor the terms agreed upon at the time of purchase.
