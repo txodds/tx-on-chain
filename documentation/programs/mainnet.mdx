@@ -17,7 +17,7 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.4.7",
+    "version": "1.5.2",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -460,58 +460,6 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       ]
     },
     {
-      "name": "subscribe_v2",
-      "discriminator": [
-        13,
-        248,
-        232,
-        63,
-        182,
-        236,
-        71,
-        149
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_treasury_vault",
-          "writable": true
-        },
-        {
-          "name": "token_treasury_pda",
-          "docs": [
-            "Hold the PDA that owns the vault"
-          ]
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        },
-        {
-          "name": "associated_token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "weeks",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "update_pricing_matrix",
       "discriminator": [
         177,
@@ -566,7 +514,7 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         {
           "name": "ten_daily_fixtures_roots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -607,7 +555,8 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_fixture_batch",
@@ -625,7 +574,7 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         {
           "name": "ten_daily_fixtures_roots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -652,7 +601,8 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_odds",
@@ -712,7 +662,8 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_stat",
@@ -800,7 +751,8 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "withdraw_usdt",
@@ -1076,7 +1028,7 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
     {
       "code": 6041,
       "name": "InvalidWeeks",
-      "msg": "Weeks must be greater than zero"
+      "msg": "Weeks must be a multiple of 4"
     },
     {
       "code": 6042,
@@ -1772,7 +1724,7 @@ export type Txoracle = {
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.4.7",
+    "version": "1.5.2",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -2215,58 +2167,6 @@ export type Txoracle = {
       ]
     },
     {
-      "name": "subscribeV2",
-      "discriminator": [
-        13,
-        248,
-        232,
-        63,
-        182,
-        236,
-        71,
-        149
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "tokenMint"
-        },
-        {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "tokenTreasuryVault",
-          "writable": true
-        },
-        {
-          "name": "tokenTreasuryPda",
-          "docs": [
-            "Hold the PDA that owns the vault"
-          ]
-        },
-        {
-          "name": "tokenProgram"
-        },
-        {
-          "name": "systemProgram"
-        },
-        {
-          "name": "associatedTokenProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "weeks",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "updatePricingMatrix",
       "discriminator": [
         177,
@@ -2321,7 +2221,7 @@ export type Txoracle = {
         {
           "name": "tenDailyFixturesRoots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -2362,7 +2262,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateFixtureBatch",
@@ -2380,7 +2281,7 @@ export type Txoracle = {
         {
           "name": "tenDailyFixturesRoots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -2407,7 +2308,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateOdds",
@@ -2467,7 +2369,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateStat",
@@ -2555,7 +2458,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "withdrawUsdt",
@@ -2831,7 +2735,7 @@ export type Txoracle = {
     {
       "code": 6041,
       "name": "invalidWeeks",
-      "msg": "Weeks must be greater than zero"
+      "msg": "Weeks must be a multiple of 4"
     },
     {
       "code": 6042,
