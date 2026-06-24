@@ -21,12 +21,22 @@ This guide demonstrates how to validate scores data against on-chain Merkle root
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
-import * as config from '../common/config';
-import * as users from '../common/users';
+import axios from "axios";
 
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const program = anchor.workspace.Txoracle as anchor.Program<Txoracle>;
+
+// Create HTTP client with authentication
+const httpClient = axios.create({
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${jwt}`,
+    "X-Api-Token": apiToken
+  },
+  baseURL: "https://txline.txodds.com",
+});
 ```
 
 ## Fetching Scores Data
@@ -35,7 +45,7 @@ Retrieve a snapshot of scores for a specific fixture:
 
 ```typescript
 const fixtureId = 17952170;
-const response = await users.apiClient.get(`/scores/snapshot/${fixtureId}?asOf=${Date.now()}`);
+const response = await httpClient.get(`/api/scores/snapshot/${fixtureId}?asOf=${Date.now()}`);
 console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
 ```
 
@@ -48,8 +58,7 @@ const epochDay = Math.floor(targetTime.getTime() / 86400000);
 const hourOfDay = targetTime.getUTCHours();
 const interval = Math.floor(targetTime.getUTCMinutes() / 5);
 
-const updateUrl = `${config.API_BASE_URL}/scores/updates/${epochDay}/${hourOfDay}/${interval}`;
-const updates = await users.apiClient.get(updateUrl);
+const updates = await httpClient.get(`/api/scores/updates/${epochDay}/${hourOfDay}/${interval}`);
 console.log(`Updates found:`, updates.data);
 ```
 
@@ -59,8 +68,13 @@ Validate a single statistic against on-chain Merkle roots:
 
 ```typescript
 // Fetch validation data from API
-const url = `/scores/stat-validation?fixtureId=17952170&seq=941&statKey=1002`;
-const response = await users.apiClient.get(url);
+const response = await httpClient.get("/api/scores/stat-validation", {
+  params: {
+    fixtureId: 17952170,
+    seq: 941,
+    statKey: 1002
+  }
+});
 const validation = response.data;
 
 // Prepare fixture summary
@@ -152,8 +166,14 @@ Validate a comparison between two stats (e.g., score difference). This example b
 
 ```typescript
 // Fetch validation data including a second stat
-const url2 = `/scores/stat-validation?fixtureId=17952170&seq=941&statKey=1002&statKey2=1003`;
-const response2 = await users.apiClient.get(url2);
+const response2 = await httpClient.get("/api/scores/stat-validation", {
+  params: {
+    fixtureId: 17952170,
+    seq: 941,
+    statKey: 1002,
+    statKey2: 1003
+  }
+});
 const validation2 = response2.data;
 
 // Prepare second stat (stat1 is already defined above)
@@ -196,62 +216,43 @@ console.log("Two-stat validation result:", isValid2);
 
 ## Real-Time Scores Streaming
 
-Subscribe to real-time scores updates with automatic JWT renewal:
+Subscribe to real-time scores updates:
 
 ```typescript
-import { EventSource } from 'eventsource';
-
-const streamUrl = `${config.API_BASE_URL}/scores/stream`;
-
-const eventSource = new EventSource(streamUrl, {
-  fetch: async (input, init) => {
-    let response = await fetch(input, {
-      ...init,
-      headers: {
-        ...init?.headers,
-        'Accept-Encoding': 'deflate',
-        'Authorization': `Bearer ${users.authState.jwt}`,
-        'X-Api-Token': users.authState.apiToken,
-      },
-    });
-
-    // Renew JWT if expired
-    if (response.status === 403 || response.status === 401) {
-      const newJwt = await users.renewJwt();
-      response = await fetch(input, {
-        ...init,
-        headers: {
-          ...init?.headers,
-          'Authorization': `Bearer ${newJwt}`,
-          'X-Api-Token': users.authState.apiToken,
-        },
-      });
-    }
-
-    return response;
+const streamUrl = "https://txline.txodds.com/api/scores/stream";
+const streamResponse = await fetch(streamUrl, {
+  headers: {
+    Authorization: `Bearer ${jwt}`,
+    "X-Api-Token": apiToken,
+    Accept: "text/event-stream",
+    "Cache-Control": "no-cache",
   },
 });
 
-eventSource.onmessage = (event) => {
-  console.log('Received scores update:', event.data);
-};
+if (!streamResponse.ok) {
+  throw new Error(`Stream failed: ${streamResponse.status}`);
+}
 
-eventSource.onopen = () => {
-  console.log('Stream connected');
-};
+const reader = streamResponse.body!.getReader();
+const decoder = new TextDecoder();
 
-eventSource.onerror = (err) => {
-  console.error('Stream error:', err);
-};
-```
+try {
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
 
-## JWT Token Renewal
+    const chunk = decoder.decode(value);
+    const lines = chunk.split("\n");
 
-The API client automatically handles JWT expiration and renewal. After a JWT expires (typically 1 month), the next request will intercept the 403 response, automatically renew the JWT, and retry the original request.
-
-```typescript
-// Any API call will automatically renew the JWT if expired
-const response = await users.apiClient.get(`/scores/snapshot/${fixtureId}?asOf=${Date.now()}`);
+    for (const line of lines) {
+      if (line.trim()) {
+        console.log('Received scores update:', line);
+      }
+    }
+  }
+} finally {
+  reader.releaseLock();
+}
 ```
 
 ## Validation Use Cases
