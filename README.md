@@ -2,8 +2,6 @@
 
 This repository showcases usage of the TxLINE on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
 
-The latest news and updates can be found at [News](docs/news.md).
-
 ## Overview
 
 TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It supports the following two main use cases:
@@ -23,7 +21,7 @@ TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It suppor
 
 The following is a basic diagram showing the system in operation.
 
-![Alt text](docs/assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
+![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
 The OpenAPI documentation is available at
    - https://txline-dev.txodds.com/docs for Solana DevNet use.
@@ -112,9 +110,9 @@ only require a JWT token (see below) to serve the snapshots or an SSE stream of 
 
 The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
 
-[TxODDS US Football Feed v1.13](docs/assets/txodds-us-football-feed-v1.13.pdf)
+[TxODDS US Football Feed v1.17.4](assets/txodds-us-football-feed-v1.17.4.pdf)
 
-[TxODDS US Baskeball Feed v1.12](docs/assets/txodds-basketball-feed-v1.12.pdf)
+[TxODDS US Basketball Feed v1.14.2](assets/txodds-basketball-feed-v1.14.2.pdf)
 
 In contrast to the B2B offering, (limited) historical access to data is also included.
 
@@ -144,7 +142,7 @@ Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
 
 The following diagram shows how the users typically access data from purchasing TxL to issuing off-chain calls.
 
-![Alt text](docs/assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
+![Alt text](assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
 ### 1. Purchase Tokens
 
@@ -296,9 +294,7 @@ Validates scores data using on-chain cryptographic proofs.
    
 ## Trading Flow
 
-The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.
-
-![Alt text](docs/assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true "TxODDS Oracle trading workflow")
+The following section gives an overview of how binary options predication markets work with TxODDS Oracle.
 
 Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
 
