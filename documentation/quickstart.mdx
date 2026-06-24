@@ -88,9 +88,32 @@ Subscribe to the TxLINE by paying with TxL. Choose between a standard subscripti
 <Tabs>
   <Tab title="Standard Subscription">
     ```typescript
+    import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+    import { PublicKey, SystemProgram } from "@solana/web3.js";
+
     const SERVICE_LEVEL_ID = 1;
-    const DURATION_WEEKS = 1;
+    const DURATION_WEEKS = 4;
     const SELECTED_LEAGUES: number[] = []; // Standard bundle
+
+    // Derive Token Treasury PDA - owns the vault that collects subscription fees
+    const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("token_treasury_v2")],
+      program.programId
+    );
+
+    // Derive Token Treasury Vault - the ATA that holds collected TxL tokens
+    const tokenTreasuryVault = getAssociatedTokenAddressSync(
+      SUBSCRIPTION_TOKEN_MINT,
+      tokenTreasuryPda,
+      true,
+      TOKEN_2022_PROGRAM_ID
+    );
+
+    // Derive Pricing Matrix PDA
+    const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("pricing_matrix")],
+      program.programId
+    );
 
     const txSig = await program.methods
       .subscribe(SERVICE_LEVEL_ID, DURATION_WEEKS)
@@ -110,9 +133,32 @@ Subscribe to the TxLINE by paying with TxL. Choose between a standard subscripti
   </Tab>
   <Tab title="Custom Leagues">
     ```typescript
+    import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+    import { PublicKey, SystemProgram } from "@solana/web3.js";
+
     const SERVICE_LEVEL_ID = 3;
-    const DURATION_WEEKS = 1;
+    const DURATION_WEEKS = 4;
     const SELECTED_LEAGUES = [500001]; // Your league IDs
+
+    // Derive Token Treasury PDA - owns the vault that collects subscription fees
+    const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("token_treasury_v2")],
+      program.programId
+    );
+
+    // Derive Token Treasury Vault - the ATA that holds collected TxL tokens
+    const tokenTreasuryVault = getAssociatedTokenAddressSync(
+      SUBSCRIPTION_TOKEN_MINT,
+      tokenTreasuryPda,
+      true,
+      TOKEN_2022_PROGRAM_ID
+    );
+
+    // Derive Pricing Matrix PDA
+    const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
+      [Buffer.from("pricing_matrix")],
+      program.programId
+    );
 
     const txSig = await program.methods
       .subscribe(SERVICE_LEVEL_ID, DURATION_WEEKS)
