@@ -89,6 +89,36 @@ try {
 }
 ```
 
+## Historical Scores
+
+Fetch the complete sequence of score updates for a fixture that started between two weeks and six hours ago.
+
+```typescript
+import axios from "axios";
+
+const httpClient = axios.create({
+  timeout: 30000,
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${jwt}`,
+    "X-Api-Token": apiToken
+  },
+  baseURL: "https://txline.txodds.com",
+});
+
+const fixtureId = 17952170;
+const historicalScores = await httpClient.get(`/api/scores/historical/${fixtureId}`);
+
+console.log(`Retrieved ${historicalScores.data.length} score updates for fixture ${fixtureId}`);
+historicalScores.data.forEach((update, index) => {
+  console.log(`${index + 1}. Seq: ${update.seq}, TS: ${update.ts}, State: ${update.gameState}`);
+});
+```
+
+<Info>
+**Historical Availability**: This endpoint only returns data for fixtures with start times between two weeks and six hours in the past from the current time.
+</Info>
+
 <Info>
 **Stream Compression**: To reduce bandwidth usage by up to 70-80%, add `"Accept-Encoding": "gzip"` to your headers. You'll need to decompress the response chunks using `gunzipSync()` from Node's `zlib` module before decoding.
 </Info>
