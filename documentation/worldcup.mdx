@@ -141,13 +141,12 @@ console.log("API Token activated successfully!");
 
 You're all set! Start fetching World Cup and International Friendlies data using your activated API credentials.
 
-Check out the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) for all available endpoints including:
+Check out the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) for available endpoints including:
 
-- **Live Matches** - Get real-time match data and scores
-- **League Standings** - Access current league tables and rankings
-- **Historical Data** - Replay past matches and events
-- **Player Statistics** - Detailed player performance metrics
-- **Match Events** - Goals, cards, substitutions, and more
+- **Fixtures** - Get upcoming and current fixture metadata
+- **Odds** - Fetch snapshots, historical updates, and stream StablePrice odds
+- **Scores** - Fetch snapshots, historical updates, and stream score events
+- **Validation Proofs** - Retrieve fixture, odds, and score proofs for on-chain validation
 
 Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
 

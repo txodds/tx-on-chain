@@ -70,6 +70,36 @@
       }
     ]
   },
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/documentation/quickstart"
+    },
+    {
+      "source": "/quickstart",
+      "destination": "/documentation/quickstart"
+    },
+    {
+      "source": "/worldcup",
+      "destination": "/documentation/worldcup"
+    },
+    {
+      "source": "/subscription-tiers",
+      "destination": "/documentation/subscription-tiers"
+    },
+    {
+      "source": "/scores/schedule",
+      "destination": "/documentation/scores/schedule"
+    },
+    {
+      "source": "/openapi.json",
+      "destination": "/docs/docs.yaml"
+    },
+    {
+      "source": "/api-reference/openapi.json",
+      "destination": "/docs/docs.yaml"
+    }
+  ],
   "logo": {
     "light": "https://txodds.github.io/tx-on-chain/assets/logo/light.svg",
     "dark": "https://txodds.github.io/tx-on-chain/assets/logo/dark.svg"

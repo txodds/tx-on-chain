@@ -1,6 +1,6 @@
-# TxLINE - TxODDS Oracle Examples
+# TxLINE Documentation
 
-This repository showcases usage of the TxLINE on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
+This repository contains the public TxLINE documentation sources, on-chain IDL/types, and supporting assets for integrating with the TxLINE hybrid Solana and TxODDS off-chain data system. Start with the current hosted documentation at https://txline.txodds.com/documentation/quickstart.
 
 ## Overview
 
@@ -10,7 +10,7 @@ TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It suppor
 
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
-   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxL` and pay (at the time of writing) a fixed amount of TxL for one-week long access to proprietary data.
+   - Subscriptions are established on-chain with `subscribe(serviceLevelId, durationWeeks)` and activated off-chain with time-limited API tokens. Free World Cup and International Friendlies tiers do not require a TxL purchase; paid tiers use TxL.
 
 **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
 
@@ -23,9 +23,7 @@ The following is a basic diagram showing the system in operation.
 
 ![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
-The OpenAPI documentation is available at
-   - https://txline-dev.txodds.com/docs for Solana DevNet use.
-   - https://txline.txodds.com/docs for Solana MainNet use.
+The hosted API reference is available from the TxLINE documentation site. The current OpenAPI YAML is published at https://txline.txodds.com/docs/docs.yaml.
 
 The data the Oracle system is currently offering includes
 - fixture snapshots/updates: every time any key metadata for a fixture changes, an update becomes available;
@@ -38,77 +36,18 @@ This validation is based on the mathematical property of Merkle roots such that 
 
 Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.
 
-## Games coverage
+## Coverage and Free Tiers
 
-As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.
+Current coverage and pricing are documented in the hosted docs:
 
-| Competition ID       | League Name            |
-| :------- | :--------------------- |
-| 550001   | NCAA Division I FCS    |
-| 10005930 | NCAA Extra Matches     |
-| 500005   | NCAA Division I FBS    |
-| 10005302 | NCAA Division I (W)    |
-| 300043   | NCAA Division I        |
-
-With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA. Specifically, these conferences should be covered fully:
-
-1. SEC
-2. Big Ten
-3. Big 12
-4. Big East
-5. ACC
-6. Mountain West
-7. West Coast Conference
-8. Atlantic 10 Conference
-9. Conference USA
-10. Missouri Valley
-11. American
-12. Big West
-13. Southern Conference
-14. Ivy League
-15. Mid-American Conference
-16. Horizon League
-17. Western Athletic Conference
-
-Regular season only coverage should become available for
-
-1. Summit League
-2. Big South Conference
-3. Southland Conference
-4. Coastal Athletic Conference (CAA)
-5. Sun Belt
-6. MAAC (Only Sunday, Tuesday, Wednesday, Friday games)
-7. American East (non-Saturday games)
-8. SWAC Conference (only Monday games)
-9. Patriot League (non-Saturday games)
-10. ASUN Conference (non-Saturday games)
-
-All of the above conferences are covered by the same competition `NCAA Division I` with competition id = 300043.
-
-## Free-tier stable price de-margined odds (since 7th November 2025)
-
-The following endpoints (as documented in the OpenAPI documentation)
-
-`https://oracle.txodds.com/api/guest/odds/snapshot` 
-`https://oracle.txodds.com/api/guest/odds/stream` 
-
-only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.
-
-| Competition ID       | Competition            | Country |
-| :------- | :--------------------- | :--- |
-| 7   | Primera División    | Spain |
-| 8 | Premier League     | England
-| 9   | Bundesliga   | Germany |
-| 10  | UEFA Champions League    | European Cup |
-| 13   | Serie A        | Italy |
-| 16   | Ligue 1        | France |
-| 18   | UEFA Europa League        | European Cup |
-| 26   | Serie A       | Brazil |
-| 87   | Liga Profesional Argentina       | Argentina |
+- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup) - service levels 1 and 12 for World Cup and International Friendlies data.
+- [Subscription Tiers](https://txline.txodds.com/documentation/subscription-tiers) - free and paid tier IDs, delays, and 28-day pricing.
+- [StablePrice Feed](https://txline.txodds.com/documentation/odds/odds-coverage) - covered odds competitions and downloadable soccer league list.
+- [Scores Schedule](https://txline.txodds.com/documentation/scores/schedule) - currently listed confirmed fixtures.
 
 ## Content in the `scores` channel
 
-The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
+The `scores` channel includes the detailed models for US football and US basketball. Feed-specific documentation is available in the hosted docs and in the included PDF assets:
 
 [TxODDS US Football Feed v1.17.4](assets/txodds-us-football-feed-v1.17.4.pdf)
 
@@ -124,174 +63,45 @@ The `odds` channel includes fully de-margined stable odds (effectively, probabil
 
 ## Configurations
 
-### Solana DevNet - contains matches' re-runs to be used for integration
+### Solana Devnet
 ```
-Tx API: https://oracle-dev.txodds.com/api/
+Tx API: https://txline-dev.txodds.com/api/
 Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
-Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
+TxL Token Mint: 4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG
+USDT Mint: ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh
 ```
 
-### Solana MainNet - contains actual live matches with low-latency delivery from off-chain services (for example, 52 matches covered on Sat, 20 September, 2025)
+### Solana Mainnet
 ```
-Tx API: https://oracle.txodds.com/api/
+Tx API: https://txline.txodds.com/api/
 Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
-Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
+TxL Token Mint: Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL
+USDT Mint: Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
 ```
 
 ## Access Flow
 
-The following diagram shows how the users typically access data from purchasing TxL to issuing off-chain calls.
+The following diagram shows how users typically move from subscription setup to off-chain API calls.
 
 ![Alt text](assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
-### 1. Purchase Tokens
+1. **Start a guest session** - call `POST https://txline.txodds.com/auth/guest/start` to receive the guest JWT.
+2. **Purchase TxL if needed** - paid tiers use `POST https://txline.txodds.com/api/guest/purchase/quote`, followed by local transaction verification and signing. Free World Cup tiers do not require a TxL purchase.
+3. **Subscribe on-chain** - call `program.methods.subscribe(serviceLevelId, durationWeeks)` with the `pricing_matrix` PDA and `token_treasury_v2` PDA/vault accounts.
+4. **Activate API access** - call `POST https://txline.txodds.com/api/token/activate` with the subscription transaction signature, wallet signature, selected leagues, and guest JWT.
+5. **Call data APIs** - send `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <activated-api-token>` on fixtures, odds, and scores requests.
 
-Before accessing the oracle services, you must purchase TxOracle tokens. See `examples/subscription/purchase_tokens.ts` for the complete implementation of token purchasing.
+## Current Examples
 
-### 2. Access Off-Chain API
+The current copy-paste examples live in the hosted documentation pages rather than a top-level `examples/` directory:
 
-With TxL, you can access the off-chain API services through the following request flow:
+- [Quickstart](https://txline.txodds.com/documentation/quickstart) - purchase, subscribe, activate, and API-token header setup.
+- [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
+- [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
+- [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
 
-1. **Guest Authentication** - Make a `POST /auth/guest/start` request to receive a JWT token
-2. **Create Subscription** - Execute an on-chain `subscribe_with_token` transaction with encrypted JWT payload, which will transfer the price of the subscription in TxL to the TxODDS treasury.
-3. **Token Activation** - Make a `GET /api/token/activate` request with the transaction signature and encryption parameters to receive your API access token
-4. **API Access** - Use the API token in subsequent requests to all off-chain services
+The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
 
-## Running the Examples
-
-### Prerequisites
-
-- Node.js and npm installed
-- TypeScript and ts-node installed globally or in your project
-- A Solana wallet keypair file
-- SOL for transaction fees (devnet or mainnet depending on configuration)
-
-### Setup
-
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-### Running examples
-
-All example scripts are located in the `./examples/` directory and can be executed using ts-node:
-
-```bash
-# Purchase tokens
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/tokens/purchase_tokens.ts
-
-# Run an example script.
-# Note: Some examples contain Id's that can be modified within the file
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/streaming/stream_odds.ts
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/snapshots/get_odds_snapshot.ts
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/validation/validate_odd_onchain.ts
-```
-
-OR 
-
-```bash
-# Purchase tokens
-anchor run purchase_tokens
-
-# Run an example script.
-# Note: Some examples contain Id's that can be modified within the file
-anchor run stream_odds
-anchor run get_odds_snapshot
-anchor run validate_odds_onchain
-```
-
-## Available Examples
-
-### Token Management
-
-#### `examples/tokens/purchase_tokens.ts`
-
-Demonstrates how to purchase TxL using SOL.
-
-1. Executes on-chain token purchase transaction
-2. Transfers tokens from treasury to user's account
-
-### Data Snapshots
-
-#### `examples/snapshots/get_fixtures_snapshot.ts`
-
-Accesses fixture data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves fixtures snapshots for a given date/competitionId
-4. Shows responses from each snapshot endpoint
-
-#### `examples/snapshots/get_odds_snapshot.ts`
-
-Accesses odds data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves odds snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint
-
-#### `examples/snapshots/get_scores_snapshot.ts`
-
-Accesses scores data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves scores snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint
-
-### Data Streaming
-
-#### `examples/streaming/stream_odds.ts`
-
-Demonstrates real-time odds streaming using Server-Sent Events (SSE).
-
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to odds stream
-3. Displays live odds messages
-
-#### `examples/streaming/stream_scores.ts`
-
-Demonstrates real-time scores streaming using Server-Sent Events (SSE).
-
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to scores stream
-3. Displays live scores messages
-
-### On-Chain Validation
-
-#### `examples/validation/validate_fixtures_onchain.ts`
-
-Validates fixture data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against ten daily batch roots account
-6. Cryptographically proves the fixture
-
-#### `examples/validation/validate_odds_onchain.ts`
-
-Validates odds data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves odds validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily batch roots account
-6. Cryptographically proves the price
-
-
-#### `examples/validation/validate_scores_onchain.ts`
-
-Validates scores data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves stat validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily scores roots account
-6. Cryptographically proves the stat
-   
 ## Trading Flow
 
 The following section gives an overview of how binary options predication markets work with TxODDS Oracle.
@@ -1104,5 +914,5 @@ https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuu
 
 For comprehensive API documentation:
 
-- **Mainnet Documentation**: [oracle.txodds.com/docs](https://oracle.txodds.com/docs)
-- **Devnet Documentation**: [oracle-dev.txodds.com/docs](https://oracle-dev.txodds.com/docs)
+- **Hosted Documentation**: [txline.txodds.com/documentation/quickstart](https://txline.txodds.com/documentation/quickstart)
+- **OpenAPI YAML**: [txline.txodds.com/docs/docs.yaml](https://txline.txodds.com/docs/docs.yaml)
