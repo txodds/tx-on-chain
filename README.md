@@ -104,16 +104,18 @@ The `backup/` directory is a historical archive of older Anchor examples and IDL
 
 ## Trading Flow
 
-The following section gives an overview of how binary options predication markets work with TxODDS Oracle.
+The following section gives an overview of how binary options prediction markets work with TxODDS Oracle.
 
 Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
+
+> Note: this trading section is a protocol-level overview of the on-chain/off-chain flow. The hosted OpenAPI reference currently documents the data-access APIs, not the `/api/trading/*` endpoints below, so treat those REST snippets as illustrative until trading endpoints are published in the hosted API reference.
 
 Importantly, there are two time periods involved:
 
 1. **Claim period**: the phase of the game where an event that matches the prediction will happen.
 2. **Stat period**: the phase of the game for which the respective stats are computed.
 
-A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
+A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side submits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
 
 This is an example to help with understanding these two time periods.
 
@@ -683,9 +685,9 @@ The stat period is also encoded economically as follows:
 
 ## Trading offer definition
 
-### Specify the stat period
+### Specify the stat term
 
-The Stat period as used in offers and settlements is wrapped in the `StatTerm` class that designates the statistic used for prediction. For example:
+The stat used in offers and settlements is wrapped in the `StatTerm` class. For example:
 
 ```
 { key: 1 } // Stat key for "Participant1_Score"
@@ -725,7 +727,7 @@ const predicate = {
 
 const offer = new schema.Offer({
    fixtureId: new BN(17271370),
-   period: 4, // Q2
+   period: 5, // HT (halftime after Q2)
    predicate,
    binaryOp: null, // This is a single-stat predicate
    statA: { key: 1 }, // Stat key for "Participant1_Score"
@@ -741,17 +743,17 @@ The `odds` are decimal odds, multiplied by 1000 to preserve a three-decimal poin
 the eventual counter-party losing the amount of tokens equivalent to 0.5 SOL.
 The offer states that the specified fixture during the half-time break is going to have the team A's total score greater than 11--this being the result after the two quarters are fully played. The offer will be self-managed so that after an hour from the offer submission, the matching by counter-parties will be disabled.
 
-Once the offer is acknoledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a nottification `NewOffer` that looks like this:
+Once the offer is acknowledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a notification `NewOffer` that looks like this:
 
 ```
 { offerId: 6,
   offer:
    {
       fixtureId: 17271370,
-      period: 4,
+      period: 5,
       predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
       binaryOp: null,
-      statA: { key: 2 },
+      statA: { key: 1 },
       statB: null,
       stake: 500000000,
       odds: 2000,
@@ -783,7 +785,7 @@ const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptan
 });
 ```
 
-Once the TxODDS of-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both trades for signing via this `SigningRequest` message:
+Once the TxODDS off-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both traders for signing via this `SigningRequest` message:
 
 ```
 {
@@ -823,7 +825,7 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 {
    offer: {
    fixtureId: 17271370,
-   period: 4,
+   period: 5,
    predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
    binaryOp: null,
    statA: { key: 1 },
@@ -838,7 +840,7 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
 
-Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the predication can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
+Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the prediction can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
 
 ```
 const url = `${API_BASE_URL}/api/scores/stat-validation?fixtureId=17271370&seq=401&statKey=1`
@@ -850,7 +852,7 @@ const response = await axios.get(url, {
 });
 ```
 
-The `seq` uniquely identified the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner bacause the actual team A score was not > than 11. Here is the call to on-chain to settle the trade.
+The `seq` uniquely identifies the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner because the actual team A score was not greater than 11. Here is the call to on-chain to settle the trade.
 
 ```
 const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
