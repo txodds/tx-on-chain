@@ -56,6 +56,10 @@ const provider = new anchor.AnchorProvider(
 
 Choose between two free service levels - no TxL tokens required!
 
+<Info>
+Before running the subscription call, initialize `program` with the TxLINE IDL/types, set `SUBSCRIPTION_TOKEN_MINT`, and derive `pricingMatrixPda`, `tokenTreasuryPda`, `tokenTreasuryVault`, and `userTokenAccount`. See [Program Addresses](/documentation/programs/addresses) for constants and PDA derivation, then choose [IDL & Types (Mainnet)](/documentation/programs/mainnet) or [IDL & Types (Devnet)](/documentation/programs/devnet) for your network.
+</Info>
+
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -135,7 +139,7 @@ console.log("API Token activated successfully!");
 
 ### Step 4: Make Your First API Call
 
-You're all set! Start fetching World Cup and International Friendlies data using your API token.
+You're all set! Start fetching World Cup and International Friendlies data using your activated API credentials.
 
 Check out the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) for all available endpoints including:
 
@@ -145,7 +149,7 @@ Check out the complete [API Reference](/api-reference/authentication/start-a-new
 - **Player Statistics** - Detailed player performance metrics
 - **Match Events** - Goals, cards, substitutions, and more
 
-All endpoints require the `Authorization: Bearer ${apiToken}` header for authentication.
+Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
 
 ## Ready for More?
 
@@ -163,7 +167,7 @@ Love the free tier? Upgrade to unlock:
   </Card>
 </CardGroup>
 
-View our [Subscription Tiers](/subscription-tiers) to see all available options. Paid tiers start from just **500,000 TxL ($500) per 28 days**.
+View our [Subscription Tiers](/documentation/subscription-tiers) to see all available options. Paid tiers start from just **500,000 TxL ($500) per 28 days**.
 
 ## Frequently Asked Questions
 

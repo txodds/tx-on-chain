@@ -15,10 +15,15 @@ TxLINE provides cryptographically verifiable sports data through a hybrid Solana
 **Want to try for free?** Check out our [World Cup Free Tier](/documentation/worldcup) for instant access to EPL and World Cup data with no payment required.
 </Info>
 
+Choose the path that matches your use case:
+
+- **Free World Cup path**: Follow the [World Cup Free Tier](/documentation/worldcup) guide for service levels 1 or 12. No TxL purchase is required.
+- **Paid subscription path**: Continue below to purchase TxL if needed, subscribe on-chain, and activate an API token.
+
 ## Purchase TxL (Optional)
 
 <Info>
-**Note**: Purchasing TxL tokens is optional. We offer [free tiers for World Cup and International Friendlies](/worldcup) data with no payment required. View all [subscription tiers](/documentation/subscription-tiers) to see free and premium options.
+**Note**: Purchasing TxL tokens is optional. We offer [free tiers for World Cup and International Friendlies](/documentation/worldcup) data with no payment required. View all [subscription tiers](/documentation/subscription-tiers) to see free and premium options.
 </Info>
 
 In order to purchase TxL, your wallet will need to be funded with USDT. If you don't have USDT on Solana, you can swap for it using [Jupiter](https://jup.ag/) or another exchange.
@@ -83,7 +88,7 @@ TxODDS may refuse purchase requests and ask for KYC (Know Your Customer) verific
 
 ## Subscribe On-Chain
 
-Subscribe to the TxLINE by paying with TxL. Choose between a standard subscription or a custom league selection.
+Subscribe to TxLINE on-chain after choosing a service level. Paid tiers require TxL; the free World Cup tiers do not require a TxL purchase. Choose between a standard subscription or a custom league selection.
 
 <Tabs>
   <Tab title="Standard Subscription">
@@ -207,7 +212,12 @@ const activationResponse = await axios.post(
 const apiToken = activationResponse.data.token || activationResponse.data;
 ```
 
-You're now ready to use the API! Use the `jwt` and `apiToken` to authenticate your requests.
+You're now ready to use the API. Send both activated credentials with data API requests:
+
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer ${jwt}` from `/auth/guest/start` |
+| `X-Api-Token` | `apiToken` returned by `/api/token/activate` |
 
 ## Next Steps
 

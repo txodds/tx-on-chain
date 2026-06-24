@@ -4,11 +4,15 @@ description: "Validate scores data using cryptographic Merkle proofs"
 ---
 
 <Info>
-**Prerequisites**: Complete the [Quickstart](/quickstart) guide to set up authentication and subscriptions
+**Prerequisites**: Complete the [Quickstart](/documentation/quickstart) guide to set up authentication and subscriptions. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
 <Info>
 **API Endpoints**: Use `https://txline.txodds.com/api/` for mainnet or `https://txline-dev.txodds.com/api/` for devnet
+</Info>
+
+<Info>
+**Program setup**: The `Txoracle` type used below comes from the generated types in [IDL & Types (Mainnet)](/documentation/programs/mainnet) or [IDL & Types (Devnet)](/documentation/programs/devnet). Use [Program Addresses](/documentation/programs/addresses) for program IDs and PDA derivation.
 </Info>
 
 ## Overview
