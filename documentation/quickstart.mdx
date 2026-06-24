@@ -68,11 +68,14 @@ const transaction = anchor.web3.Transaction.from(txBuffer);
 // Verify transaction safety locally (recommended)
 // This ensures the transaction matches what you requested
 
-// Sign the transaction
-transaction.partialSign(wallet);
+// Sign the transaction with either a local Keypair or a wallet adapter
+const signedTransaction =
+  "secretKey" in wallet
+    ? (transaction.partialSign(wallet), transaction)
+    : await wallet.signTransaction(transaction);
 
 // Broadcast to Solana
-const txSignature = await connection.sendRawTransaction(transaction.serialize(), {
+const txSignature = await connection.sendRawTransaction(signedTransaction.serialize(), {
   skipPreflight: false,
   preflightCommitment: "confirmed"
 });
@@ -195,7 +198,10 @@ const jwt = authResponse.data.token;
 // Sign the subscription transaction
 const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
 const message = new TextEncoder().encode(messageString);
-const signatureBytes = nacl.sign.detached(message, provider.wallet.payer!.secretKey);
+const signatureBytes =
+  wallet.signMessage
+    ? await wallet.signMessage(message)
+    : nacl.sign.detached(message, provider.wallet.payer!.secretKey);
 const walletSignature = Buffer.from(signatureBytes).toString("base64");
 
 // Activate API access

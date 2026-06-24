@@ -108,7 +108,7 @@ The following section gives an overview of how binary options prediction markets
 
 Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
 
-> Note: this trading section is a protocol-level overview of the on-chain/off-chain flow. The hosted OpenAPI reference currently documents the data-access APIs, not the `/api/trading/*` endpoints below, so treat those REST snippets as illustrative until trading endpoints are published in the hosted API reference.
+> Note: this trading section is a protocol-level overview of the on-chain/off-chain flow. The hosted OpenAPI reference currently documents the data-access APIs, not the `/api/trading/*` endpoints below, so treat those REST snippets as illustrative until trading endpoints are published in the hosted API reference. The `settleTrade` instruction is available in the Devnet IDL; the current Mainnet IDL exposes `validateStat` for on-chain score proof checks.
 
 Importantly, there are two time periods involved:
 
@@ -768,7 +768,9 @@ Once the offer is acknowledged by the TxODDS off-chain service, the subscribers 
 A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
 
 ```
-const messageBuffer = new BN(offerIdToAccept).toBuffer('le', 4);
+// The exact accept preimage must match the published trading API contract.
+// This illustrative flow signs the offer ID as a little-endian u64.
+const messageBuffer = new BN(offerIdToAccept).toArrayLike(Buffer, "le", 8);
 const signature = nacl.sign.detached(messageBuffer, user.secretKey);
 
 const acceptancePayload = {
@@ -800,7 +802,12 @@ Once the TxODDS off-chain service receives a counter-offer on the `accept` endpo
 For the `create_trade` to be executable on blockchain, it needs to have three signers: both traders and the authority behind the `txoracle` program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above `SigningRequest` is received by both traders and each use a similar method to sign and send it back to the TxODDS service.
 
 ```
-const messageToSign = Buffer.from(data.partiallySignedTx, 'base64');
+const transaction = anchor.web3.Transaction.from(
+   Buffer.from(data.partiallySignedTx, "base64")
+);
+
+// Solana transaction signatures are over the transaction message bytes.
+const messageToSign = transaction.serializeMessage();
 const signature = nacl.sign.detached(messageToSign, user.secretKey);
 
 const signaturePayload = {
@@ -855,18 +862,65 @@ const response = await axios.get(url, {
 The `seq` uniquely identifies the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner because the actual team A score was not greater than 11. Here is the call to on-chain to settle the trade.
 
 ```
+const validation = response.data;
+
+function toBytes32(value) {
+   const bytes = Array.isArray(value)
+      ? Uint8Array.from(value)
+      : value instanceof Uint8Array
+         ? value
+         : value.startsWith("0x")
+            ? Buffer.from(value.slice(2), "hex")
+            : Buffer.from(value, "base64");
+
+   if (bytes.length !== 32) {
+      throw new Error(`Expected 32 bytes, received ${bytes.length}`);
+   }
+
+   return Array.from(bytes);
+}
+
+const toProofNodes = (nodes) =>
+   nodes.map((node) => ({
+      hash: toBytes32(node.hash),
+      isRightSibling: node.isRightSibling,
+   }));
+
+const fixtureSummary = {
+   fixtureId: new BN(validation.summary.fixtureId),
+   updateStats: {
+      updateCount: validation.summary.updateStats.updateCount,
+      minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
+      maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
+   },
+   eventsSubTreeRoot: toBytes32(validation.summary.eventStatsSubTreeRoot),
+};
+
+const fixtureProof = toProofNodes(validation.subTreeProof);
+const mainTreeProof = toProofNodes(validation.mainTreeProof);
+
+const stat1 = {
+   statToProve: validation.statToProve,
+   eventStatRoot: toBytes32(validation.eventStatRoot),
+   statProof: toProofNodes(validation.statProof),
+};
+
+const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
+
 const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
    [
       Buffer.from("daily_scores_roots"),
-      new BN(epochDay).toBuffer("le", 2), // epochDay is u16, so 2 bytes little-endian
+      new BN(epochDay).toArrayLike(Buffer, "le", 2), // epochDay is u16, so 2 bytes little-endian
    ],
    program.programId
 );
 
+const tradeIdBn = new BN(tradeId);
+
 const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
    [
       Buffer.from("escrow"), 
-      tradeId.toBuffer("le", 8)
+      tradeIdBn.toArrayLike(Buffer, "le", 8)
    ],
    program.programId
 );
@@ -874,14 +928,21 @@ const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
 const [escrowVaultPda] = PublicKey.findProgramAddressSync(
    [
       Buffer.from("escrow_vault"), 
-      tradeId.toBuffer("le", 8)
+      tradeIdBn.toArrayLike(Buffer, "le", 8)
+   ],
+   program.programId
+);
+
+const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from("token_treasury_v2")
    ],
    program.programId
 );
 
 const txSignature = await program.methods
    .settleTrade(
-      tradeId,
+      tradeIdBn,
       new BN(validation.ts),
       fixtureSummary,
       fixtureProof,
@@ -897,7 +958,10 @@ const txSignature = await program.methods
       tradeEscrow: tradeEscrowPda,
       escrowVault: escrowVaultPda,
       winnerTokenAccount: tokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
+      tokenMint: STAKE_TOKEN_MINT,
+      tokenTreasuryPda,
+      tokenProgram: STAKE_TOKEN_PROGRAM_ID, // TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID, matching STAKE_TOKEN_MINT
+      systemProgram: SystemProgram.programId,
    })
    .preInstructions([
       ComputeBudgetProgram.setComputeUnitLimit({

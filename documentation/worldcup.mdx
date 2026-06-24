@@ -112,11 +112,11 @@ const jwt = authResponse.data.token;
 const messageString = `${txSig}:${SELECTED_LEAGUES.join(",")}:${jwt}`;
 const message = new TextEncoder().encode(messageString);
 
-// Sign with your wallet
-const signatureBytes = nacl.sign.detached(
-  message,
-  provider.wallet.payer!.secretKey
-);
+// Sign with either a wallet adapter or the local Anchor payer
+const signatureBytes =
+  wallet.signMessage
+    ? await wallet.signMessage(message)
+    : nacl.sign.detached(message, provider.wallet.payer!.secretKey);
 const walletSignature = Buffer.from(signatureBytes).toString("base64");
 
 // Activate your API access
