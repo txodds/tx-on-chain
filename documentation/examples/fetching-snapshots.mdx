@@ -15,6 +15,10 @@ description: "Retrieve fixtures, odds, and scores data"
 
 Get all fixtures for a specific competition or all competitions.
 
+<Note>
+`Participant1IsHome` is the feed's home/away designation for mapping `Participant1` and `Participant2`; it is not a venue guarantee. For neutral competitions such as the World Cup, `Participant1IsHome: true` means `Participant1` is listed as the home side for feed purposes, even if the match is not played in that team's country.
+</Note>
+
 ```typescript
 import axios from "axios";
 
@@ -38,7 +42,14 @@ const fixtures = fixturesResponse.data;
 
 console.log(`Retrieved ${fixtures.length} fixtures`);
 fixtures.slice(0, 3).forEach((fixture, index) => {
-  console.log(`${index + 1}. ${fixture.Participant1} vs ${fixture.Participant2}`);
+  const homeTeam = fixture.Participant1IsHome
+    ? fixture.Participant1
+    : fixture.Participant2;
+  const awayTeam = fixture.Participant1IsHome
+    ? fixture.Participant2
+    : fixture.Participant1;
+
+  console.log(`${index + 1}. ${homeTeam} vs ${awayTeam}`);
   console.log(`   ID: ${fixture.FixtureId}, Start: ${new Date(fixture.StartTime).toISOString()}`);
 });
 

@@ -3,6 +3,12 @@ title: "StablePrice Feed"
 description: "Leagues covered by the odds feed"
 ---
 
+## Market Coverage
+
+TxLINE odds endpoints expose StablePrice markets through `SuperOddsType`, `MarketParameters`, `MarketPeriod`, `PriceNames`, and `Prices` fields in the API response. For the public World Cup and International Friendlies free tiers, plan around the core soccer StablePrice markets exposed by your API response, such as 1x2, Asian Handicap, and Over/Under Goals. Do not assume direct odds are available for corners, bookings/cards, or player props unless those markets appear in your API response or TxODDS confirms that your market bundle includes them.
+
+Scores feeds may include event or score fields such as corners, cards, lineups, and player statistics. Those fields are score/event data, not a guarantee that equivalent odds markets are available from the odds feed.
+
 ### Soccer
 
 <Card

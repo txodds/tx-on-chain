@@ -85,10 +85,12 @@ The following diagram shows how users typically move from subscription setup to 
 
 ![Alt text](assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
-1. **Start a guest session** - call `POST https://txline.txodds.com/auth/guest/start` to receive the guest JWT.
-2. **Purchase TxL if needed** - paid tiers use `POST https://txline.txodds.com/api/guest/purchase/quote`, followed by local transaction verification and signing. Free World Cup tiers do not require a TxL purchase.
+Use one network consistently. Devnet subscribe transactions must use the devnet API host (`https://txline-dev.txodds.com`), and mainnet subscribe transactions must use the mainnet API host (`https://txline.txodds.com`).
+
+1. **Start a guest session** - call `POST /auth/guest/start` on the matching TxLINE host to receive the guest JWT.
+2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, followed by local transaction verification and signing. Free World Cup tiers do not require a TxL purchase.
 3. **Subscribe on-chain** - call `program.methods.subscribe(serviceLevelId, durationWeeks)` with the `pricing_matrix` PDA and `token_treasury_v2` PDA/vault accounts.
-4. **Activate API access** - call `POST https://txline.txodds.com/api/token/activate` with the subscription transaction signature, wallet signature, selected leagues, and guest JWT.
+4. **Activate API access** - sign `${txSig}:${selectedLeagues.join(",")}:${jwt}` with the subscription wallet, then call `POST /api/token/activate` on the matching TxLINE host. For the free standard bundle, `selectedLeagues = []`, so the exact signed message is `${txSig}::${jwt}`.
 5. **Call data APIs** - send `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <activated-api-token>` on fixtures, odds, and scores requests.
 
 ## Current Examples
