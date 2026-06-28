@@ -3,11 +3,15 @@ title: "StablePrice Feed"
 description: "Leagues covered by the odds feed"
 ---
 
-## Market Coverage
+## Available Coverage
 
-TxLINE odds endpoints expose StablePrice markets through `SuperOddsType`, `MarketParameters`, `MarketPeriod`, `PriceNames`, and `Prices` fields in the API response. For the public World Cup and International Friendlies free tiers, plan around the core soccer StablePrice markets exposed by your API response, such as 1x2, Asian Handicap, and Over/Under Goals. Do not assume direct odds are available for corners, bookings/cards, or player props unless those markets appear in your API response or TxODDS confirms that your market bundle includes them.
+StablePrice odds coverage currently includes:
 
-Scores feeds may include event or score fields such as corners, cards, lineups, and player statistics. Those fields are score/event data, not a guarantee that equivalent odds markets are available from the odds feed.
+- **Soccer**: supported leagues are listed in the downloadable CSV below.
+- **NCAAB (College Basketball)**: competition ID `300043`.
+- **NCAAF (College Football)**: competition IDs `550001`, `10005930`, `500005`, and `10005302`.
+
+Available markets are returned by the odds API for each covered fixture.
 
 ### Soccer
 
