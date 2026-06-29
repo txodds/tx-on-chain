@@ -14,7 +14,7 @@
 ## Scores
 
 - [Scores Overview](https://txline.txodds.com/documentation/scores/overview): Scores feed overview.
-- [Schedule](https://txline.txodds.com/documentation/scores/schedule): Confirmed soccer fixtures currently listed for coverage.
+- [Schedule](https://txline.txodds.com/documentation/scores/schedule): Confirmed fixtures currently listed for TxLINE match data coverage.
 - [Soccer Feed](https://txline.txodds.com/documentation/scores/soccer-feed): Soccer score encodings and feed docs.
 - [American Football Feed](https://txline.txodds.com/documentation/scores/football-feed): American football score encodings and feed docs.
 - [Basketball Feed](https://txline.txodds.com/documentation/scores/basketball-feed): Basketball score encodings and feed docs.
