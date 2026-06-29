@@ -1,0 +1,36 @@
+# TxLINE Documentation
+
+## Documentation
+
+- [Quickstart](https://txline.txodds.com/documentation/quickstart): Start here for the current free and paid TxLINE onboarding flows.
+- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup): Free World Cup and International Friendlies access tiers.
+- [Subscription Tiers](https://txline.txodds.com/documentation/subscription-tiers): Service levels, delays, and pricing.
+
+## Odds
+
+- [Odds Overview](https://txline.txodds.com/documentation/odds/overview): StablePrice odds overview.
+- [StablePrice Feed](https://txline.txodds.com/documentation/odds/odds-coverage): Covered odds competitions and soccer league download.
+
+## Scores
+
+- [Scores Overview](https://txline.txodds.com/documentation/scores/overview): Scores feed overview.
+- [Schedule](https://txline.txodds.com/documentation/scores/schedule): Confirmed fixtures currently listed for TxLINE match data coverage.
+- [Soccer Feed](https://txline.txodds.com/documentation/scores/soccer-feed): Soccer score encodings and feed docs.
+- [American Football Feed](https://txline.txodds.com/documentation/scores/football-feed): American football score encodings and feed docs.
+- [Basketball Feed](https://txline.txodds.com/documentation/scores/basketball-feed): Basketball score encodings and feed docs.
+
+## Solana Programs
+
+- [Program Addresses](https://txline.txodds.com/documentation/programs/addresses): Current mainnet/devnet addresses and PDA derivation.
+- [IDL & Types (Mainnet)](https://txline.txodds.com/documentation/programs/mainnet): Mainnet IDL and TypeScript types.
+- [IDL & Types (Devnet)](https://txline.txodds.com/documentation/programs/devnet): Devnet IDL and TypeScript types.
+
+## Examples
+
+- [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots): Fixtures, odds, and scores snapshot examples.
+- [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data): Server-Sent Events examples for odds and scores.
+- [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation): Fetch proofs and validate data on-chain.
+
+## API Reference
+
+- [OpenAPI YAML](https://txline.txodds.com/docs/docs.yaml): Current TxLINE OpenAPI source.

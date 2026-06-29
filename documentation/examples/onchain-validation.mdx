@@ -4,11 +4,15 @@ description: "Validate scores data using cryptographic Merkle proofs"
 ---
 
 <Info>
-**Prerequisites**: Complete the [Quickstart](/quickstart) guide to set up authentication and subscriptions
+**Prerequisites**: Complete the [Quickstart](/documentation/quickstart) guide to set up authentication and subscriptions. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
 <Info>
 **API Endpoints**: Use `https://txline.txodds.com/api/` for mainnet or `https://txline-dev.txodds.com/api/` for devnet
+</Info>
+
+<Info>
+**Program setup**: The `Txoracle` type used below comes from the generated types in [IDL & Types (Mainnet)](/documentation/programs/mainnet) or [IDL & Types (Devnet)](/documentation/programs/devnet). Use [Program Addresses](/documentation/programs/addresses) for program IDs and PDA derivation.
 </Info>
 
 ## Overview
@@ -37,6 +41,29 @@ const httpClient = axios.create({
   },
   baseURL: "https://txline.txodds.com",
 });
+
+function toBytes32(value: string | number[] | Uint8Array): number[] {
+  const bytes = Array.isArray(value)
+    ? Uint8Array.from(value)
+    : value instanceof Uint8Array
+      ? value
+      : value.startsWith("0x")
+        ? Buffer.from(value.slice(2), "hex")
+        : Buffer.from(value, "base64");
+
+  if (bytes.length !== 32) {
+    throw new Error(`Expected 32 bytes, received ${bytes.length}`);
+  }
+
+  return Array.from(bytes);
+}
+
+function toProofNodes(nodes: Array<{ hash: string | number[] | Uint8Array; isRightSibling: boolean }>) {
+  return nodes.map((node) => ({
+    hash: toBytes32(node.hash),
+    isRightSibling: node.isRightSibling,
+  }));
+}
 ```
 
 ## Fetching Scores Data
@@ -85,28 +112,18 @@ const fixtureSummary = {
     minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
     maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
   },
-  eventsSubTreeRoot: validation.summary.eventStatsSubTreeRoot,
+  eventsSubTreeRoot: toBytes32(validation.summary.eventStatsSubTreeRoot),
 };
 
 // Prepare Merkle proofs
-const fixtureProof = validation.subTreeProof.map((node: any) => ({
-  hash: node.hash,
-  isRightSibling: node.isRightSibling,
-}));
-
-const mainTreeProof = validation.mainTreeProof.map((node: any) => ({
-  hash: node.hash,
-  isRightSibling: node.isRightSibling,
-}));
+const fixtureProof = toProofNodes(validation.subTreeProof);
+const mainTreeProof = toProofNodes(validation.mainTreeProof);
 
 // Prepare stat to validate
 const stat1 = {
   statToProve: validation.statToProve,
-  eventStatRoot: validation.eventStatRoot,
-  statProof: validation.statProof.map((node: any) => ({
-    hash: node.hash,
-    isRightSibling: node.isRightSibling,
-  })),
+  eventStatRoot: toBytes32(validation.eventStatRoot),
+  statProof: toProofNodes(validation.statProof),
 };
 
 // Define validation predicate
@@ -122,7 +139,7 @@ const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
 const [dailyScoresPda] = PublicKey.findProgramAddressSync(
   [
     Buffer.from("daily_scores_roots"),
-    new BN(epochDay).toBuffer("le", 2),
+    new BN(epochDay).toArrayLike(Buffer, "le", 2),
   ],
   program.programId
 );
@@ -179,11 +196,8 @@ const validation2 = response2.data;
 // Prepare second stat (stat1 is already defined above)
 const stat2 = {
   statToProve: validation2.statToProve2,
-  eventStatRoot: validation2.eventStatRoot,
-  statProof: validation2.statProof2.map((node: any) => ({
-    hash: node.hash,
-    isRightSibling: node.isRightSibling,
-  })),
+  eventStatRoot: toBytes32(validation2.eventStatRoot),
+  statProof: toProofNodes(validation2.statProof2),
 };
 
 // Define operation and predicate
@@ -233,25 +247,9 @@ if (!streamResponse.ok) {
   throw new Error(`Stream failed: ${streamResponse.status}`);
 }
 
-const reader = streamResponse.body!.getReader();
-const decoder = new TextDecoder();
-
-try {
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-
-    const chunk = decoder.decode(value);
-    const lines = chunk.split("\n");
-
-    for (const line of lines) {
-      if (line.trim()) {
-        console.log('Received scores update:', line);
-      }
-    }
-  }
-} finally {
-  reader.releaseLock();
+// Reuse the readSseMessages and parseSseData helpers from the Streaming Data guide.
+for await (const message of readSseMessages(streamResponse)) {
+  console.log(message.event ?? "message", parseSseData(message.data));
 }
 ```
 

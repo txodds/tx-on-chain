@@ -21,6 +21,19 @@ description: "TxLINE Solana program addresses and key accounts"
 | USDT Mint | `ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh` |
 | API Endpoint | `https://txline-dev.txodds.com/api/` |
 
+<Warning>
+Use all values from one network only. A devnet subscribe transaction from `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` must be activated with `https://txline-dev.txodds.com`, and a mainnet subscribe transaction from `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` must be activated with `https://txline.txodds.com`.
+</Warning>
+
+## API Hosts
+
+| Network | Guest Auth | API Base |
+|---------|------------|----------|
+| Mainnet | `https://txline.txodds.com/auth/guest/start` | `https://txline.txodds.com/api/` |
+| Devnet | `https://txline-dev.txodds.com/auth/guest/start` | `https://txline-dev.txodds.com/api/` |
+
+Use the host root for `/auth/guest/start`, then use the matching `/api/token/activate` endpoint after the on-chain `subscribe` transaction confirms.
+
 ## Deriving Program Derived Addresses (PDAs)
 
 The program uses several PDAs that you'll need to derive when interacting with it:
@@ -28,9 +41,12 @@ The program uses several PDAs that you'll need to derive when interacting with i
 ```typescript
 import { PublicKey } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { BN } from "@coral-xyz/anchor";
 
 const programId = new PublicKey("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
 const txlTokenMint = new PublicKey("Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL");
+
+// For devnet, replace both constants with the devnet values above.
 
 // Token Treasury PDA - owns the vault that collects subscription fees
 const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
@@ -73,7 +89,7 @@ const epochDay = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
 const [dailyScoresPda] = PublicKey.findProgramAddressSync(
   [
     Buffer.from("daily_scores_roots"),
-    new Uint8Array(new Uint16Array([epochDay]).buffer)
+    new BN(epochDay).toArrayLike(Buffer, "le", 2)
   ],
   programId
 );
@@ -82,7 +98,7 @@ const [dailyScoresPda] = PublicKey.findProgramAddressSync(
 const [dailyBatchRootsPda] = PublicKey.findProgramAddressSync(
   [
     Buffer.from("daily_batch_roots"),
-    new Uint8Array(new Uint16Array([epochDay]).buffer)
+    new BN(epochDay).toArrayLike(Buffer, "le", 2)
   ],
   programId
 );
@@ -92,7 +108,7 @@ const alignedEpochDay = Math.floor(epochDay / 10) * 10;
 const [tenDailyFixturesRootsPda] = PublicKey.findProgramAddressSync(
   [
     Buffer.from("ten_daily_fixtures_roots"),
-    new Uint8Array(new Uint16Array([alignedEpochDay]).buffer)
+    new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2)
   ],
   programId
 );

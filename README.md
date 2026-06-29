@@ -1,8 +1,6 @@
-# TxLINE - TxODDS Oracle Examples
+# TxLINE Documentation
 
-This repository showcases usage of the TxLINE on-chain contract, demonstrating how to interact with sports data validation using Solana blockchain technology. The documentation in the GitHub Pages format is available at https://txodds.github.io/tx-on-chain/.
-
-The latest news and updates can be found at [News](docs/news.md).
+This repository contains the public TxLINE documentation sources, on-chain IDL/types, and supporting assets for integrating with the TxLINE hybrid Solana and TxODDS off-chain data system. Start with the current hosted documentation at https://txline.txodds.com/documentation/quickstart.
 
 ## Overview
 
@@ -12,7 +10,7 @@ TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It suppor
 
    - The data is canonicalised so that all fixtures, odds, or scores are provably unique and can be validated on-chain using cryptographic proofs based on Merkle roots for batches of respective data published to the Solana blockchain.
    - The data is delivered in a request-response or streaming form.
-   - One-week long subscriptions are established using a cryptographically secure protocol that assumes that a funded Solana user wallet can (programmatically) purchase `TxL` and pay (at the time of writing) a fixed amount of TxL for one-week long access to proprietary data.
+   - Subscriptions are established on-chain with `subscribe(serviceLevelId, durationWeeks)` and activated off-chain with time-limited API tokens. Free World Cup and International Friendlies tiers do not require a TxL purchase; paid tiers use TxL.
 
 **Prediction-based trading** Sophisticated and highly general binary options Trading that allows users to:
 
@@ -23,11 +21,9 @@ TxLINE is a hybrid Solana on-chain and TxODDS hosted off-chain system. It suppor
 
 The following is a basic diagram showing the system in operation.
 
-![Alt text](docs/assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
+![Alt text](assets/TxODDS%20Oracle.png?raw=true "TxODDS Oracle")
 
-The OpenAPI documentation is available at
-   - https://txline-dev.txodds.com/docs for Solana DevNet use.
-   - https://txline.txodds.com/docs for Solana MainNet use.
+The hosted API reference is available from the TxLINE documentation site. The current OpenAPI YAML is published at https://txline.txodds.com/docs/docs.yaml.
 
 The data the Oracle system is currently offering includes
 - fixture snapshots/updates: every time any key metadata for a fixture changes, an update becomes available;
@@ -40,81 +36,22 @@ This validation is based on the mathematical property of Merkle roots such that 
 
 Essentialy the data access layer (use case 1) allows users to front-run their trading activity (use case 2), being fully informed about actual fixture changes, odds, and score events in near real-time--with settlement available as soon as the data is fully confirmed by the published on-chain batch signatures--typically as soon as the current 5-minute interval ends and the corresponding phase of the game arrives, or at the end of the previous completed game phase if the prediction period corresponds to the 'completion phase' (such as Q3 break or break before overtime 2) of the previous active phase.
 
-## Games coverage
+## Coverage and Free Tiers
 
-As of mid-September 2025, the following data is covered for the fixtures, odds, and scores channels, and available for trading.
+Current coverage and pricing are documented in the hosted docs:
 
-| Competition ID       | League Name            |
-| :------- | :--------------------- |
-| 550001   | NCAA Division I FCS    |
-| 10005930 | NCAA Extra Matches     |
-| 500005   | NCAA Division I FBS    |
-| 10005302 | NCAA Division I (W)    |
-| 300043   | NCAA Division I        |
-
-With the upcoming US basketball season, it is expected that data will be available for the the US basketball leagues excluding NBA. Specifically, these conferences should be covered fully:
-
-1. SEC
-2. Big Ten
-3. Big 12
-4. Big East
-5. ACC
-6. Mountain West
-7. West Coast Conference
-8. Atlantic 10 Conference
-9. Conference USA
-10. Missouri Valley
-11. American
-12. Big West
-13. Southern Conference
-14. Ivy League
-15. Mid-American Conference
-16. Horizon League
-17. Western Athletic Conference
-
-Regular season only coverage should become available for
-
-1. Summit League
-2. Big South Conference
-3. Southland Conference
-4. Coastal Athletic Conference (CAA)
-5. Sun Belt
-6. MAAC (Only Sunday, Tuesday, Wednesday, Friday games)
-7. American East (non-Saturday games)
-8. SWAC Conference (only Monday games)
-9. Patriot League (non-Saturday games)
-10. ASUN Conference (non-Saturday games)
-
-All of the above conferences are covered by the same competition `NCAA Division I` with competition id = 300043.
-
-## Free-tier stable price de-margined odds (since 7th November 2025)
-
-The following endpoints (as documented in the OpenAPI documentation)
-
-`https://oracle.txodds.com/api/guest/odds/snapshot` 
-`https://oracle.txodds.com/api/guest/odds/stream` 
-
-only require a JWT token (see below) to serve the snapshots or an SSE stream of odds delayed by 60 seconds for the following competitions.
-
-| Competition ID       | Competition            | Country |
-| :------- | :--------------------- | :--- |
-| 7   | Primera División    | Spain |
-| 8 | Premier League     | England
-| 9   | Bundesliga   | Germany |
-| 10  | UEFA Champions League    | European Cup |
-| 13   | Serie A        | Italy |
-| 16   | Ligue 1        | France |
-| 18   | UEFA Europa League        | European Cup |
-| 26   | Serie A       | Brazil |
-| 87   | Liga Profesional Argentina       | Argentina |
+- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup) - service levels 1 and 12 for World Cup and International Friendlies data.
+- [Subscription Tiers](https://txline.txodds.com/documentation/subscription-tiers) - free and paid tier IDs, delays, and 28-day pricing.
+- [StablePrice Feed](https://txline.txodds.com/documentation/odds/odds-coverage) - covered odds competitions and downloadable soccer league list.
+- [Scores Schedule](https://txline.txodds.com/documentation/scores/schedule) - currently listed confirmed fixtures.
 
 ## Content in the `scores` channel
 
-The `scores` channel includes the fully detailed model of US football and upcoming US baketball as otherwise avaiable using direct B2B sales offered to big betting operators and syndicats. The documentation for this feed is available at the above API endpoints and also in the included documents:
+The `scores` channel includes the detailed models for US football and US basketball. Feed-specific documentation is available in the hosted docs and in the included PDF assets:
 
-[TxODDS US Football Feed v1.13](docs/assets/txodds-us-football-feed-v1.13.pdf)
+[TxODDS US Football Feed v1.17.4](assets/txodds-us-football-feed-v1.17.4.pdf)
 
-[TxODDS US Baskeball Feed v1.12](docs/assets/txodds-basketball-feed-v1.12.pdf)
+[TxODDS US Basketball Feed v1.14.2](assets/txodds-basketball-feed-v1.14.2.pdf)
 
 In contrast to the B2B offering, (limited) historical access to data is also included.
 
@@ -126,188 +63,61 @@ The `odds` channel includes fully de-margined stable odds (effectively, probabil
 
 ## Configurations
 
-### Solana DevNet - contains matches' re-runs to be used for integration
+### Solana Devnet
 ```
-Tx API: https://oracle-dev.txodds.com/api/
+Tx API: https://txline-dev.txodds.com/api/
 Program ID: 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
-Token Mint: GYdhNurtx2EgiTPRHVGuFWKHPycdpUqgedVkwEVUWVTC
+TxL Token Mint: 4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG
+USDT Mint: ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh
 ```
 
-### Solana MainNet - contains actual live matches with low-latency delivery from off-chain services (for example, 52 matches covered on Sat, 20 September, 2025)
+### Solana Mainnet
 ```
-Tx API: https://oracle.txodds.com/api/
+Tx API: https://txline.txodds.com/api/
 Program ID: 9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA
-Token Mint: sLX1i9dfmsuyFBmJTWuGjjRmG4VPWYK6dRRKSM4BCSx
+TxL Token Mint: Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL
+USDT Mint: Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB
 ```
 
 ## Access Flow
 
-The following diagram shows how the users typically access data from purchasing TxL to issuing off-chain calls.
+The following diagram shows how users typically move from subscription setup to off-chain API calls.
 
-![Alt text](docs/assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
+![Alt text](assets/TxODDS%20Oracle%20data%20access%20workflow.png?raw=true "TxODDS Oracle data access workflow")
 
-### 1. Purchase Tokens
+Use one network consistently. Devnet subscribe transactions must use the devnet API host (`https://txline-dev.txodds.com`), and mainnet subscribe transactions must use the mainnet API host (`https://txline.txodds.com`).
 
-Before accessing the oracle services, you must purchase TxOracle tokens. See `examples/subscription/purchase_tokens.ts` for the complete implementation of token purchasing.
+1. **Start a guest session** - call `POST /auth/guest/start` on the matching TxLINE host to receive the guest JWT.
+2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, followed by local transaction verification and signing. Free World Cup tiers do not require a TxL purchase.
+3. **Subscribe on-chain** - call `program.methods.subscribe(serviceLevelId, durationWeeks)` with the `pricing_matrix` PDA and `token_treasury_v2` PDA/vault accounts.
+4. **Activate API access** - sign `${txSig}:${selectedLeagues.join(",")}:${jwt}` with the subscription wallet, then call `POST /api/token/activate` on the matching TxLINE host. For the free standard bundle, `selectedLeagues = []`, so the exact signed message is `${txSig}::${jwt}`.
+5. **Call data APIs** - send `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <activated-api-token>` on fixtures, odds, and scores requests.
 
-### 2. Access Off-Chain API
+## Current Examples
 
-With TxL, you can access the off-chain API services through the following request flow:
+The current copy-paste examples live in the hosted documentation pages rather than a top-level `examples/` directory:
 
-1. **Guest Authentication** - Make a `POST /auth/guest/start` request to receive a JWT token
-2. **Create Subscription** - Execute an on-chain `subscribe_with_token` transaction with encrypted JWT payload, which will transfer the price of the subscription in TxL to the TxODDS treasury.
-3. **Token Activation** - Make a `GET /api/token/activate` request with the transaction signature and encryption parameters to receive your API access token
-4. **API Access** - Use the API token in subsequent requests to all off-chain services
+- [Quickstart](https://txline.txodds.com/documentation/quickstart) - purchase, subscribe, activate, and API-token header setup.
+- [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
+- [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
+- [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
 
-## Running the Examples
+The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
 
-### Prerequisites
-
-- Node.js and npm installed
-- TypeScript and ts-node installed globally or in your project
-- A Solana wallet keypair file
-- SOL for transaction fees (devnet or mainnet depending on configuration)
-
-### Setup
-
-1. **Install Dependencies**
-   ```bash
-   npm install
-   ```
-
-### Running examples
-
-All example scripts are located in the `./examples/` directory and can be executed using ts-node:
-
-```bash
-# Purchase tokens
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/tokens/purchase_tokens.ts
-
-# Run an example script.
-# Note: Some examples contain Id's that can be modified within the file
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/streaming/stream_odds.ts
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/snapshots/get_odds_snapshot.ts
-ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="~/.config/solana/id.json" npx ts-node ./examples/validation/validate_odd_onchain.ts
-```
-
-OR 
-
-```bash
-# Purchase tokens
-anchor run purchase_tokens
-
-# Run an example script.
-# Note: Some examples contain Id's that can be modified within the file
-anchor run stream_odds
-anchor run get_odds_snapshot
-anchor run validate_odds_onchain
-```
-
-## Available Examples
-
-### Token Management
-
-#### `examples/tokens/purchase_tokens.ts`
-
-Demonstrates how to purchase TxL using SOL.
-
-1. Executes on-chain token purchase transaction
-2. Transfers tokens from treasury to user's account
-
-### Data Snapshots
-
-#### `examples/snapshots/get_fixtures_snapshot.ts`
-
-Accesses fixture data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves fixtures snapshots for a given date/competitionId
-4. Shows responses from each snapshot endpoint
-
-#### `examples/snapshots/get_odds_snapshot.ts`
-
-Accesses odds data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves odds snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint
-
-#### `examples/snapshots/get_scores_snapshot.ts`
-
-Accesses scores data via the API.
-
-1. Authenticates and creates API subscription
-2. Retrieves scores snapshots for a given fixtureId/date/competitionId
-4. Shows responses from each snapshot endpoint
-
-### Data Streaming
-
-#### `examples/streaming/stream_odds.ts`
-
-Demonstrates real-time odds streaming using Server-Sent Events (SSE).
-
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to odds stream
-3. Displays live odds messages
-
-#### `examples/streaming/stream_scores.ts`
-
-Demonstrates real-time scores streaming using Server-Sent Events (SSE).
-
-1. Authenticates and creates API subscription
-2. Establishes SSE connection to scores stream
-3. Displays live scores messages
-
-### On-Chain Validation
-
-#### `examples/validation/validate_fixtures_onchain.ts`
-
-Validates fixture data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against ten daily batch roots account
-6. Cryptographically proves the fixture
-
-#### `examples/validation/validate_odds_onchain.ts`
-
-Validates odds data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves odds validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily batch roots account
-6. Cryptographically proves the price
-
-
-#### `examples/validation/validate_scores_onchain.ts`
-
-Validates scores data using on-chain cryptographic proofs.
-
-1. Authenticates and creates API subscription
-2. Fetches college football fixture data from last Saturday
-3. Retrieves stat validation proofs from the API
-4. Constructs proof for On-Chain protocol
-5. Executes on-chain validation against daily scores roots account
-6. Cryptographically proves the stat
-   
 ## Trading Flow
 
-The following diagram gives an overview of how binary options predication markets work with TxODDS Oracle.
-
-![Alt text](docs/assets/TxODDS%20Oracle%20trading%20workflow.png?raw=true "TxODDS Oracle trading workflow")
+The following section gives an overview of how binary options prediction markets work with TxODDS Oracle.
 
 Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
+
+> Note: this trading section is a protocol-level overview of the on-chain/off-chain flow. The hosted OpenAPI reference currently documents the data-access APIs, not the `/api/trading/*` endpoints below, so treat those REST snippets as illustrative until trading endpoints are published in the hosted API reference. The `settleTrade` instruction is available in the Devnet IDL; the current Mainnet IDL exposes `validateStat` for on-chain score proof checks.
 
 Importantly, there are two time periods involved:
 
 1. **Claim period**: the phase of the game where an event that matches the prediction will happen.
 2. **Stat period**: the phase of the game for which the respective stats are computed.
 
-A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side sibmits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
+A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side submits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
 
 This is an example to help with understanding these two time periods.
 
@@ -877,9 +687,9 @@ The stat period is also encoded economically as follows:
 
 ## Trading offer definition
 
-### Specify the stat period
+### Specify the stat term
 
-The Stat period as used in offers and settlements is wrapped in the `StatTerm` class that designates the statistic used for prediction. For example:
+The stat used in offers and settlements is wrapped in the `StatTerm` class. For example:
 
 ```
 { key: 1 } // Stat key for "Participant1_Score"
@@ -919,7 +729,7 @@ const predicate = {
 
 const offer = new schema.Offer({
    fixtureId: new BN(17271370),
-   period: 4, // Q2
+   period: 5, // HT (halftime after Q2)
    predicate,
    binaryOp: null, // This is a single-stat predicate
    statA: { key: 1 }, // Stat key for "Participant1_Score"
@@ -935,17 +745,17 @@ The `odds` are decimal odds, multiplied by 1000 to preserve a three-decimal poin
 the eventual counter-party losing the amount of tokens equivalent to 0.5 SOL.
 The offer states that the specified fixture during the half-time break is going to have the team A's total score greater than 11--this being the result after the two quarters are fully played. The offer will be self-managed so that after an hour from the offer submission, the matching by counter-parties will be disabled.
 
-Once the offer is acknoledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a nottification `NewOffer` that looks like this:
+Once the offer is acknowledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a notification `NewOffer` that looks like this:
 
 ```
 { offerId: 6,
   offer:
    {
       fixtureId: 17271370,
-      period: 4,
+      period: 5,
       predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
       binaryOp: null,
-      statA: { key: 2 },
+      statA: { key: 1 },
       statB: null,
       stake: 500000000,
       odds: 2000,
@@ -960,7 +770,9 @@ Once the offer is acknoledged by the TxODDS off-chain service, the subscribers t
 A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
 
 ```
-const messageBuffer = new BN(offerIdToAccept).toBuffer('le', 4);
+// The exact accept preimage must match the published trading API contract.
+// This illustrative flow signs the offer ID as a little-endian u64.
+const messageBuffer = new BN(offerIdToAccept).toArrayLike(Buffer, "le", 8);
 const signature = nacl.sign.detached(messageBuffer, user.secretKey);
 
 const acceptancePayload = {
@@ -977,7 +789,7 @@ const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptan
 });
 ```
 
-Once the TxODDS of-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both trades for signing via this `SigningRequest` message:
+Once the TxODDS off-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both traders for signing via this `SigningRequest` message:
 
 ```
 {
@@ -992,7 +804,12 @@ Once the TxODDS of-chain service receives a counter-offer on the `accept` endpoi
 For the `create_trade` to be executable on blockchain, it needs to have three signers: both traders and the authority behind the `txoracle` program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above `SigningRequest` is received by both traders and each use a similar method to sign and send it back to the TxODDS service.
 
 ```
-const messageToSign = Buffer.from(data.partiallySignedTx, 'base64');
+const transaction = anchor.web3.Transaction.from(
+   Buffer.from(data.partiallySignedTx, "base64")
+);
+
+// Solana transaction signatures are over the transaction message bytes.
+const messageToSign = transaction.serializeMessage();
 const signature = nacl.sign.detached(messageToSign, user.secretKey);
 
 const signaturePayload = {
@@ -1017,7 +834,7 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 {
    offer: {
    fixtureId: 17271370,
-   period: 4,
+   period: 5,
    predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
    binaryOp: null,
    statA: { key: 1 },
@@ -1032,7 +849,7 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
 
-Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the predication can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
+Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the prediction can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
 
 ```
 const url = `${API_BASE_URL}/api/scores/stat-validation?fixtureId=17271370&seq=401&statKey=1`
@@ -1044,21 +861,68 @@ const response = await axios.get(url, {
 });
 ```
 
-The `seq` uniquely identified the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner bacause the actual team A score was not > than 11. Here is the call to on-chain to settle the trade.
+The `seq` uniquely identifies the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner because the actual team A score was not greater than 11. Here is the call to on-chain to settle the trade.
 
 ```
+const validation = response.data;
+
+function toBytes32(value) {
+   const bytes = Array.isArray(value)
+      ? Uint8Array.from(value)
+      : value instanceof Uint8Array
+         ? value
+         : value.startsWith("0x")
+            ? Buffer.from(value.slice(2), "hex")
+            : Buffer.from(value, "base64");
+
+   if (bytes.length !== 32) {
+      throw new Error(`Expected 32 bytes, received ${bytes.length}`);
+   }
+
+   return Array.from(bytes);
+}
+
+const toProofNodes = (nodes) =>
+   nodes.map((node) => ({
+      hash: toBytes32(node.hash),
+      isRightSibling: node.isRightSibling,
+   }));
+
+const fixtureSummary = {
+   fixtureId: new BN(validation.summary.fixtureId),
+   updateStats: {
+      updateCount: validation.summary.updateStats.updateCount,
+      minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
+      maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
+   },
+   eventsSubTreeRoot: toBytes32(validation.summary.eventStatsSubTreeRoot),
+};
+
+const fixtureProof = toProofNodes(validation.subTreeProof);
+const mainTreeProof = toProofNodes(validation.mainTreeProof);
+
+const stat1 = {
+   statToProve: validation.statToProve,
+   eventStatRoot: toBytes32(validation.eventStatRoot),
+   statProof: toProofNodes(validation.statProof),
+};
+
+const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
+
 const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
    [
       Buffer.from("daily_scores_roots"),
-      new BN(epochDay).toBuffer("le", 2), // epochDay is u16, so 2 bytes little-endian
+      new BN(epochDay).toArrayLike(Buffer, "le", 2), // epochDay is u16, so 2 bytes little-endian
    ],
    program.programId
 );
 
+const tradeIdBn = new BN(tradeId);
+
 const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
    [
       Buffer.from("escrow"), 
-      tradeId.toBuffer("le", 8)
+      tradeIdBn.toArrayLike(Buffer, "le", 8)
    ],
    program.programId
 );
@@ -1066,14 +930,21 @@ const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
 const [escrowVaultPda] = PublicKey.findProgramAddressSync(
    [
       Buffer.from("escrow_vault"), 
-      tradeId.toBuffer("le", 8)
+      tradeIdBn.toArrayLike(Buffer, "le", 8)
+   ],
+   program.programId
+);
+
+const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+   [
+      Buffer.from("token_treasury_v2")
    ],
    program.programId
 );
 
 const txSignature = await program.methods
    .settleTrade(
-      tradeId,
+      tradeIdBn,
       new BN(validation.ts),
       fixtureSummary,
       fixtureProof,
@@ -1089,7 +960,10 @@ const txSignature = await program.methods
       tradeEscrow: tradeEscrowPda,
       escrowVault: escrowVaultPda,
       winnerTokenAccount: tokenAccount.address,
-      tokenProgram: TOKEN_PROGRAM_ID,
+      tokenMint: STAKE_TOKEN_MINT,
+      tokenTreasuryPda,
+      tokenProgram: STAKE_TOKEN_PROGRAM_ID, // TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID, matching STAKE_TOKEN_MINT
+      systemProgram: SystemProgram.programId,
    })
    .preInstructions([
       ComputeBudgetProgram.setComputeUnitLimit({
@@ -1108,5 +982,5 @@ https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuu
 
 For comprehensive API documentation:
 
-- **Mainnet Documentation**: [oracle.txodds.com/docs](https://oracle.txodds.com/docs)
-- **Devnet Documentation**: [oracle-dev.txodds.com/docs](https://oracle-dev.txodds.com/docs)
+- **Hosted Documentation**: [txline.txodds.com/documentation/quickstart](https://txline.txodds.com/documentation/quickstart)
+- **OpenAPI YAML**: [txline.txodds.com/docs/docs.yaml](https://txline.txodds.com/docs/docs.yaml)
