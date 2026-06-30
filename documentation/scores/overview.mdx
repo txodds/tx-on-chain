@@ -1,18 +1,25 @@
 ---
 title: "Overview"
-description: "In-venue, scout-verified play-by-play data for US college sports"
+description: "Cryptographically verifiable scores data for soccer, US football, and basketball"
 ---
 
-The TxLINE scores feed delivers granular, real-time play-by-play data for NCAA Football and NCAA Basketball. Collected in-venue by TxODDS scouts and instantly cross-verified by US-based analysts, this feed bypasses repurposed broadcast delays to give you raw, sub-second sports data.
+The TxLINE scores feed delivers granular sports score data that can be validated against on-chain Merkle roots. Current documentation covers soccer, US football, and basketball score encodings, with World Cup and International Friendlies coverage available through the free tiers where enabled.
 
-Every stat is encoded and published to Solana, validating directly against on-chain Merkle roots. Any score, period, or player stat is verifiable permissionlessly at any time.
+Every supported stat is encoded with deterministic keys and published through batches whose roots are anchored on Solana. Use the feed-specific pages for stat-key encoding, and use the [Schedule](/documentation/scores/schedule) and API responses to confirm current fixture availability.
+
+| Feed | What to use |
+|------|-------------|
+| Soccer | [Soccer Feed](/documentation/scores/soccer-feed) for World Cup-oriented stat keys and game phases |
+| American football | [American Football Feed](/documentation/scores/football-feed) for US football phase and stat encodings |
+| Basketball | [Basketball Feed](/documentation/scores/basketball-feed) for basketball phase and stat encodings |
 
 ## Built for Settlement & Micro-Markets
 
-This feed is purpose-built for high-frequency betting environments: in-play markets, player props, and micro-betting.
+This feed is built for applications that need deterministic event data and proof-based settlement.
 
 - **Deterministic Encoding:** Every stat maps to a fixed cryptographic key with period multipliers applied on top.
 - **Reliable Proofs:** If you are building automated smart contract settlement logic or validation proofs, the exact layout schemas are defined in the technical specifications below.
+- **Network-Aware Access:** Use mainnet credentials with mainnet APIs and devnet credentials with devnet APIs.
 
 ## Technical Capabilities
 
@@ -27,3 +34,7 @@ This feed is purpose-built for high-frequency betting environments: in-play mark
     Redundant infrastructure engineered for zero data loss during peak tournament events.
   </Card>
 </CardGroup>
+
+<Info>
+If a live stream is connected but no data messages arrive, there may be no covered fixture actively producing updates at that moment. Check the [Schedule](/documentation/scores/schedule), keep the stream open during live windows, or use historical endpoints for completed fixtures.
+</Info>
