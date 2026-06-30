@@ -20,9 +20,22 @@ Choose the path that matches your use case:
 - **Free World Cup path**: Follow the [World Cup Free Tier](/documentation/worldcup) guide for service levels 1 or 12. No TxL purchase is required.
 - **Paid subscription path**: Continue below to purchase TxL if needed, subscribe on-chain, and activate an API token.
 
+<Info>
+The snippets below show the required integration pieces. To run them in your own app, provide a Solana wallet object, use the matching TxLINE IDL/types for your network, and keep the Solana RPC, program ID, guest JWT host, and API host on the same network.
+</Info>
+
+<Note>
+Free tiers do not require a TxL purchase, but the on-chain `subscribe` transaction still needs SOL for Solana transaction fees and any account rent. On devnet, fund your wallet with a devnet SOL airdrop before subscribing.
+</Note>
+
 ## Select Your Network
 
 Pick one network and use it consistently for every step. The Solana RPC, program ID, TxL mint, guest JWT, and activation endpoint must all be on the same network.
+
+| Network | Program ID | TxL Token Mint | Guest Auth | API Base |
+|---------|------------|----------------|------------|----------|
+| Mainnet | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL` | `https://txline.txodds.com/auth/guest/start` | `https://txline.txodds.com/api/` |
+| Devnet | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG` | `https://txline-dev.txodds.com/auth/guest/start` | `https://txline-dev.txodds.com/api/` |
 
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
@@ -78,6 +91,10 @@ if (!program.programId.equals(programId)) {
 <Warning>
 Do not activate a devnet transaction on `https://txline.txodds.com`, and do not activate a mainnet transaction on `https://txline-dev.txodds.com`. Use the matching `apiOrigin` from the selected network.
 </Warning>
+
+<Note>
+The `wallet` variable is your signing wallet. In a browser app, use your wallet adapter's public key, `signTransaction`, and `signMessage` methods. In a local Anchor script, use `ANCHOR_WALLET` and `ANCHOR_PROVIDER_URL` to load the payer wallet.
+</Note>
 
 ## Purchase TxL (Optional)
 
@@ -276,6 +293,14 @@ const activationResponse = await axios.post(
 const apiToken = activationResponse.data.token || activationResponse.data;
 ```
 
+The activation signature must be a base64-encoded detached wallet signature over the exact message string. For the standard free bundle, `SELECTED_LEAGUES = []`, so the message has two colons between `txSig` and `jwt`:
+
+```text
+${txSig}::${jwt}
+```
+
+The signing wallet must be the same wallet that submitted the on-chain `subscribe` transaction, and the `jwt` must come from the same network host used for activation.
+
 You're now ready to use the API. Send both activated credentials with data API requests:
 
 | Header | Value |
@@ -283,8 +308,18 @@ You're now ready to use the API. Send both activated credentials with data API r
 | `Authorization` | `Bearer ${jwt}` from `/auth/guest/start` |
 | `X-Api-Token` | `apiToken` returned by `/api/token/activate` |
 
+## Credential Lifecycle
+
+| Credential | Where it comes from | How it is used |
+|------------|---------------------|----------------|
+| Guest JWT | `POST /auth/guest/start` on the matching host | Sent as `Authorization: Bearer <jwt>` and included in the activation signature preimage |
+| API token | `POST /api/token/activate` after a confirmed `subscribe` transaction | Sent as `X-Api-Token` on data requests |
+
+If a data request returns `401`, renew the guest JWT from the same network host and retry with the same activated API token. If activation returns `403`, check the signed message, wallet, signature encoding, transaction network, and activation host.
+
 ## Next Steps
 
 - View the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) to explore all available endpoints
 - Check out [Subscription Tiers](/documentation/subscription-tiers) for pricing and plan options
 - Try the [World Cup Free Tier](/documentation/worldcup) for instant free access
+- Use [Troubleshooting](/documentation/examples/troubleshooting) to diagnose activation, streaming, and validation errors

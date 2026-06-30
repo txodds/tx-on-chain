@@ -25,6 +25,15 @@ description: "TxLINE Solana program addresses and key accounts"
 Use all values from one network only. A devnet subscribe transaction from `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` must be activated with `https://txline-dev.txodds.com`, and a mainnet subscribe transaction from `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` must be activated with `https://txline.txodds.com`.
 </Warning>
 
+## Network Consistency Checklist
+
+| Network | Solana RPC | Program ID | TxL Mint | Guest JWT URL | Activation URL |
+|---------|------------|------------|----------|---------------|----------------|
+| Mainnet | `https://api.mainnet-beta.solana.com` | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL` | `https://txline.txodds.com/auth/guest/start` | `https://txline.txodds.com/api/token/activate` |
+| Devnet | `https://api.devnet.solana.com` | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG` | `https://txline-dev.txodds.com/auth/guest/start` | `https://txline-dev.txodds.com/api/token/activate` |
+
+The transaction signature, guest JWT, activation endpoint, and program ID must all come from the same row. If any one value comes from a different row, activation can fail even when the on-chain transaction itself confirmed.
+
 ## API Hosts
 
 | Network | Guest Auth | API Base |
@@ -34,9 +43,35 @@ Use all values from one network only. A devnet subscribe transaction from `6pW64
 
 Use the host root for `/auth/guest/start`, then use the matching `/api/token/activate` endpoint after the on-chain `subscribe` transaction confirms.
 
+## Activation Message
+
+After `subscribe(serviceLevelId, durationWeeks)` confirms, activate the API token by signing this exact message with the same wallet that submitted the transaction:
+
+```text
+${txSig}:${selectedLeagues.join(",")}:${jwt}
+```
+
+For the standard free bundle, `selectedLeagues = []`, so the message is:
+
+```text
+${txSig}::${jwt}
+```
+
+Send the detached wallet signature as base64 in `walletSignature`, and send the guest JWT from the matching network as `Authorization: Bearer <jwt>`.
+
 ## Deriving Program Derived Addresses (PDAs)
 
 The program uses several PDAs that you'll need to derive when interacting with it:
+
+| Account | Seed(s) | Purpose |
+|---------|---------|---------|
+| Pricing matrix | `pricing_matrix` | Contains service level pricing, delay, league bundle, and market bundle rows |
+| Token treasury PDA | `token_treasury_v2` | PDA owner for subscription treasury accounts |
+| Token treasury vault | Associated token account for TxL mint owned by `token_treasury_v2` PDA | Receives TxL subscription payments where applicable |
+| USDT treasury PDA | `usdt_treasury` | PDA owner for USDT purchase treasury accounts |
+| Daily scores roots | `daily_scores_roots`, `epochDay` as u16 little-endian | On-chain root account used for score proof validation |
+| Daily batch roots | `daily_batch_roots`, `epochDay` as u16 little-endian | On-chain root account used for odds proof validation |
+| Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | On-chain root account used for fixture proof validation |
 
 ```typescript
 import { PublicKey } from "@solana/web3.js";

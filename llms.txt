@@ -30,6 +30,7 @@
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots): Fixtures, odds, and scores snapshot examples.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data): Server-Sent Events examples for odds and scores.
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation): Fetch proofs and validate data on-chain.
+- [Troubleshooting](https://txline.txodds.com/documentation/examples/troubleshooting): Diagnose activation, streaming, authentication, and validation errors.
 
 ## API Reference
 

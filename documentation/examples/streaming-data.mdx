@@ -11,6 +11,21 @@ description: "Real-time odds and scores updates via Server-Sent Events"
 **Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) or [World Cup Free Tier activation](/documentation/worldcup) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
+## Stream Expectations
+
+An open SSE connection means your credentials and stream request are accepted. It does not guarantee that a covered fixture is producing data at that exact moment.
+
+If the stream opens but you only see heartbeats or no data messages for a while:
+
+- Check [Scores Schedule](/documentation/scores/schedule) for active or upcoming covered fixtures.
+- Keep the stream open during a covered live fixture window.
+- Use `/api/scores/historical/{fixtureId}` when you need replay data for a completed fixture within the historical availability window.
+- Confirm you are using the correct network host for your subscription.
+
+<Note>
+If a stream returns `401`, renew the guest JWT from the same host and reconnect with the same `X-Api-Token`. If it returns `403`, check that the API token belongs to the same network and subscription bundle.
+</Note>
+
 ## SSE Parsing Helper
 
 ```typescript
@@ -111,6 +126,8 @@ for await (const message of readSseMessages(streamResponse)) {
 }
 ```
 
+Use `https://txline-dev.txodds.com/api/odds/stream` for a devnet subscription.
+
 ## Stream Scores Updates
 
 Connect to the scores stream for real-time updates.
@@ -134,6 +151,8 @@ for await (const message of readSseMessages(streamResponse)) {
   console.log(message.event ?? "message", parseSseData(message.data));
 }
 ```
+
+Use `https://txline-dev.txodds.com/api/scores/stream` for a devnet subscription.
 
 ## Historical Scores
 
@@ -168,3 +187,7 @@ historicalScores.data.forEach((update, index) => {
 <Info>
 **Stream Compression**: To reduce bandwidth usage by up to 70-80%, add `"Accept-Encoding": "gzip"` to your headers. You'll need to decompress the response chunks using `gunzipSync()` from Node's `zlib` module before decoding.
 </Info>
+
+## Troubleshooting
+
+For activation, credential, and stream diagnostics, see [Troubleshooting](/documentation/examples/troubleshooting).
