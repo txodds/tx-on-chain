@@ -65,7 +65,7 @@ async function main() {
     4,
     [],
     undefined,  // Alternatively, use a working JWT Token here
-    "txoracle_api_4fa15dc09cb94349a16a9af69532d60f" // undefined   // Alternatively, use a working API Token here
+    undefined   // Alternatively, use a working API Token here
   );
   console.log("API Token:", users.authState.apiToken);
  
