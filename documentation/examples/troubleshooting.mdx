@@ -56,6 +56,7 @@ ${txSig}::${jwt}
 | `403 Access denied` on data endpoints | Invalid API token, expired subscription, wrong network token, or insufficient subscription permissions | Confirm the `X-Api-Token` came from the same network and subscription bundle |
 | `Invalid public key input` | Placeholder value was not replaced with a real Solana public key | Replace all placeholders with the program ID, TxL mint, and wallet public key for the selected network |
 | SSE connection opens but no data messages arrive | The stream can be healthy even when no covered fixture is actively producing updates | Check the [Schedule](/documentation/scores/schedule), keep the stream open, or use historical endpoints for completed fixtures |
+| `/api/scores/stat-validation` called with `seq=0` or a random `seq` | The sequence was treated as a placeholder instead of coming from a real score record | Get a score record from snapshot, updates, historical data, or the scores stream, then pass that record's observed `Seq` or `seq` value |
 | `InvalidMainTreeProof` during validation | Timestamp, epoch day PDA, proof decoding, or fixture/update selection mismatch | Derive `daily_scores_roots` from the same timestamp passed to `validateStat`, decode hashes to exactly 32 bytes, and verify you are using the intended fixture and sequence |
 
 ## Auth Headers
@@ -100,6 +101,8 @@ const [dailyScoresPda] = PublicKey.findProgramAddressSync(
 ```
 
 Pass the same `targetTs` into `validateStat`, and make sure every proof hash is decoded to exactly 32 bytes before passing it to Anchor.
+
+Use a real score record sequence for `/api/scores/stat-validation`; `seq=0` is not valid. For settlement conditions tied to a period result, choose a record whose phase or status represents that completed period. An in-running record proves the condition at that moment, not the final result of the period.
 
 For a first sanity check, use an exact predicate against the returned stat value if your response shape includes `validation.statToProve.value`:
 

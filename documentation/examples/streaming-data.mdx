@@ -154,6 +154,8 @@ for await (const message of readSseMessages(streamResponse)) {
 
 Use `https://txline-dev.txodds.com/api/scores/stream` for a devnet subscription.
 
+Scores stream messages can be used as validation inputs. When a message contains a real sequence field, use its observed `Seq` or `seq` value with `/api/scores/stat-validation`; do not replace it with `0` or a synthetic sequence number.
+
 ## Historical Scores
 
 Fetch the complete sequence of score updates for a fixture that started between two weeks and six hours ago.
@@ -179,6 +181,8 @@ historicalScores.data.forEach((update, index) => {
   console.log(`${index + 1}. Seq: ${update.seq}, TS: ${update.ts}, State: ${update.gameState}`);
 });
 ```
+
+Use the observed sequence from a historical record when requesting a validation proof for that record.
 
 <Info>
 **Historical Availability**: This endpoint only returns data for fixtures with start times between two weeks and six hours in the past from the current time.
