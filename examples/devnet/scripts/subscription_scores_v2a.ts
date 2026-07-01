@@ -153,7 +153,6 @@ async function main() {
     };
 
     // Fetch single V2 payload requesting four stats at once
-    // const url = `/scores/stat-validation?fixtureId=17952170&seq=941&statKeys=1001,1002,1007,2007`;
     const url = `/scores/stat-validation?fixtureId=18175981&seq=991&statKeys=1,2,3001,3002`;    
 
     const response = await users.apiClient.get(url, { userName: name } as any);
