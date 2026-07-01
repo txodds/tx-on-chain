@@ -104,6 +104,40 @@ const updates = await httpClient.get(`/api/scores/updates/${epochDay}/${hourOfDa
 console.log(`Updates found:`, updates.data);
 ```
 
+## Choosing the Score Sequence
+
+The `seq` parameter is not a placeholder. Use the sequence value from a real score record observed through one of the scores data endpoints:
+
+- `/api/scores/snapshot/{fixtureId}`
+- `/api/scores/updates/{epochDay}/{hourOfDay}/{interval}`
+- `/api/scores/historical/{fixtureId}`
+- `/api/scores/stream`
+
+Do not call `/api/scores/stat-validation` with `seq=0`. Score sequences start at `1` for a fixture and increment as new score records are produced. Depending on your client and response mapper, the payload field may appear as `Seq` or `seq`; use that observed value when requesting the validation proof.
+
+```typescript
+const scoreRecord = updates.data[0];
+const seq = scoreRecord.Seq ?? scoreRecord.seq;
+
+if (!Number.isInteger(seq) || seq < 1) {
+  throw new Error("Use a real score record sequence; seq=0 is not valid");
+}
+
+const validation = await httpClient.get("/api/scores/stat-validation", {
+  params: {
+    fixtureId: scoreRecord.FixtureId ?? scoreRecord.fixtureId,
+    seq,
+    statKey: 1002
+  }
+});
+```
+
+## Phase and Status Semantics
+
+Pick the score record whose game phase matches the condition you want to prove. For example, "final score of the first half" should use the record for the completed first-half phase or halftime/rest state, not an arbitrary in-running first-half update.
+
+If you validate an in-running first-half record, the predicate means the condition was true at that observed moment. That is different from proving the final first-half result. Check the sport-specific phase tables, such as [Soccer Feed](/documentation/scores/soccer-feed), and use the score record's `statusId`, `StatusId`, `gameState`, or equivalent phase field when deciding whether a record is suitable for settlement.
+
 ## Single-Stat Validation
 
 Validate a single statistic against on-chain Merkle roots:
