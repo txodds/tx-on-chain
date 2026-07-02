@@ -77,7 +77,7 @@ async function main() {
   const userProgram = new anchor.Program(program.idl, userProvider);
 
   try {
-    // Fetch the odds snapshot for a specific fixture
+    // Fetch the scores snapshot for a specific fixture
     async function getScoresSnapshot(fixtureId: number, asOf?: number) {
       const url = asOf 
         ? `/scores/snapshot/${fixtureId}?asOf=${asOf}` 
