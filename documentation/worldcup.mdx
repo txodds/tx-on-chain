@@ -55,6 +55,10 @@ Before you subscribe, confirm that you have:
 npm install @coral-xyz/anchor @solana/web3.js @solana/spl-token axios tweetnacl
 ```
 
+<Info>
+The repository also includes runnable devnet free-tier scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). Those examples use the current devnet IDL/types and require Node.js `20+` because of the SSE client dependency in the lockfile.
+</Info>
+
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
 import type { Txoracle } from "./types/txoracle"; // Use the matching mainnet/devnet type
@@ -235,6 +239,8 @@ Check out the complete [API Reference](/api-reference/authentication/start-a-new
 - **Odds** - Fetch snapshots, historical updates, and stream StablePrice odds
 - **Scores** - Fetch snapshots, historical updates, and stream score events
 - **Validation Proofs** - Retrieve fixture, odds, and score proofs for on-chain validation
+
+Use [Runnable Devnet Examples](/documentation/examples/devnet-examples) for complete scripts that subscribe to the free tier, activate an API token, connect to streams, and run fixture or score validation simulations.
 
 Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
 

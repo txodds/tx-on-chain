@@ -96,6 +96,10 @@ Do not activate a devnet transaction on `https://txline.txodds.com`, and do not 
 The `wallet` variable is your signing wallet. In a browser app, use your wallet adapter's public key, `signTransaction`, and `signMessage` methods. In a local Anchor script, use `ANCHOR_WALLET` and `ANCHOR_PROVIDER_URL` to load the payer wallet.
 </Note>
 
+<Info>
+For a runnable devnet version of the activation and stream flow, use the scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). They include free-tier activation, odds and scores streams, fixture validation, and `validateStatV2` examples.
+</Info>
+
 ## Purchase TxL (Optional)
 
 <Info>
@@ -322,4 +326,5 @@ If a data request returns `401`, renew the guest JWT from the same network host 
 - View the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) to explore all available endpoints
 - Check out [Subscription Tiers](/documentation/subscription-tiers) for pricing and plan options
 - Try the [World Cup Free Tier](/documentation/worldcup) for instant free access
+- Run the [Runnable Devnet Examples](/documentation/examples/devnet-examples) for end-to-end devnet activation, streaming, and validation
 - Use [Troubleshooting](/documentation/examples/troubleshooting) to diagnose activation, streaming, and validation errors

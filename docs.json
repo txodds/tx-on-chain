@@ -54,6 +54,7 @@
               "documentation/examples/fetching-snapshots",
               "documentation/examples/streaming-data",
               "documentation/examples/onchain-validation",
+              "documentation/examples/devnet-examples",
               "documentation/examples/troubleshooting"
             ]
           },

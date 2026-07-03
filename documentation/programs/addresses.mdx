@@ -43,6 +43,17 @@ The transaction signature, guest JWT, activation endpoint, and program ID must a
 
 Use the host root for `/auth/guest/start`, then use the matching `/api/token/activate` endpoint after the on-chain `subscribe` transaction confirms.
 
+## IDL and TypeScript Types
+
+Use the generated IDL and TypeScript types for the same network as your program ID:
+
+| Network | IDL and types |
+|---------|---------------|
+| Mainnet | Root `idl/txoracle.json` and `types/txoracle.ts`, also published in [IDL & Types (Mainnet)](/documentation/programs/mainnet). |
+| Devnet | `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`, also published in [IDL & Types (Devnet)](/documentation/programs/devnet). |
+
+The current generated types include `validateStatV2`/`validate_stat_v2` for multi-stat score validation. See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for scripts that use the devnet IDL and V2 strategies.
+
 ## Activation Message
 
 After `subscribe(serviceLevelId, durationWeeks)` confirms, activate the API token by signing this exact message with the same wallet that submitted the transaction:

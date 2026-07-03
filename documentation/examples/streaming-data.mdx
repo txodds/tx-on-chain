@@ -26,6 +26,18 @@ If the stream opens but you only see heartbeats or no data messages for a while:
 If a stream returns `401`, renew the guest JWT from the same host and reconnect with the same `X-Api-Token`. If it returns `403`, check that the API token belongs to the same network and subscription bundle.
 </Note>
 
+## Runnable Devnet Streams
+
+The repository includes runnable devnet stream scripts that handle activation, API token headers, JWT renewal, and SSE connections:
+
+| Script | Stream coverage |
+|--------|-----------------|
+| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Odds snapshots and odds SSE streams. |
+| [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, score validation, and scores SSE streams. |
+| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
+
+See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the required devnet environment variables and Node.js runtime notes.
+
 ## SSE Parsing Helper
 
 ```typescript
