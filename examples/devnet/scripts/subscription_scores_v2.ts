@@ -153,6 +153,7 @@ async function main() {
     };
 
     // Fetch single V2 payload requesting four stats at once
+    // Note that the statKeys order is important as they are referenced by indexes 0..N in validation strategy predicates
     const url = `/scores/stat-validation?fixtureId=17926686&seq=880&statKeys=1,2`;    
 
     const response = await users.apiClient.get(url, { userName: name } as any);
