@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/txoracle.json`.
  */
 export type Txoracle = {
-  "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
+  "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
     "version": "1.5.5",
@@ -13,6 +13,265 @@ export type Txoracle = {
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
+    {
+      "name": "auditTradeResult",
+      "discriminator": [
+        50,
+        242,
+        243,
+        5,
+        209,
+        75,
+        76,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        }
+      ],
+      "args": [
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "claimBatchLegacy",
+      "discriminator": [
+        254,
+        101,
+        89,
+        255,
+        169,
+        75,
+        207,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots"
+        },
+        {
+          "name": "tokenMint",
+          "docs": [
+            "The Mint is now required to perform decimal-safe transfers (TransferChecked)"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "termsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "winnerIsMaker",
+          "type": "bool"
+        },
+        {
+          "name": "seq",
+          "type": "u32"
+        },
+        {
+          "name": "merkleProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "claimViaResolution",
+      "discriminator": [
+        98,
+        206,
+        250,
+        87,
+        151,
+        135,
+        162,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots"
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "merkleProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "closeIntent",
+      "discriminator": [
+        112,
+        245,
+        154,
+        249,
+        57,
+        126,
+        54,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "orderIntent",
+          "writable": true
+        },
+        {
+          "name": "intentVault",
+          "writable": true
+        },
+        {
+          "name": "makerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        }
+      ],
+      "args": []
+    },
     {
       "name": "closePricingMatrix",
       "discriminator": [
@@ -40,6 +299,256 @@ export type Txoracle = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "createIntent",
+      "discriminator": [
+        216,
+        214,
+        79,
+        121,
+        23,
+        194,
+        96,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "orderIntent",
+          "writable": true
+        },
+        {
+          "name": "intentVault",
+          "writable": true
+        },
+        {
+          "name": "makerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "intentId",
+          "type": "u64"
+        },
+        {
+          "name": "termsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "depositAmount",
+          "type": "u64"
+        },
+        {
+          "name": "expirationTs",
+          "type": "i64"
+        },
+        {
+          "name": "claimPeriod",
+          "type": "u16"
+        },
+        {
+          "name": "fixtureId",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "createTrade",
+      "discriminator": [
+        183,
+        82,
+        24,
+        245,
+        248,
+        30,
+        204,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderA",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderB",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderATokenAccount",
+          "writable": true
+        },
+        {
+          "name": "traderBTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tradeEscrow",
+          "writable": true
+        },
+        {
+          "name": "escrowVault",
+          "writable": true
+        },
+        {
+          "name": "stakeTokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda",
+          "docs": [
+            "Hold the PDA that owns the vault and acts as freeze authority"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "stakeA",
+          "type": "u64"
+        },
+        {
+          "name": "stakeB",
+          "type": "u64"
+        },
+        {
+          "name": "tradeTermsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "executeMatch",
+      "discriminator": [
+        76,
+        47,
+        91,
+        223,
+        20,
+        10,
+        147,
+        232
+      ],
+      "accounts": [
+        {
+          "name": "solver",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "makerIntent",
+          "writable": true
+        },
+        {
+          "name": "takerIntent",
+          "writable": true
+        },
+        {
+          "name": "makerVault",
+          "writable": true
+        },
+        {
+          "name": "takerVault",
+          "writable": true
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "makerStake",
+          "type": "u64"
+        },
+        {
+          "name": "takerStake",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "exposeStructs",
+      "discriminator": [
+        142,
+        252,
+        254,
+        118,
+        194,
+        230,
+        160,
+        195
+      ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initializePricingMatrix",
@@ -319,6 +828,52 @@ export type Txoracle = {
       ]
     },
     {
+      "name": "publishResolutionRoot",
+      "discriminator": [
+        191,
+        161,
+        47,
+        36,
+        163,
+        58,
+        31,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots",
+          "writable": true
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "purchaseSubscriptionTokenUsdt",
       "discriminator": [
         198,
@@ -388,6 +943,316 @@ export type Txoracle = {
         {
           "name": "txlineAmount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "refundBatch",
+      "discriminator": [
+        227,
+        54,
+        194,
+        2,
+        78,
+        8,
+        104,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenMint",
+          "docs": [
+            "The mint is required for transfer_checked logic"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "requestDevnetFaucet",
+      "discriminator": [
+        49,
+        178,
+        104,
+        8,
+        23,
+        120,
+        186,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "faucetTracker",
+          "writable": true
+        },
+        {
+          "name": "usdtMint",
+          "writable": true
+        },
+        {
+          "name": "userUsdtAta",
+          "writable": true
+        },
+        {
+          "name": "usdtTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settleMatchedTrade",
+      "discriminator": [
+        191,
+        233,
+        149,
+        116,
+        32,
+        239,
+        18,
+        65
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "settleTrade",
+      "discriminator": [
+        252,
+        176,
+        98,
+        248,
+        73,
+        123,
+        8,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        },
+        {
+          "name": "tradeEscrow",
+          "writable": true
+        },
+        {
+          "name": "escrowVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "predicate",
+          "type": {
+            "defined": {
+              "name": "traderPredicate"
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "op",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "binaryExpression"
+              }
+            }
+          }
         }
       ]
     },
@@ -834,6 +1699,45 @@ export type Txoracle = {
   ],
   "accounts": [
     {
+      "name": "faucetTracker",
+      "discriminator": [
+        247,
+        221,
+        212,
+        62,
+        42,
+        233,
+        215,
+        190
+      ]
+    },
+    {
+      "name": "matchedTrade",
+      "discriminator": [
+        104,
+        54,
+        182,
+        211,
+        94,
+        15,
+        215,
+        142
+      ]
+    },
+    {
+      "name": "orderIntent",
+      "discriminator": [
+        12,
+        130,
+        12,
+        36,
+        12,
+        221,
+        218,
+        14
+      ]
+    },
+    {
       "name": "pricingMatrix",
       "discriminator": [
         173,
@@ -844,6 +1748,112 @@ export type Txoracle = {
         77,
         110,
         106
+      ]
+    },
+    {
+      "name": "tradeEscrow",
+      "discriminator": [
+        251,
+        124,
+        237,
+        23,
+        18,
+        126,
+        198,
+        49
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "auditVerifiedEvent",
+      "discriminator": [
+        249,
+        57,
+        59,
+        176,
+        243,
+        27,
+        132,
+        169
+      ]
+    },
+    {
+      "name": "batchClaimExecuted",
+      "discriminator": [
+        207,
+        182,
+        115,
+        79,
+        244,
+        25,
+        123,
+        18
+      ]
+    },
+    {
+      "name": "batchRefundExecuted",
+      "discriminator": [
+        193,
+        25,
+        157,
+        200,
+        184,
+        164,
+        176,
+        252
+      ]
+    },
+    {
+      "name": "intentClosed",
+      "discriminator": [
+        127,
+        229,
+        67,
+        202,
+        91,
+        56,
+        164,
+        0
+      ]
+    },
+    {
+      "name": "intentCreated",
+      "discriminator": [
+        184,
+        46,
+        156,
+        205,
+        169,
+        254,
+        11,
+        108
+      ]
+    },
+    {
+      "name": "matchExecuted",
+      "discriminator": [
+        42,
+        57,
+        255,
+        224,
+        78,
+        10,
+        39,
+        168
+      ]
+    },
+    {
+      "name": "tradeSettled",
+      "discriminator": [
+        22,
+        119,
+        166,
+        225,
+        175,
+        53,
+        93,
+        216
       ]
     }
   ],
@@ -1226,6 +2236,72 @@ export type Txoracle = {
   ],
   "types": [
     {
+      "name": "auditVerifiedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auditor",
+            "type": "pubkey"
+          },
+          {
+            "name": "termsHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "rootUsed",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "result",
+            "type": "bool"
+          },
+          {
+            "name": "matchTimestamp",
+            "type": "i64"
+          },
+          {
+            "name": "auditTimestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "batchClaimExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "tradeCount",
+            "type": "u16"
+          },
+          {
+            "name": "totalPayoutAmount",
+            "type": "u64"
+          },
+          {
+            "name": "totalRentReclaimed",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
       "name": "batchMetadata",
       "type": {
         "kind": "struct",
@@ -1245,6 +2321,26 @@ export type Txoracle = {
           {
             "name": "overallBatchEndTs",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "batchRefundExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "tradeCount",
+            "type": "u16"
+          },
+          {
+            "name": "totalRentReclaimed",
+            "type": "u64"
           }
         ]
       }
@@ -1276,6 +2372,18 @@ export type Txoracle = {
           },
           {
             "name": "equalTo"
+          }
+        ]
+      }
+    },
+    {
+      "name": "faucetTracker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lastRequestTime",
+            "type": "i64"
           }
         ]
       }
@@ -1406,10 +2514,217 @@ export type Txoracle = {
       }
     },
     {
+      "name": "intentClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "intentId",
+            "type": "u64"
+          },
+          {
+            "name": "refundAmount",
+            "type": "u64"
+          },
+          {
+            "name": "closedBy",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "intentCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "tokenMint",
+            "type": "pubkey"
+          },
+          {
+            "name": "intentId",
+            "type": "u64"
+          },
+          {
+            "name": "fixtureId",
+            "type": "i64"
+          },
+          {
+            "name": "depositAmount",
+            "type": "u64"
+          },
+          {
+            "name": "expirationTs",
+            "type": "i64"
+          },
+          {
+            "name": "termsHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "intentState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "active"
+          },
+          {
+            "name": "locked"
+          },
+          {
+            "name": "closed"
+          },
+          {
+            "name": "expired"
+          }
+        ]
+      }
+    },
+    {
       "name": "marketIntentParams",
       "type": {
         "kind": "struct",
-        "fields": []
+        "fields": [
+          {
+            "name": "fixtureId",
+            "type": "i64"
+          },
+          {
+            "name": "period",
+            "type": "u16"
+          },
+          {
+            "name": "statAKey",
+            "type": "u32"
+          },
+          {
+            "name": "statBKey",
+            "type": {
+              "option": "u32"
+            }
+          },
+          {
+            "name": "predicate",
+            "type": {
+              "defined": {
+                "name": "traderPredicate"
+              }
+            }
+          },
+          {
+            "name": "op",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "binaryExpression"
+                }
+              }
+            }
+          },
+          {
+            "name": "negation",
+            "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "matchExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tradeId",
+            "type": "u64"
+          },
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "taker",
+            "type": "pubkey"
+          },
+          {
+            "name": "makerStake",
+            "type": "u64"
+          },
+          {
+            "name": "takerStake",
+            "type": "u64"
+          },
+          {
+            "name": "tokenMint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "matchedTrade",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tradeId",
+            "type": "u64"
+          },
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "taker",
+            "type": "pubkey"
+          },
+          {
+            "name": "stakeMaker",
+            "type": "u64"
+          },
+          {
+            "name": "stakeTaker",
+            "type": "u64"
+          },
+          {
+            "name": "termsHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "tradeState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
       }
     },
     {
@@ -1561,6 +2876,67 @@ export type Txoracle = {
           {
             "name": "maxTimestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "orderIntent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "intentId",
+            "type": "u64"
+          },
+          {
+            "name": "depositAmount",
+            "type": "u64"
+          },
+          {
+            "name": "remainingAmount",
+            "type": "u64"
+          },
+          {
+            "name": "odds",
+            "type": "u16"
+          },
+          {
+            "name": "termsHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixtureId",
+            "type": "i64"
+          },
+          {
+            "name": "period",
+            "type": "u16"
+          },
+          {
+            "name": "expirationTs",
+            "type": "i64"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "intentState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -1888,6 +3264,117 @@ export type Txoracle = {
       }
     },
     {
+      "name": "tradeEscrow",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tradeId",
+            "type": "u64"
+          },
+          {
+            "name": "traderA",
+            "type": "pubkey"
+          },
+          {
+            "name": "traderB",
+            "type": "pubkey"
+          },
+          {
+            "name": "stakeA",
+            "type": "u64"
+          },
+          {
+            "name": "stakeB",
+            "type": "u64"
+          },
+          {
+            "name": "tradeTermsHash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "tradeState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "createdAt",
+            "type": "i64"
+          },
+          {
+            "name": "expiresAt",
+            "type": "i64"
+          },
+          {
+            "name": "feeAmount",
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "tradeSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tradeId",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "payoutAmount",
+            "type": "u64"
+          },
+          {
+            "name": "tokenMint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tradeState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "active"
+          },
+          {
+            "name": "resolved"
+          },
+          {
+            "name": "disputed"
+          }
+        ]
+      }
+    },
+    {
       "name": "traderPredicate",
       "type": {
         "kind": "struct",
@@ -1912,7 +3399,7 @@ export type Txoracle = {
     {
       "name": "backendAdminPubkey",
       "type": "pubkey",
-      "value": "54Wot8oX53yKTtfoJwMc8RHrsqL1p6WC71devAoB1GGT"
+      "value": "Ah5xwzHxRYBBV3BWHDCHdfzQJfBehzGQcc7A9QX1DLUB"
     },
     {
       "name": "lamportsPerSol",
@@ -1932,17 +3419,17 @@ export type Txoracle = {
     {
       "name": "stakeAmount",
       "type": "u64",
-      "value": "250000000"
+      "value": "1"
     },
     {
       "name": "subscriptionDuration",
       "type": "i64",
-      "value": "604800"
+      "value": "3600"
     },
     {
       "name": "subscriptionPriceToken",
       "type": "u64",
-      "value": "25000000"
+      "value": "1"
     },
     {
       "name": "tokenDecimals",
@@ -1962,7 +3449,7 @@ export type Txoracle = {
     {
       "name": "txlineMint",
       "type": "pubkey",
-      "value": "Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL"
+      "value": "4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG"
     },
     {
       "name": "usdtDecimalsFactor",
@@ -1972,7 +3459,7 @@ export type Txoracle = {
     {
       "name": "usdtMint",
       "type": "pubkey",
-      "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+      "value": "ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh"
     }
   ]
 };
