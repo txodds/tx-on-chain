@@ -81,6 +81,19 @@ const payload = {
 The fixed `fixtureId` and `seq` pairs in the example scripts are demo fixtures. In production, derive `fixtureId`, `seq`, phase, and status from an observed score record from snapshot, updates, historical data, or the scores stream.
 </Warning>
 
+## Final Outcome and Fixtures
+
+On the current devnet and mainnet releases, final scores records use `action=game_finalised` with `statusId=100` and `period=100`. Use those records when validating or settling the final match outcome, regardless of whether the match ended after regulation time, extra time, penalties, or abandonment.
+
+Fixture payloads include a backward-compatible `GameState` field. Current values are:
+
+| GameState | Meaning |
+|-----------|---------|
+| `1` | Scheduled |
+| `6` | Cancelled |
+
+Use `fixture_validation_view_only.ts` for the runnable fixture proof flow. The script demonstrates fetching fixture validation data, deriving the ten-day fixture roots PDA, and simulating `validateFixture`.
+
 ## Related Guides
 
 - [Quickstart](/documentation/quickstart)

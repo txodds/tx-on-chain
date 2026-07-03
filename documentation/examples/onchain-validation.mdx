@@ -150,6 +150,8 @@ Pick the score record whose game phase matches the condition you want to prove. 
 
 If you validate an in-running first-half record, the predicate means the condition was true at that observed moment. That is different from proving the final first-half result. Check the sport-specific phase tables, such as [Soccer Feed](/documentation/scores/soccer-feed), and use the score record's `statusId`, `StatusId`, `gameState`, or equivalent phase field when deciding whether a record is suitable for settlement.
 
+For final match outcome settlement on the current devnet and mainnet releases, use a scores record with `action=game_finalised`. These finalisation records set `statusId` and `period` to `100`, so the same final-outcome validation path covers regulation-time wins, extra-time wins, penalty wins, and abandoned matches.
+
 ## Single-Stat Validation
 
 Validate a single statistic against on-chain Merkle roots:

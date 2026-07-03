@@ -9,6 +9,8 @@ Every supported stat is encoded with deterministic keys and published through ba
 
 For on-chain validation, use [On-Chain Validation](/documentation/examples/onchain-validation). The current examples include both legacy `validateStat` requests and `validateStatV2` multi-stat strategies through the runnable devnet scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples).
 
+For final match outcome settlement, scores records with `action=game_finalised` use `statusId=100` and `period=100` on the current devnet and mainnet releases. That gives integrations a single final-outcome marker independent of whether the match ended in regulation, extra time, penalties, or abandonment.
+
 | Feed | What to use |
 |------|-------------|
 | Soccer | [Soccer Feed](/documentation/scores/soccer-feed) for World Cup-oriented stat keys and game phases |
