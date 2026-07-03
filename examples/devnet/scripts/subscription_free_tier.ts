@@ -9,9 +9,8 @@ import TxoracleJson from "../idl/txoracle.json";
 import * as anchor from "@coral-xyz/anchor";
 import * as config from '../common/config';
 import * as users from '../common/users';
+import { PublicKey } from "@solana/web3.js";
 import axios from "axios";
-import * as os from "os";
-import * as path from "path";
 import { EventSource } from 'eventsource'
 
 async function main() {
@@ -24,38 +23,19 @@ async function main() {
   );
   const connection = provider.connection;
 
-  const authority = (provider.wallet as any).payer as anchor.web3.Keypair;
-
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
-
-  if (!mintAddress) {
-    throw new Error("TOKEN_MINT_ADDRESS environment variable is not set!");
-  }
-
-  const tokenMint = new anchor.web3.PublicKey(mintAddress);
-
-  // The recipient for the USDT subscription payment is the authority wallet.
-  const recipient = authority.publicKey;
+  if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
+  const tokenMint = new PublicKey(mintAddress);
 
   console.log("Program ID:", program.programId.toBase58());
-  console.log("Authority Wallet:", authority.publicKey.toBase58());
   console.log("Token Mint:", tokenMint.toBase58());
-  console.log("Recipient Wallet:", recipient.toBase58());
 
-  const walletPath = process.env.ANCHOR_WALLET;
-  if (!walletPath) throw new Error("Environment variable ANCHOR_WALLET is not set");
+  const walletPath = process.env.ANCHOR_WALLET!;
+  const name = "Trader A";
 
-  const keypairLocation = walletPath.startsWith("~")
-    ? path.join(os.homedir(), walletPath.slice(1))
-    : path.resolve(walletPath);
-
-  const name = path.basename(walletPath, ".json");
-
-  // We're going to target fixture 17052072 that is in competition 16 (Ligue 1), which is
-  // in custom league bundle of size 20 included in service level 3
   const user = await users.setupUser(
     name,
-    keypairLocation,
+    walletPath,
     tokenMint,
     connection,
     program,

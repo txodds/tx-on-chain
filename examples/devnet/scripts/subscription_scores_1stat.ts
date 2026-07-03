@@ -7,11 +7,9 @@ import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
-import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
-import {EventSource} from 'eventsource'
 import BN from "bn.js";
 import { inspect } from 'util';
 import { IdlTypes } from "@coral-xyz/anchor";
