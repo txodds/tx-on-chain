@@ -8,7 +8,7 @@ export type Txoracle = {
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.4.7",
+    "version": "1.5.5",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -451,58 +451,6 @@ export type Txoracle = {
       ]
     },
     {
-      "name": "subscribeV2",
-      "discriminator": [
-        13,
-        248,
-        232,
-        63,
-        182,
-        236,
-        71,
-        149
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "tokenMint"
-        },
-        {
-          "name": "userTokenAccount",
-          "writable": true
-        },
-        {
-          "name": "tokenTreasuryVault",
-          "writable": true
-        },
-        {
-          "name": "tokenTreasuryPda",
-          "docs": [
-            "Hold the PDA that owns the vault"
-          ]
-        },
-        {
-          "name": "tokenProgram"
-        },
-        {
-          "name": "systemProgram"
-        },
-        {
-          "name": "associatedTokenProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "weeks",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "updatePricingMatrix",
       "discriminator": [
         177,
@@ -557,7 +505,7 @@ export type Txoracle = {
         {
           "name": "tenDailyFixturesRoots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -598,7 +546,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateFixtureBatch",
@@ -616,7 +565,7 @@ export type Txoracle = {
         {
           "name": "tenDailyFixturesRoots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -643,7 +592,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateOdds",
@@ -703,7 +653,8 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validateStat",
@@ -791,7 +742,45 @@ export type Txoracle = {
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
+    },
+    {
+      "name": "validateStatV2",
+      "discriminator": [
+        208,
+        215,
+        194,
+        214,
+        241,
+        71,
+        246,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "dailyScoresMerkleRoots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "statValidationInput"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "nDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
     },
     {
       "name": "withdrawUsdt",
@@ -1067,7 +1056,7 @@ export type Txoracle = {
     {
       "code": 6041,
       "name": "invalidWeeks",
-      "msg": "Weeks must be greater than zero"
+      "msg": "Weeks must be a multiple of 4"
     },
     {
       "code": 6042,
@@ -1188,6 +1177,51 @@ export type Txoracle = {
       "code": 6065,
       "name": "unauthorizedAdmin",
       "msg": "Unauthorized admin"
+    },
+    {
+      "code": 6066,
+      "name": "invalidAccount",
+      "msg": "invalid account"
+    },
+    {
+      "code": 6067,
+      "name": "missingSummary",
+      "msg": "Missing summary"
+    },
+    {
+      "code": 6068,
+      "name": "missingProof",
+      "msg": "Missing proof"
+    },
+    {
+      "code": 6069,
+      "name": "tooManyStats",
+      "msg": "Stat index exceeds maximum allowed limit"
+    },
+    {
+      "code": 6070,
+      "name": "duplicateStatCoverage",
+      "msg": "Stat index is evaluated multiple times"
+    },
+    {
+      "code": 6071,
+      "name": "incompleteStatCoverage",
+      "msg": "Not all extracted stats were evaluated"
+    },
+    {
+      "code": 6072,
+      "name": "missingDistancePredicate",
+      "msg": "Distance predicate is missing for geometric targets"
+    },
+    {
+      "code": 6073,
+      "name": "indexOutOfBounds",
+      "msg": "Index out of bounds"
+    },
+    {
+      "code": 6074,
+      "name": "statNotZero",
+      "msg": "Stat not zero"
     }
   ],
   "types": [
@@ -1356,10 +1390,64 @@ export type Txoracle = {
       }
     },
     {
+      "name": "geometricTarget",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "statIndex",
+            "type": "u8"
+          },
+          {
+            "name": "prediction",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
       "name": "marketIntentParams",
       "type": {
         "kind": "struct",
         "fields": []
+      }
+    },
+    {
+      "name": "nDimensionalStrategy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "geometricTargets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "geometricTarget"
+                }
+              }
+            }
+          },
+          {
+            "name": "distancePredicate",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "traderPredicate"
+                }
+              }
+            }
+          },
+          {
+            "name": "discretePredicates",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "statPredicate"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -1626,6 +1714,86 @@ export type Txoracle = {
       }
     },
     {
+      "name": "statLeaf",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "scoreStat"
+              }
+            }
+          },
+          {
+            "name": "statProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "statPredicate",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "single",
+            "fields": [
+              {
+                "name": "index",
+                "type": "u8"
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "traderPredicate"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "binary",
+            "fields": [
+              {
+                "name": "indexA",
+                "type": "u8"
+              },
+              {
+                "name": "indexB",
+                "type": "u8"
+              },
+              {
+                "name": "op",
+                "type": {
+                  "defined": {
+                    "name": "binaryExpression"
+                  }
+                }
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "traderPredicate"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "statTerm",
       "type": {
         "kind": "struct",
@@ -1653,6 +1821,65 @@ export type Txoracle = {
               "vec": {
                 "defined": {
                   "name": "proofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "statValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixtureSummary",
+            "type": {
+              "defined": {
+                "name": "scoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixtureProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "mainTreeProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "eventStatRoot",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "stats",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "statLeaf"
                 }
               }
             }

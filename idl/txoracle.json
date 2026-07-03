@@ -2,7 +2,7 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.4.7",
+    "version": "1.5.5",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -445,58 +445,6 @@
       ]
     },
     {
-      "name": "subscribe_v2",
-      "discriminator": [
-        13,
-        248,
-        232,
-        63,
-        182,
-        236,
-        71,
-        149
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "token_mint"
-        },
-        {
-          "name": "user_token_account",
-          "writable": true
-        },
-        {
-          "name": "token_treasury_vault",
-          "writable": true
-        },
-        {
-          "name": "token_treasury_pda",
-          "docs": [
-            "Hold the PDA that owns the vault"
-          ]
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "system_program"
-        },
-        {
-          "name": "associated_token_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "weeks",
-          "type": "u8"
-        }
-      ]
-    },
-    {
       "name": "update_pricing_matrix",
       "discriminator": [
         177,
@@ -551,7 +499,7 @@
         {
           "name": "ten_daily_fixtures_roots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -592,7 +540,8 @@
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_fixture_batch",
@@ -610,7 +559,7 @@
         {
           "name": "ten_daily_fixtures_roots",
           "docs": [
-            "The address is constrained by seeds, ensuring we load the correct PDA."
+            "Constrain the address by seeds to ensure the correct PDA is loaded"
           ]
         }
       ],
@@ -637,7 +586,8 @@
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_odds",
@@ -697,7 +647,8 @@
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
     },
     {
       "name": "validate_stat",
@@ -785,7 +736,45 @@
             }
           }
         }
-      ]
+      ],
+      "returns": "bool"
+    },
+    {
+      "name": "validate_stat_v2",
+      "discriminator": [
+        208,
+        215,
+        194,
+        214,
+        241,
+        71,
+        246,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "daily_scores_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationInput"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
     },
     {
       "name": "withdraw_usdt",
@@ -1061,7 +1050,7 @@
     {
       "code": 6041,
       "name": "InvalidWeeks",
-      "msg": "Weeks must be greater than zero"
+      "msg": "Weeks must be a multiple of 4"
     },
     {
       "code": 6042,
@@ -1182,6 +1171,51 @@
       "code": 6065,
       "name": "UnauthorizedAdmin",
       "msg": "Unauthorized admin"
+    },
+    {
+      "code": 6066,
+      "name": "InvalidAccount",
+      "msg": "invalid account"
+    },
+    {
+      "code": 6067,
+      "name": "MissingSummary",
+      "msg": "Missing summary"
+    },
+    {
+      "code": 6068,
+      "name": "MissingProof",
+      "msg": "Missing proof"
+    },
+    {
+      "code": 6069,
+      "name": "TooManyStats",
+      "msg": "Stat index exceeds maximum allowed limit"
+    },
+    {
+      "code": 6070,
+      "name": "DuplicateStatCoverage",
+      "msg": "Stat index is evaluated multiple times"
+    },
+    {
+      "code": 6071,
+      "name": "IncompleteStatCoverage",
+      "msg": "Not all extracted stats were evaluated"
+    },
+    {
+      "code": 6072,
+      "name": "MissingDistancePredicate",
+      "msg": "Distance predicate is missing for geometric targets"
+    },
+    {
+      "code": 6073,
+      "name": "IndexOutOfBounds",
+      "msg": "Index out of bounds"
+    },
+    {
+      "code": 6074,
+      "name": "StatNotZero",
+      "msg": "Stat not zero"
     }
   ],
   "types": [
@@ -1350,10 +1384,64 @@
       }
     },
     {
+      "name": "GeometricTarget",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat_index",
+            "type": "u8"
+          },
+          {
+            "name": "prediction",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
       "name": "MarketIntentParams",
       "type": {
         "kind": "struct",
         "fields": []
+      }
+    },
+    {
+      "name": "NDimensionalStrategy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "geometric_targets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "GeometricTarget"
+                }
+              }
+            }
+          },
+          {
+            "name": "distance_predicate",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TraderPredicate"
+                }
+              }
+            }
+          },
+          {
+            "name": "discrete_predicates",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatPredicate"
+                }
+              }
+            }
+          }
+        ]
       }
     },
     {
@@ -1620,6 +1708,86 @@
       }
     },
     {
+      "name": "StatLeaf",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "ScoreStat"
+              }
+            }
+          },
+          {
+            "name": "stat_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatPredicate",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Single",
+            "fields": [
+              {
+                "name": "index",
+                "type": "u8"
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "TraderPredicate"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "Binary",
+            "fields": [
+              {
+                "name": "index_a",
+                "type": "u8"
+              },
+              {
+                "name": "index_b",
+                "type": "u8"
+              },
+              {
+                "name": "op",
+                "type": {
+                  "defined": {
+                    "name": "BinaryExpression"
+                  }
+                }
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "TraderPredicate"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "StatTerm",
       "type": {
         "kind": "struct",
@@ -1647,6 +1815,65 @@
               "vec": {
                 "defined": {
                   "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixture_summary",
+            "type": {
+              "defined": {
+                "name": "ScoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixture_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "stats",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatLeaf"
                 }
               }
             }
