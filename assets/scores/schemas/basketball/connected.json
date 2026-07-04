@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "A connection has been established. The field ConnectionType identifies the type of user that connected.",
+  "title": "connected",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "connected"
+          ]
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "ConnectionServerId": {
+          "type": [
+            "string"
+          ],
+          "description": "Internal Id of the server ",
+          "title": "Connection Server Id",
+          "examples": [
+            "507ad907-9f35-458f-8a7b-982c62ce5292",
+            "44a5ecab-49b5-4b21-8712-e27cfc69bb96"
+          ]
+        },
+        "ConnectionType": {
+          "type": [
+            "string"
+          ],
+          "description": "The type of user that established the connection",
+          "title": "Connection Type",
+          "enum": [
+            "reporter",
+            "analyst"
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Confirmed",
+    "ConnectionId",
+    "ConnectionServerId",
+    "ConnectionType",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "Ts"
+  ]
+}
+
