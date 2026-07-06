@@ -76,7 +76,15 @@ These encodings are used for on-chain validation proofs and trading settlement.
 <Card
   title="Download"
   icon="file-pdf"
-  href="https://txodds.github.io/tx-on-chain/assets/txodds-soccer-feed-v1.0.pdf"
+  href="https://txodds.github.io/tx-on-chain/assets/txodds-soccer-feed-v1.1.pdf"
 >
   Complete documentation for the TxODDS Soccer data feed
 </Card>
+
+### Version 1.1 Updates
+
+The v1.1 Soccer Feed PDF includes the following integrator-facing updates:
+
+- `Substitution` messages can include `FollowsAction`, linking a confirmed substitution to the originating unconfirmed action.
+- `Action Amend` can include `Participant`, identifying the team related to the original action being amended.
+- `halftime_finalised` indicates halftime data has been reviewed and verified, and may be sent more than once for the same halftime period.
