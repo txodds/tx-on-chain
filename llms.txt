@@ -21,9 +21,9 @@
 
 ## Solana Programs
 
-- [Program Addresses](https://txline.txodds.com/documentation/programs/addresses): Current mainnet/devnet addresses and PDA derivation.
-- [IDL & Types (Mainnet)](https://txline.txodds.com/documentation/programs/mainnet): Mainnet IDL and TypeScript types.
-- [IDL & Types (Devnet)](https://txline.txodds.com/documentation/programs/devnet): Devnet IDL and TypeScript types.
+- [Program Addresses](https://txline.txodds.com/documentation/programs/addresses): Current mainnet/devnet addresses and public validation account derivation.
+- [Program Reference (Mainnet)](https://txline.txodds.com/documentation/programs/mainnet): Public mainnet integration values and validation accounts.
+- [Program Reference (Devnet)](https://txline.txodds.com/documentation/programs/devnet): Public devnet integration values and validation accounts.
 
 ## Examples
 
