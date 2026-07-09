@@ -19,6 +19,12 @@ Get all fixtures for a specific competition or all competitions.
 `Participant1IsHome` is the feed's home/away designation for mapping `Participant1` and `Participant2`; it is not a venue guarantee. For neutral competitions such as the World Cup, `Participant1IsHome: true` means `Participant1` is listed as the home side for feed purposes, even if the match is not played in that team's country.
 </Note>
 
+<Info>
+The hosted OpenAPI schema does not define a separate `GameState` field on `Fixture`. It defines odds state as `GameState` and scores state as `gameState`, both as strings. These feed fields are distinct from the numeric state code packed into `FixtureId` for fixture validation.
+</Info>
+
+The packing convention is `packedFixtureId = pureFixtureId + GameState * 2^48`. The currently confirmed numeric codes are `1` for scheduled and `6` for cancelled. A packed value using either confirmed code remains a safe JavaScript integer when the pure fixture ID fits in 48 bits, but callers should still require `Number.isSafeInteger(packedFixtureId)`. The runnable example passes the packed value to `validateFixture`; whether the current backend rejects a pure ID remains inconclusive until a covered live proof is available.
+
 ```typescript
 import axios from "axios";
 
@@ -65,7 +71,10 @@ console.log(`Retrieved ${allFixtures.length} total fixtures`);
 Get odds data for a specific fixture or time period.
 
 ```typescript
-const fixtureId = 17271370;
+const fixtureId = Number(process.env.TXLINE_FIXTURE_ID);
+if (!Number.isSafeInteger(fixtureId) || fixtureId <= 0) {
+  throw new Error("Set TXLINE_FIXTURE_ID to an observed fixture ID");
+}
 
 // Get odds for specific fixture
 const fixtureOddsResponse = await httpClient.get(
@@ -76,9 +85,11 @@ const fixtureOdds = fixtureOddsResponse.data;
 console.log(`Retrieved ${fixtureOdds.length} odds entries`);
 
 // Get odds for time period
-const epochDay = 20085;
-const hourOfDay = 15;
-const interval = 0;
+const targetTs = Date.now() - 5 * 60 * 1000;
+const target = new Date(targetTs);
+const epochDay = Math.floor(targetTs / 86400000);
+const hourOfDay = target.getUTCHours();
+const interval = Math.floor(target.getUTCMinutes() / 5);
 
 const updatesResponse = await httpClient.get(
   `/api/odds/updates/${epochDay}/${hourOfDay}/${interval}`
@@ -93,7 +104,10 @@ console.log(`Retrieved ${updates.length} odds updates`);
 Get scores data for a specific fixture or time period.
 
 ```typescript
-const fixtureId = 17271370;
+const fixtureId = Number(process.env.TXLINE_FIXTURE_ID);
+if (!Number.isSafeInteger(fixtureId) || fixtureId <= 0) {
+  throw new Error("Set TXLINE_FIXTURE_ID to an observed fixture ID");
+}
 
 // Get scores snapshot for fixture
 const snapshotScoresResponse = await httpClient.get(
@@ -103,23 +117,17 @@ const snapshotScores = snapshotScoresResponse.data;
 
 console.log(`Retrieved ${snapshotScores.length} snapshot scores entries`);
 
-// Get live scores updates
-const liveScoresResponse = await httpClient.get(
-  `/api/scores/updates/${fixtureId}`
-);
-const liveScores = liveScoresResponse.data;
+// Get score updates for a recent UTC interval
+const targetTs = Date.now() - 5 * 60 * 1000;
+const target = new Date(targetTs);
+const epochDay = Math.floor(targetTs / 86400000);
+const hourOfDay = target.getUTCHours();
+const interval = Math.floor(target.getUTCMinutes() / 5);
 
-console.log(`Retrieved ${liveScores.length} live scores updates`);
-
-// Get scores for time period
-const epochDay = 20085;
-const hourOfDay = 15;
-const interval = 0;
-
-const historicalUpdatesResponse = await httpClient.get(
+const updatesResponse = await httpClient.get(
   `/api/scores/updates/${epochDay}/${hourOfDay}/${interval}`
 );
-const historicalUpdates = historicalUpdatesResponse.data;
+const scoreUpdates = updatesResponse.data;
 
-console.log(`Retrieved ${historicalUpdates.length} historical scores updates`);
+console.log(`Retrieved ${scoreUpdates.length} score updates for the UTC interval`);
 ```

@@ -15,7 +15,7 @@ Experience the power of TxLINE's sports data API with our complimentary free tie
     **Service Level 12**: World Cup & Int Friendlies in real-time
   </Card>
   <Card title="Historical Replay" icon="clock-rotate-left">
-    Full access to historical data for past matches and events analysis.
+    Replay scores for fixtures whose start times fall between two weeks and six hours ago.
   </Card>
   <Card title="On-Chain Verification" icon="shield-check">
     Cryptographically verifiable data with Solana blockchain anchoring.
@@ -26,7 +26,7 @@ Experience the power of TxLINE's sports data API with our complimentary free tie
 </CardGroup>
 
 <Info>
-**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before upgrading to real-time data.
+**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before choosing broader paid league coverage.
 </Info>
 
 ## Getting Started
@@ -181,6 +181,9 @@ async function signActivationMessage(message: Uint8Array): Promise<Uint8Array> {
 }
 
 const signatureBytes = await signActivationMessage(message);
+if (signatureBytes.length !== 64) {
+  throw new Error("Activation requires a 64-byte detached Ed25519 signature");
+}
 const walletSignature = Buffer.from(signatureBytes).toString("base64");
 
 // Activate your API access
@@ -196,10 +199,25 @@ const activationResponse = await axios.post(
   }
 );
 
-// Save your API token
-const apiToken = activationResponse.data.token || activationResponse.data;
+// Save your API token only after validating the response shape
+const apiToken = typeof activationResponse.data === "string"
+  ? activationResponse.data
+  : activationResponse.data?.token;
+if (typeof apiToken !== "string" || apiToken.length === 0) {
+  throw new Error("Activation response did not contain an API token");
+}
 console.log("API Token activated successfully!");
 ```
+
+For the standard free bundle, `SELECTED_LEAGUES = []`, so the exact message signed by your wallet is:
+
+```text
+${txSig}::${jwt}
+```
+
+Use a base64-encoded, 64-byte detached Ed25519 signature, and make sure the signing wallet is the same wallet that submitted the `subscribe` transaction. Do not share your guest JWT, detached wallet signature, or activated API token in public support channels.
+
+Keep the confirmed `txSig` if activation fails. It is a public Solana transaction identifier and can be reused for activation-only recovery. After a `401`, obtain a fresh guest JWT and re-sign because the JWT is part of the message. Retry transient `5xx` responses, including `504`, only with bounded backoff. Do not send another `subscribe` transaction automatically, and do not retry or refresh the JWT in response to `400` or `403`.
 
 ### Step 4: Make Your First API Call
 
@@ -214,16 +232,16 @@ Check out the complete [API Reference](/api-reference/authentication/start-a-new
 
 Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
 
-## Ready for More?
+## Expand your league coverage
 
-Love the free tier? Upgrade to unlock:
+Mainnet service level `12` already offers real-time World Cup and International Friendlies data at no TxL cost. Paid tiers add broader league and bundle choices:
 
 <CardGroup cols={3}>
-  <Card title="Real-Time Data" icon="bolt">
-    Zero delay live data for time-sensitive applications
+  <Card title="Additional Leagues" icon="bolt">
+    Select a paid bundle when you need competitions outside the free World Cup bundle
   </Card>
-  <Card title="1000+ Leagues" icon="trophy">
-    Access to all major leagues worldwide
+  <Card title="Standard Bundles" icon="trophy">
+    Choose the configured 10-, 25-, 50-, 100-, or all-league bundle
   </Card>
   <Card title="Custom Leagues" icon="sliders">
     Choose exactly which leagues you need
@@ -236,15 +254,19 @@ View our [Subscription Tiers](/documentation/subscription-tiers) to see all avai
 
 <AccordionGroup>
   <Accordion title="Do I need to renew my free subscription?">
-    All subscriptions can be purchased for any duration in multiples of 4 weeks (28 days), up to 12 months. Simply re-subscribe when your access expires. There's no cost to renew free tiers.
+    `durationWeeks` must be a positive multiple of four. Current devnet simulations accepted `4`, `52`, `56`, and `252`, and rejected `0`, `2`, `5`, and `255`; `252` is the largest accepted multiple that fits the unsigned 8-bit program argument. This program boundary is not a product-policy maximum. Confirm the current commercial duration policy and re-read the selected network's pricing account before submitting. Re-subscribe when access expires. Free-tier renewals have zero TxL price under the current row, but still require SOL for transaction fees and possible account rent.
   </Accordion>
 
   <Accordion title="Can I upgrade from free tier to paid?">
-    Absolutely! You can upgrade at any time by subscribing to a paid tier. Your new subscription will take effect immediately.
+    You can subscribe to a paid tier for broader league coverage. Confirm the transaction and activate its API token before relying on the new entitlement.
   </Accordion>
 
   <Accordion title="Is there a rate limit on free tier?">
-    No rate limits on API calls. However, data has a 60-second delay compared to premium real-time tiers.
+    The pricing matrix does not define HTTP rate limits, and the current public repository does not establish a no-limit guarantee. Treat `429` as a rate-limit response and confirm current policy with TxODDS.
+  </Accordion>
+
+  <Accordion title="Do I need SOL for the free tier?">
+    Yes. No TxL purchase is required for the free tier, but the Solana wallet still needs SOL on the selected network to submit the on-chain subscription transaction and cover any account rent.
   </Accordion>
 
   <Accordion title="What happens if I don't renew?">
@@ -252,7 +274,7 @@ View our [Subscription Tiers](/documentation/subscription-tiers) to see all avai
   </Accordion>
 
   <Accordion title="Can I use this for commercial projects?">
-    Yes! The free tier can be used for commercial projects. However, for production applications, we recommend upgrading to real-time data for the best user experience.
+    Yes. The free tier can be used for commercial projects. Mainnet service level `12` already provides real-time access for its free World Cup bundle; use a paid tier when you need broader league coverage.
   </Accordion>
 </AccordionGroup>
 

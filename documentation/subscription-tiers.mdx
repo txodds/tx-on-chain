@@ -41,8 +41,12 @@ TxLINE offers flexible data access subscriptions, each available with configurab
 </Tabs>
 
 <Info>
-**Subscription Duration**: Subscriptions must be purchased in multiples of 4 weeks (28 days). Minimum term is 4 weeks.
+**Subscription Duration**: `durationWeeks` is an unsigned 8-bit value and must be a positive multiple of `4`. Current devnet simulations accepted `4`, `52`, `56`, and `252`, and rejected `0`, `2`, `5`, and `255`. The largest representable multiple of `4` is `252`. Re-read the selected network's pricing account before submitting because program configuration can change.
 </Info>
+
+The `subscribe` instruction encodes `serviceLevelId` as an unsigned 16-bit value and `durationWeeks` as an unsigned 8-bit value. The current devnet service-level `1` row has zero token price, `samplingIntervalSec = 0`, league bundle `1`, and market bundle `2`. Simulations reject an unknown service level and a token mint that does not match the pricing configuration.
+
+HTTP rate limits and retention are backend policies, not fields in the on-chain pricing matrix. Do not infer unlimited requests or unlimited historical access from a free price or zero sampling interval.
 
 ## Confirm
 
@@ -66,6 +70,8 @@ matrix.rows.forEach((row) => {
   });
 });
 ```
+
+Check the row immediately before constructing a subscription. Do not hardcode a mainnet or devnet row for the other network.
 
 <Info>
 **Pricing subject to change**: Pricing structure may be updated at any time. Active subscriptions will honor the terms agreed upon at the time of purchase.

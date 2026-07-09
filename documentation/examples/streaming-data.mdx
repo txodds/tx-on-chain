@@ -1,6 +1,6 @@
 ---
 title: "Streaming Data"
-description: "Real-time odds and scores updates via Server-Sent Events"
+description: "Streaming odds and scores updates via Server-Sent Events"
 ---
 
 <Info>
@@ -11,6 +11,32 @@ description: "Real-time odds and scores updates via Server-Sent Events"
 **Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) or [World Cup Free Tier activation](/documentation/worldcup) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
+## Stream Expectations
+
+An open SSE connection means your credentials and stream request are accepted. It does not guarantee that a covered fixture is producing data at that exact moment.
+
+If the stream opens but you only see heartbeats or no data messages for a while:
+
+- Check [Scores Schedule](/documentation/scores/schedule) for active or upcoming covered fixtures.
+- Keep the stream open during a covered live fixture window.
+- Use `/api/scores/historical/{fixtureId}` when you need replay data for a completed fixture within the historical availability window.
+- Confirm you are using the correct network host for your subscription.
+
+<Note>
+If a stream returns `401`, renew the guest JWT once from the same host and reconnect with the same `X-Api-Token`. If it returns `403`, check the API token, subscription, network, and bundle permission. Do not renew the JWT on `403`, and bound every reconnect attempt.
+</Note>
+
+## Runnable Devnet Streams
+
+The repository includes runnable devnet stream scripts that handle activation, API token headers, JWT renewal, and SSE connections:
+
+| Script | Stream coverage |
+|--------|-----------------|
+| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Odds snapshots and odds SSE streams. |
+| [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, score validation, and scores SSE streams. |
+| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
+| [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Historical score discovery and replay within the documented retention window. |
+
 ## SSE Parsing Helper
 
 ```typescript
@@ -19,13 +45,18 @@ type SseMessage = {
   event?: string;
   data: string;
   retry?: number;
+  comments: string[];
 };
 
 function parseSseBlock(block: string): SseMessage | null {
-  const message: SseMessage = { data: "" };
+  const message: SseMessage = { data: "", comments: [] };
 
   for (const rawLine of block.split(/\r?\n/)) {
-    if (!rawLine || rawLine.startsWith(":")) continue;
+    if (!rawLine) continue;
+    if (rawLine.startsWith(":")) {
+      message.comments.push(rawLine.slice(1).replace(/^ /, ""));
+      continue;
+    }
 
     const separatorIndex = rawLine.indexOf(":");
     const field = separatorIndex === -1 ? rawLine : rawLine.slice(0, separatorIndex);
@@ -41,7 +72,9 @@ function parseSseBlock(block: string): SseMessage | null {
   }
 
   message.data = message.data.replace(/\n$/, "");
-  return message.data || message.event || message.id ? message : null;
+  return message.data || message.event || message.id || message.comments.length
+    ? message
+    : null;
 }
 
 async function* readSseMessages(response: Response): AsyncGenerator<SseMessage> {
@@ -78,62 +111,102 @@ async function* readSseMessages(response: Response): AsyncGenerator<SseMessage> 
   }
 }
 
-function parseSseData(data: string) {
-  try {
-    return JSON.parse(data);
-  } catch {
-    return data;
+```
+
+Bound smoke probes to 30–45 seconds. Classify the result instead of treating every open connection as a data success:
+
+- An accepted response or heartbeat is an authentication and transport smoke pass.
+- A data event is a data-flow pass.
+- An accepted stream with no data event is `inconclusive`, because no covered fixture may be active.
+- A non-`2xx` response, parser error, or timeout before the response is accepted is a failure.
+
+```typescript
+async function probeSse(streamUrl: string, seconds = 35) {
+  if (seconds < 30 || seconds > 45) {
+    throw new Error("SSE probe duration must be between 30 and 45 seconds");
   }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), seconds * 1000);
+  let accepted = false;
+  let sawHeartbeat = false;
+  let sawData = false;
+
+  try {
+    const response = await fetch(streamUrl, {
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        "X-Api-Token": apiToken,
+        Accept: "text/event-stream",
+        "Cache-Control": "no-cache",
+      },
+    });
+
+    if (!response.ok) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error(`Stream failed: ${response.status}`);
+    }
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.toLowerCase().includes("text/event-stream")) {
+      await response.body?.cancel().catch(() => undefined);
+      throw new Error("Stream returned an unexpected content type");
+    }
+    accepted = true;
+
+    for await (const message of readSseMessages(response)) {
+      const namedHeartbeat =
+        message.event === "heartbeat" || message.event === "ping";
+      if (namedHeartbeat) {
+        sawHeartbeat = true;
+      } else if (message.data) {
+        sawData = true;
+        console.log("SSE data event", {
+          id: message.id,
+          event: message.event ?? "message",
+          bytes: new TextEncoder().encode(message.data).length,
+        });
+      } else if (message.comments.length > 0) {
+        sawHeartbeat = true;
+      }
+    }
+  } catch (error) {
+    if (!(error instanceof Error && error.name === "AbortError")) throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (sawData) return "data-flow-pass" as const;
+  if (accepted || sawHeartbeat) return "transport-pass-data-inconclusive" as const;
+  throw new Error("SSE probe timed out before the stream was accepted");
 }
 ```
 
 ## Stream Odds Updates
 
-Connect to the odds stream for real-time updates.
+Connect to the odds stream for updates at the cadence of your selected service level.
 
 ```typescript
 const streamUrl = "https://txline.txodds.com/api/odds/stream";
-const streamResponse = await fetch(streamUrl, {
-  headers: {
-    Authorization: `Bearer ${jwt}`,
-    "X-Api-Token": apiToken,
-    Accept: "text/event-stream",
-    "Cache-Control": "no-cache",
-  },
-});
-
-if (!streamResponse.ok) {
-  throw new Error(`Stream failed: ${streamResponse.status}`);
-}
-
-for await (const message of readSseMessages(streamResponse)) {
-  console.log(message.event ?? "message", parseSseData(message.data));
-}
+const outcome = await probeSse(streamUrl);
+console.log("Odds stream outcome:", outcome);
 ```
+
+Use `https://txline-dev.txodds.com/api/odds/stream` for a devnet subscription.
 
 ## Stream Scores Updates
 
-Connect to the scores stream for real-time updates.
+Connect to the scores stream for updates at the cadence of your selected service level.
 
 ```typescript
 const streamUrl = "https://txline.txodds.com/api/scores/stream";
-const streamResponse = await fetch(streamUrl, {
-  headers: {
-    Authorization: `Bearer ${jwt}`,
-    "X-Api-Token": apiToken,
-    Accept: "text/event-stream",
-    "Cache-Control": "no-cache",
-  },
-});
-
-if (!streamResponse.ok) {
-  throw new Error(`Stream failed: ${streamResponse.status}`);
-}
-
-for await (const message of readSseMessages(streamResponse)) {
-  console.log(message.event ?? "message", parseSseData(message.data));
-}
+const outcome = await probeSse(streamUrl);
+console.log("Scores stream outcome:", outcome);
 ```
+
+Use `https://txline-dev.txodds.com/api/scores/stream` for a devnet subscription.
+
+Scores stream messages can be used as validation inputs. When a message contains a real sequence field, use its observed `Seq` or `seq` value with `/api/scores/stat-validation`; do not replace it with `0` or a synthetic sequence number.
 
 ## Historical Scores
 
@@ -152,19 +225,28 @@ const httpClient = axios.create({
   baseURL: "https://txline.txodds.com",
 });
 
-const fixtureId = 17952170;
+const fixtureId = Number(process.env.TXLINE_FIXTURE_ID);
+if (!Number.isSafeInteger(fixtureId) || fixtureId <= 0) {
+  throw new Error("Set TXLINE_FIXTURE_ID to an observed fixture ID");
+}
+
 const historicalScores = await httpClient.get(`/api/scores/historical/${fixtureId}`);
 
 console.log(`Retrieved ${historicalScores.data.length} score updates for fixture ${fixtureId}`);
 historicalScores.data.forEach((update, index) => {
-  console.log(`${index + 1}. Seq: ${update.seq}, TS: ${update.ts}, State: ${update.gameState}`);
+  const seq = update.Seq ?? update.seq;
+  const ts = update.Ts ?? update.ts;
+  const fixture = update.FixtureId ?? update.fixtureId;
+  console.log(`${index + 1}. Fixture: ${fixture}, Seq: ${seq}, TS: ${ts}`);
 });
 ```
+
+Use the observed sequence from a historical record when requesting a validation proof for that record.
 
 <Info>
 **Historical Availability**: This endpoint only returns data for fixtures with start times between two weeks and six hours in the past from the current time.
 </Info>
 
 <Info>
-**Stream Compression**: To reduce bandwidth usage by up to 70-80%, add `"Accept-Encoding": "gzip"` to your headers. You'll need to decompress the response chunks using `gunzipSync()` from Node's `zlib` module before decoding.
+**Stream Compression**: Let native `fetch`/Undici negotiate and decompress the response. Do not set `Accept-Encoding` manually, and do not pass already-decoded chunks to `gunzipSync`. For command-line probes, use `curl --compressed`. If a lower-level client exposes a genuinely raw gzip body, pipe the complete byte stream through `createGunzip` before SSE decoding; a gzip frame can span transport chunks.
 </Info>

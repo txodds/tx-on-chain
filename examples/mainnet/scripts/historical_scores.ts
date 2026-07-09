@@ -12,6 +12,26 @@ import * as users from '../common/users';
 import { PublicKey } from "@solana/web3.js";
 import axios from "axios";
 
+function returnedFixtureId(record: unknown, index: number): number {
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    throw new Error(`Historical record ${index} is not an object`);
+  }
+  const object = record as Record<string, unknown>;
+  const value = object.FixtureId ?? object.fixtureId;
+  if (value === undefined || value === null) {
+    throw new Error(`Historical record ${index} is missing FixtureId/fixtureId`);
+  }
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string" && /^\d+$/.test(value)
+      ? Number(value)
+      : Number.NaN;
+  if (!Number.isSafeInteger(parsed) || parsed < 1) {
+    throw new Error(`Historical record ${index} has an invalid FixtureId/fixtureId`);
+  }
+  return parsed;
+}
+
 async function main() {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
@@ -29,10 +49,15 @@ async function main() {
   console.log("Program ID:", program.programId.toBase58());
   console.log("Token Mint:", tokenMint.toBase58());
 
-  const walletPath = process.env.ANCHOR_WALLET!;
+  const walletPath = process.env.ANCHOR_WALLET;
+  if (!walletPath) throw new Error("ANCHOR_WALLET is not set");
   const name = "Trader A";
+  const fixtureId = Number(process.env.TXLINE_FIXTURE_ID);
+  if (!Number.isSafeInteger(fixtureId) || fixtureId < 1) {
+    throw new Error("TXLINE_FIXTURE_ID must be set to a positive safe integer");
+  }
 
-  const user = await users.setupUser(
+  await users.setupUser(
     name,
     walletPath,
     tokenMint,
@@ -41,51 +66,58 @@ async function main() {
     1,
     4,
     [],
-    undefined,  // Alternatively, use a working JWT Token here
-    undefined   // Alternatively, use a working API Token here
+    process.env.TXLINE_GUEST_JWT,
+    process.env.TXLINE_API_TOKEN
   )
-  console.log("API Token:", users.authState.apiToken);
+  console.log("Authentication established; credentials are redacted");
 
   try {
-    // Fetch the scores snapshot for a specific fixture
+    // Mainnet is never probed by the devnet audit. An explicit fixture keeps
+    // this mirrored example free of a stale default identifier.
     async function fetchHistoricalScores(fixtureId: number) {
-      let updateUrl = `${config.API_BASE_URL}/scores/historical/${fixtureId}`;
+      const updateUrl = `${config.API_BASE_URL}/scores/historical/${fixtureId}`;
       
       try {
         const response = await users.apiClient.get(updateUrl)
-        
-        if (response.data.length > 0) {
-          console.log(`Scores updates found for fixtureId ${fixtureId}:`, response.data)
+        if (response.status < 200 || response.status >= 300) {
+          throw new Error(`Historical request returned unexpected HTTP ${response.status}`);
+        }
+        const records: unknown[] = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.records)
+            ? response.data.records
+            : [];
+        if (records.length > 0) {
+          records.forEach((record, index) => {
+            const returned = returnedFixtureId(record, index);
+            if (returned !== fixtureId) {
+              throw new Error(`Historical record ${index} does not match requested fixture ${fixtureId}`);
+            }
+          });
+          console.log(`Historical scores pass for fixtureId ${fixtureId}: ${records.length} record(s)`)
         } else {
-          console.log(`Historical endpoint returned success, but data is empty.`);
+          throw new Error("Historical endpoint returned success, but data is empty");
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          console.error("Request failed:", error.response?.data || error.message)
-        } else {
-          console.error("Error:", error)
+          throw new Error(`Historical request failed${error.response?.status ? ` with HTTP ${error.response.status}` : ""}`)
         }
-        process.exit(1)
+        throw error
       }
     }
 
-    await fetchHistoricalScores(18187298);
+    await fetchHistoricalScores(fixtureId);
 
 } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error("Request Failed:", error.response?.data || error.message);
-    } else {
-      console.error("Error:", error);
+      throw new Error(`Request failed${error.response?.status ? ` with HTTP ${error.response.status}` : ""}`);
     }
-    process.exit(1);
+    throw error;
   }
 
 }
 
-main().then(
-  () => process.exit(0),
-  (err) => {
-    console.error(err);
-    process.exit(1);
-  }
-);
+main().then(() => process.exit(0), error => {
+  console.error(error instanceof Error ? error.message : "Historical scores example failed");
+  process.exit(1);
+});

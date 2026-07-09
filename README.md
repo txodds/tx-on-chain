@@ -30,7 +30,7 @@ The data the Oracle system is currently offering includes
 - odds: specifically, what is known as TxODDS stable de-margined price available for much more sports and markets in the TxODDS Fusion product;
 - scores: fully detailed (down to every on-the field action) updates for US College Football and US College Basketball matches.
 
-The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
+The data is delivered through request-response APIs or streaming to authenticated subscribers, with delay determined by the selected service level. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
 
 This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically verify whether a given record is *contained* in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified. A non-custodial orderbook trading model is also in preparation.
 
@@ -40,7 +40,7 @@ Essentialy the data access layer (use case 1) allows users to front-run their tr
 
 Current coverage and pricing are documented in the hosted docs:
 
-- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup) - service levels 1 and 12 for World Cup and International Friendlies data.
+- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup) - documented free access for World Cup and International Friendlies data.
 - [Subscription Tiers](https://txline.txodds.com/documentation/subscription-tiers) - free and paid tier IDs, delays, and 28-day pricing.
 - [StablePrice Feed](https://txline.txodds.com/documentation/odds/odds-coverage) - covered odds competitions and downloadable soccer league list.
 - [Scores Schedule](https://txline.txodds.com/documentation/scores/schedule) - currently listed confirmed fixtures.
@@ -53,7 +53,7 @@ The `scores` channel includes the detailed models for US football and US basketb
 
 [TxODDS US Basketball Feed v1.14.2](assets/txodds-basketball-feed-v1.14.2.pdf)
 
-In contrast to the B2B offering, (limited) historical access to data is also included.
+The historical scores endpoint covers fixtures whose start times are between two weeks and six hours in the past.
 
 ## Content in the `fixtures` and `odds` channels
 
@@ -88,21 +88,20 @@ The following diagram shows how users typically move from subscription setup to 
 Use one network consistently. Devnet subscribe transactions must use the devnet API host (`https://txline-dev.txodds.com`), and mainnet subscribe transactions must use the mainnet API host (`https://txline.txodds.com`).
 
 1. **Start a guest session** - call `POST /auth/guest/start` on the matching TxLINE host to receive the guest JWT.
-2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, followed by local transaction verification and signing. Free World Cup tiers do not require a TxL purchase.
+2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, which returns a serialized transaction. The current Quickstart deserializes and signs that backend-provided transaction but does not implement a local verifier; parse and validate every program, instruction, writable or signing account, fee payer, mint, recipient, amount, blockhash assumption, and unrelated instruction before using the flow with funds. Free World Cup tiers do not require a TxL purchase.
 3. **Subscribe on-chain** - call `program.methods.subscribe(serviceLevelId, durationWeeks)` with the `pricing_matrix` PDA and `token_treasury_v2` PDA/vault accounts.
 4. **Activate API access** - sign `${txSig}:${selectedLeagues.join(",")}:${jwt}` with the subscription wallet, then call `POST /api/token/activate` on the matching TxLINE host. For the free standard bundle, `selectedLeagues = []`, so the exact signed message is `${txSig}::${jwt}`.
 5. **Call data APIs** - send `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <activated-api-token>` on fixtures, odds, and scores requests.
 
 ## Current Examples
 
-The current copy-paste examples live in the hosted documentation pages rather than a top-level `examples/` directory:
+The hosted documentation contains copy-paste snippets, and `examples/devnet` contains runnable devnet activation, snapshot, streaming, historical, and validation flows:
 
 - [Quickstart](https://txline.txodds.com/documentation/quickstart) - purchase, subscribe, activate, and API-token header setup.
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
-
-The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
+- [Runnable Devnet Examples](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet) - dynamic score discovery, bounded streams, historical replay, and fail-closed on-chain simulations.
 
 ## Trading Flow
 

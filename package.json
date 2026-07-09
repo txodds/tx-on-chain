@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "yarn typecheck && yarn test:unit",
+    "test:unit": "node --test tests/*.test.cjs",
+    "typecheck": "yarn typecheck:root && yarn typecheck:devnet && yarn typecheck:mainnet",
+    "typecheck:root": "tsc -p tsconfig.json --noEmit",
+    "typecheck:devnet": "tsc -p examples/devnet/scripts/tsconfig.json --noEmit",
+    "typecheck:mainnet": "tsc -p examples/mainnet/tsconfig.json --noEmit"
   },
   "repository": {
     "type": "git",
@@ -23,6 +28,7 @@
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.91.9",
     "axios": "^1.12.0",
+    "bs58": "^6.0.0",
     "dotenv": "^16.4.7",
     "eventsource": "^4.0.0",
     "fastestsmallesttextencoderdecoder": "^1.0.22",
@@ -35,7 +41,6 @@
     "@types/chai": "^4.3.0",
     "@types/mocha": "^9.0.0",
     "@types/node": "^22.13.4",
-    "bs58": "^6.0.0",
     "chai": "^4.3.4",
     "mocha": "^9.0.3",
     "prettier": "^2.6.2",

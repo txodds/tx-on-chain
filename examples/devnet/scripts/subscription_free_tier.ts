@@ -1,161 +1,179 @@
-// Demo subscription and data access for free tier (World Cup)
+// Discover a fixture from the current UTC window, fetch its odds, and probe odds SSE.
+// Optional overrides: TXLINE_FIXTURE_ID and TXLINE_SSE_SECONDS (30..45).
 
-// Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_free_tier.ts
-
-import { Program } from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
-import TxoracleJson from "../idl/txoracle.json";
 import * as anchor from "@coral-xyz/anchor";
-import * as config from '../common/config';
-import * as users from '../common/users';
+import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import axios from "axios";
-import { EventSource } from 'eventsource'
+import { Txoracle } from "../types/txoracle";
+import TxoracleJson from "../idl/txoracle.json";
+import * as config from "../common/config";
+import * as users from "../common/users";
+import {
+  JsonObject,
+  InconclusiveError,
+  firstField,
+  fixtureIdOverride,
+  observeSse,
+  requiredSafeInteger,
+  safeError,
+  sseDurationSeconds,
+  summarizeSse,
+} from "../common/flow";
 
-async function main() {
+function fixtureObjects(value: unknown): JsonObject[] {
+  const found: JsonObject[] = [];
+  const visit = (current: unknown, depth: number): void => {
+    if (depth > 7 || current === null || typeof current !== "object") return;
+    if (Array.isArray(current)) {
+      current.forEach(item => visit(item, depth + 1));
+      return;
+    }
+    const object = current as JsonObject;
+    if (firstField(object, ["FixtureId", "fixtureId"]) !== undefined) {
+      found.push(object);
+      return;
+    }
+    Object.values(object).forEach(item => visit(item, depth + 1));
+  };
+  visit(value, 0);
+  return found;
+}
+
+type OddsSelection = { fixtureId: number; oddsCount: number };
+
+async function discoverFixtureWithOdds(): Promise<OddsSelection> {
+  const override = fixtureIdOverride();
+  const requestCap = 24;
+  let requestCount = 0;
+  const boundedGet = async (path: string, params?: Record<string, number>) => {
+    requestCount++;
+    if (requestCount > requestCap) {
+      throw new Error(`Fixture/odds discovery exceeded its ${requestCap}-request cap`);
+    }
+    return users.apiClient.get(path, { params, timeout: 15_000 });
+  };
+  const tryOdds = async (fixtureId: number): Promise<OddsSelection | undefined> => {
+    try {
+      const odds = await boundedGet(`/odds/snapshot/${fixtureId}`, { asOf: Date.now() });
+      if (odds.status < 200 || odds.status >= 300) {
+        throw new Error(`unexpected HTTP ${odds.status}`);
+      }
+      if (!Array.isArray(odds.data) || odds.data.length === 0) return undefined;
+      odds.data.forEach((record, index) => {
+        if (!record || typeof record !== "object" || Array.isArray(record)) {
+          throw new Error(`odds snapshot record ${index} is not an object`);
+        }
+        const returned = firstField(record as JsonObject, ["FixtureId", "fixtureId"]);
+        if (returned !== undefined && requiredSafeInteger(
+          returned,
+          `odds snapshot record ${index} FixtureId/fixtureId`,
+          1,
+        ) !== fixtureId) {
+          throw new Error("odds snapshot returned a record for a different fixture");
+        }
+      });
+      return { fixtureId, oddsCount: odds.data.length };
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) return undefined;
+      throw safeError(error, `odds snapshot request for fixture ${fixtureId}`);
+    }
+  };
+
+  if (override !== undefined) {
+    const selected = await tryOdds(override);
+    if (!selected) {
+      throw new Error(`Odds snapshot for TXLINE_FIXTURE_ID=${override} contained no records`);
+    }
+    return selected;
+  }
+
+  const currentEpochDay = Math.floor(Date.now() / 86_400_000);
+  const seen = new Set<number>();
+  // Inspect records returned for yesterday through the next seven UTC days.
+  for (let offset = -1; offset <= 7 && requestCount < requestCap; offset++) {
+    const epochDay = currentEpochDay + offset;
+    let response: Awaited<ReturnType<typeof boundedGet>>;
+    try {
+      response = await boundedGet("/fixtures/snapshot", { startEpochDay: epochDay });
+    } catch (error) {
+      throw safeError(error, "fixture snapshot request");
+    }
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`fixture snapshot request returned unexpected HTTP ${response.status}`);
+    }
+    for (const fixture of fixtureObjects(response.data)) {
+      const fixtureId = firstField(fixture, ["FixtureId", "fixtureId"]);
+      let normalized: number;
+      try {
+        normalized = requiredSafeInteger(
+          fixtureId,
+          "fixture FixtureId/fixtureId",
+          1,
+        );
+      } catch {
+        // Continue to the next actual fixture record.
+        continue;
+      }
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      if (requestCount >= requestCap) break;
+      const selected = await tryOdds(normalized);
+      if (selected) return selected;
+    }
+  }
+  throw new Error(
+    `No fixture with a non-empty odds snapshot was available within the ${requestCap}-request current UTC scan`,
+  );
+}
+
+async function main(): Promise<void> {
+  fixtureIdOverride();
+  const sseSeconds = sseDurationSeconds();
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
-
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
-
+  const program = new Program<Txoracle>(TxoracleJson as unknown as Txoracle, provider);
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
-  if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
-  const tokenMint = new PublicKey(mintAddress);
+  if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set");
+  const walletPath = process.env.ANCHOR_WALLET;
+  if (!walletPath) throw new Error("ANCHOR_WALLET is not set");
+  const name = "Free-tier snapshot example";
 
-  console.log("Program ID:", program.programId.toBase58());
-  console.log("Token Mint:", tokenMint.toBase58());
-
-  const walletPath = process.env.ANCHOR_WALLET!;
-  const name = "Trader A";
-
-  const user = await users.setupUser(
+  await users.setupUser(
     name,
     walletPath,
-    tokenMint,
-    connection,
+    new PublicKey(mintAddress),
+    provider.connection,
     program,
     1,
     4,
     [],
-    undefined,  // Alternatively, use a working JWT Token here
-    undefined   // Alternatively, use a working API Token here
-  )
-  console.log("API Token:", users.authState.apiToken);
+    process.env.TXLINE_GUEST_JWT,
+    process.env.TXLINE_API_TOKEN,
+  );
+  console.log("Authentication established; credentials are redacted");
 
-  try {
-    const awesomeUrl = `/fixtures/snapshot?competitionId=72&startEpochDay=20624`;
-    const response = await users.apiClient.get(awesomeUrl);
+  const { fixtureId, oddsCount } = await discoverFixtureWithOdds();
+  console.log(`Odds snapshot pass for fixture ${fixtureId} (${oddsCount} record(s))`);
 
-    console.log("Premium Data Response:", response.data);
-
-    // Fetch the odds snapshot for a specific fixture
-    var sampleOdds: any = null
-
-    async function getOddsSnapshot(fixtureId: number, asOf?: number) {
-      const baseUrl = `/odds/snapshot/${fixtureId}`;
-      const url = asOf ? `${baseUrl}?asOf=${asOf}` : baseUrl;
-
-      try {
-        const response = await users.apiClient.get(url);
-
-        console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
-        // Capture the first odds to use for validation
-        if (!sampleOdds) {
-          sampleOdds = response.data[0];
-          // console.log(`Captured sample for validation: MessageId ${sampleOdds.MessageId} @ Ts ${sampleOdds.Ts}`);
-          console.log(`Captured sample for validation: ${sampleOdds}`);
-        }
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
-          console.error("Access denied: verify the league bundle or token status");
-        } else {
-          console.error("Failed to retrieve odds snapshot:", error);
-        }
-        throw error;
-      }
-    }
-    await getOddsSnapshot(17588320, Date.now());
-
-    async function listenToOddsStream(streamId: string): Promise<void> {
-      console.log(`[Odds] Subscribing to all permitted odds updates...`);
-
-      const streamUrl = `${config.API_BASE_URL}/odds/stream`;
-
-      const eventSource = new EventSource(streamUrl, {
-        fetch: async (input, init) => {
-          // Helper to execute the request with a specific token
-          const attemptFetch = (token: string) => 
-            fetch(input, {
-              ...init,
-              headers: {
-                ...init.headers,
-                'Accept-Encoding': 'deflate',
-                'Authorization': `Bearer ${token}`,
-                'X-Api-Token': users.authState.apiToken,
-              },
-            });
-
-            // Attempt connection using the current global token
-            let response = await attemptFetch(users.authState.jwt);
-            // If rejected due to expiration, pause the stream builder, renew, and retry
-            if (response.status === 403 || response.status === 401) {
-              console.log(`[Odds - ${streamId}] SSE connection rejected. Renewing JWT...`);
-              const newJwt = await users.renewJwt();
-              response = await attemptFetch(newJwt);
-            }
-
-            return response;
-
-          },
-      });
-
-      // Process incoming server sent events
-      eventSource.onmessage = (event) => {
-        console.log(`[Odds - ${streamId}] Received payload:`, event.data);
-      };
-      
-      // Log when the connection opens
-      eventSource.onopen = () => {
-        console.log(`[Odds - ${streamId}] Stream connection opened.`);
-      };
-
-      // Log any connection errors
-      eventSource.onerror = (err) => {
-        console.error(`[Odds - ${streamId}] Stream connection error:`, err);
-      };
-    }
-
-    // Execute with unique identifiers
-    await Promise.all([
-      listenToOddsStream('Instance A'),
-      listenToOddsStream('Instance B')
-    ]);
-
-    const waitDuration = 3600 * 1000;
-    console.log(`Waiting for ${waitDuration / 1000} seconds for odds to go through...`);
-    await new Promise(resolve => setTimeout(resolve, waitDuration));
-
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      console.error("Request Failed:", error.response?.data || error.message);
-    } else {
-      console.error("Error:", error);
-    }
-    process.exit(1);
-  }
-
+  const observation = await observeSse({
+    url: `${config.API_BASE_URL}/odds/stream?fixtureId=${fixtureId}`,
+    jwt: () => users.authState.jwt,
+    apiToken: () => users.authState.apiToken,
+    renewJwt: () => users.renewJwt(name),
+    durationSeconds: sseSeconds,
+  });
+  summarizeSse("Odds SSE", observation);
 }
 
 main().then(
   () => process.exit(0),
-  (err) => {
-    console.error(err);
+  error => {
+    if (error instanceof InconclusiveError) {
+      console.error(`INCONCLUSIVE: ${error.message}`);
+      process.exit(2);
+    }
+    console.error(error instanceof Error ? error.message : "Free-tier example failed");
     process.exit(1);
-  }
+  },
 );

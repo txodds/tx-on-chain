@@ -3,9 +3,13 @@ title: "Overview"
 description: "In-venue, scout-verified play-by-play data for US college sports"
 ---
 
-The TxLINE scores feed delivers granular, real-time play-by-play data for NCAA Football and NCAA Basketball. Collected in-venue by TxODDS scouts and instantly cross-verified by US-based analysts, this feed bypasses repurposed broadcast delays to give you raw, sub-second sports data.
+The TxLINE scores feed collects granular play-by-play data for NCAA Football and NCAA Basketball in venue and cross-verifies it with US-based analysts. Subscriber delivery timing follows the selected service level; do not infer sub-second delivery for a delayed tier.
 
-Every stat is encoded and published to Solana, validating directly against on-chain Merkle roots. Any score, period, or player stat is verifiable permissionlessly at any time.
+Every supported stat is encoded with deterministic keys and published through batches whose roots are anchored on Solana. Use the feed-specific pages for stat-key encoding, and use the [Schedule](/documentation/scores/schedule) and API responses to confirm current fixture availability.
+
+For on-chain validation, use [On-Chain Validation](/documentation/examples/onchain-validation).
+
+For final-record discovery, filter `action=game_finalised` separately from ordinary score updates. Then inspect the selected record's status, sequence, and stat keys, and verify the returned proof leaf's `ScoreStat.period`. Do not assume fixed status or period sentinels without current API evidence or an approved contract source.
 
 ## Built for Settlement & Micro-Markets
 
