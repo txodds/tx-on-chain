@@ -484,7 +484,7 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, waitDuration));
 
     // This call should intercept the 403, renew the JWT and retry
-    await getScoresSnapshot(17952170, Date.now());
+    await getScoresSnapshot(18187298, Date.now());
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
