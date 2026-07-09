@@ -300,14 +300,14 @@ console.log("Two-stat validation result:", isValid2);
 
 ## V2 Multi-Stat Validation
 
-Use `statKeys` when you need the current V2 payload and strategy model. The requested key order is important: the response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions.
+Use `statKeys` when you need the current V2 payload and strategy model. The requested key order is important: the response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions. Every stat in `payload.stats` must be covered exactly once by the strategy, or the program returns `IncompleteStatCoverage`.
 
 ```typescript
 const responseV2 = await httpClient.get("/api/scores/stat-validation", {
   params: {
     fixtureId: 18175981,
     seq: 991,
-    statKeys: "1,2,3001,3002",
+    statKeys: "1,2,3001",
   },
 });
 const validationV2 = responseV2.data;
@@ -396,6 +396,7 @@ For complete runnable versions, use:
 | `InvalidMainTreeProof` | Use the same `targetTs` for `validateStat` and `daily_scores_roots` PDA derivation. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
 | Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(targetTs / 86400000)`. |
 | Predicate returns false | First test with an exact predicate against the returned stat value, then replace it with your application predicate. |
+| `IncompleteStatCoverage` | Ensure every entry in `payload.stats` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
 | V2 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
 | `401` or `403` from the proof endpoint | Renew the guest JWT, keep the `X-Api-Token`, and confirm both credentials came from the same network host. |
 

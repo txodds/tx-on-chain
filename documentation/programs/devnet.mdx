@@ -46,42 +46,50 @@ Send the detached wallet signature as base64 in `walletSignature`, and send the 
 | Daily batch roots | `daily_batch_roots`, `epochDay` as u16 little-endian | Odds proof validation |
 | Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | Fixture proof validation |
 
+<Warning>
+Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. Recompute it for every proof.
+</Warning>
+
 ```typescript
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@coral-xyz/anchor";
 
 const programId = new PublicKey("6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J");
 
-const epochDay = Math.floor(Date.now() / 86400000);
+function epochDayFromProofTimestamp(proofTimestampMs: number): number {
+  if (!Number.isSafeInteger(proofTimestampMs) || proofTimestampMs < 0) {
+    throw new Error("Expected a non-negative proof timestamp in milliseconds");
+  }
 
-const [dailyScoresPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_scores_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2),
-  ],
-  programId
-);
+  const epochDay = Math.floor(proofTimestampMs / 86400000);
+  if (epochDay > 0xffff) {
+    throw new Error("Proof timestamp is outside the u16 epoch-day range");
+  }
+  return epochDay;
+}
 
-const [dailyBatchRootsPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_batch_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2),
-  ],
-  programId
-);
+function deriveDailyValidationPda(
+  seed: "daily_scores_roots" | "daily_batch_roots",
+  proofTimestampMs: number
+): PublicKey {
+  const epochDay = epochDayFromProofTimestamp(proofTimestampMs);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(seed), new BN(epochDay).toArrayLike(Buffer, "le", 2)],
+    programId
+  )[0];
+}
 
-const alignedEpochDay = Math.floor(epochDay / 10) * 10;
-const [tenDailyFixturesRootsPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("ten_daily_fixtures_roots"),
-    new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2),
-  ],
-  programId
-);
-
-console.log("Daily Scores PDA:", dailyScoresPda.toBase58());
-console.log("Daily Batch Roots PDA:", dailyBatchRootsPda.toBase58());
-console.log("Ten Daily Fixtures Roots PDA:", tenDailyFixturesRootsPda.toBase58());
+function deriveTenDailyFixturesPda(fixtureProofTimestampMs: number): PublicKey {
+  const epochDay = epochDayFromProofTimestamp(fixtureProofTimestampMs);
+  const alignedEpochDay = Math.floor(epochDay / 10) * 10;
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("ten_daily_fixtures_roots"),
+      new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2),
+    ],
+    programId
+  )[0];
+}
 ```
 
 ## Score Validation

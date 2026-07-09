@@ -5,7 +5,7 @@ description: "Access World Cup and International Friendlies data for free with T
 
 ## Start Building with Free World Cup Data
 
-Experience the power of TxLINE's sports data API with our complimentary free tiers. Get access to World Cup and International Friendlies data with no TxL purchase, no credit card, and no commitment. Choose between 60-second delayed data or real-time data where available.
+Experience the power of TxLINE's sports data API with our complimentary free tiers. Get access to World Cup and International Friendlies data with no TxL purchase, no credit card, and no commitment. Mainnet offers documented 60-second and real-time options; devnet service levels and sampling intervals follow its current on-chain pricing matrix.
 
 <Note>
 Free means no TxL subscription payment. You still need SOL on the selected Solana network to pay transaction fees and any account rent required by the on-chain `subscribe` transaction. On devnet, request devnet SOL before starting.
@@ -14,7 +14,7 @@ Free means no TxL subscription payment. You still need SOL on the selected Solan
 ## What's Included
 
 <CardGroup cols={2}>
-  <Card title="Two Free Tiers Available" icon="trophy">
+  <Card title="Mainnet Free Tiers" icon="trophy">
     **Service Level 1**: World Cup & Int Friendlies with 60-second delay
     **Service Level 12**: World Cup & Int Friendlies in real-time
   </Card>
@@ -30,7 +30,7 @@ Free means no TxL subscription payment. You still need SOL on the selected Solan
 </CardGroup>
 
 <Info>
-**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before upgrading to real-time data.
+**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before a production rollout.
 </Info>
 
 ## Getting Started
@@ -42,7 +42,7 @@ Use the same network for every step: the Solana RPC, TxLINE program ID, guest JW
 | Network | Free service levels | Program ID | API host |
 |---------|---------------------|------------|----------|
 | Mainnet | `1` for 60-second delay, `12` for real-time | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `https://txline.txodds.com` |
-| Devnet | `1` is documented for free-tier testing | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `https://txline-dev.txodds.com` |
+| Devnet | `1`; current row reports `samplingIntervalSec = 0` | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `https://txline-dev.txodds.com` |
 
 Before you subscribe, confirm that you have:
 
@@ -112,11 +112,11 @@ if (!program.programId.equals(programId)) {
 
 ### Step 2: Subscribe to Free Tier
 
-Choose between the free service levels that are enabled on your network. Mainnet offers service level `1` for 60-second delayed World Cup and International Friendlies data and service level `12` for real-time data. Devnet currently documents service level `1`; check the on-chain pricing matrix before using any other devnet row.
+Choose between the free service levels that are enabled on your network. Mainnet offers service level `1` for 60-second delayed World Cup and International Friendlies data and service level `12` for real-time data. The current devnet pricing matrix exposes service level `1` with `samplingIntervalSec = 0`; check the on-chain pricing matrix before relying on any devnet row or interval.
 
 ```typescript
 // Free tier configuration - choose one:
-const SERVICE_LEVEL_ID = 1;  // World Cup & Int Friendlies (60-second delay)
+const SERVICE_LEVEL_ID = 1;  // Devnet: samplingIntervalSec = 0; mainnet: 60 seconds
 // const SERVICE_LEVEL_ID = 12; // Mainnet real-time World Cup & Int Friendlies
 const DURATION_WEEKS = 4; // Subscribe for 4 weeks at a time
 const SELECTED_LEAGUES: number[] = []; // Empty for standard bundle
@@ -278,7 +278,7 @@ View our [Subscription Tiers](/documentation/subscription-tiers) to see all avai
   </Accordion>
 
   <Accordion title="Is there a rate limit on free tier?">
-    No rate limits on API calls. However, data has a 60-second delay compared to premium real-time tiers.
+    No rate limits on API calls. Mainnet service level `1` has a 60-second delay, while mainnet service level `12` is real-time. Devnet sampling follows its on-chain pricing matrix; the current level `1` row reports `samplingIntervalSec = 0`.
   </Accordion>
 
   <Accordion title="Do I need SOL for the free tier?">
