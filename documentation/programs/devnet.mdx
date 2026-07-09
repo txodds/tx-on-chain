@@ -17,11 +17,270 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.2",
+    "version": "1.5.5",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
+    {
+      "name": "audit_trade_result",
+      "discriminator": [
+        50,
+        242,
+        243,
+        5,
+        209,
+        75,
+        76,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_scores_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "MarketIntentParams"
+            }
+          }
+        },
+        {
+          "name": "fixture_summary",
+          "type": {
+            "defined": {
+              "name": "ScoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "main_tree_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "fixture_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "stat_a",
+          "type": {
+            "defined": {
+              "name": "StatTerm"
+            }
+          }
+        },
+        {
+          "name": "stat_b",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "StatTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "claim_batch_legacy",
+      "discriminator": [
+        254,
+        101,
+        89,
+        255,
+        169,
+        75,
+        207,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_resolution_roots"
+        },
+        {
+          "name": "token_mint",
+          "docs": [
+            "The Mint is now required to perform decimal-safe transfers (TransferChecked)"
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch_day",
+          "type": "u16"
+        },
+        {
+          "name": "interval_index",
+          "type": "u16"
+        },
+        {
+          "name": "terms_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "winner_is_maker",
+          "type": "bool"
+        },
+        {
+          "name": "seq",
+          "type": "u32"
+        },
+        {
+          "name": "merkle_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "claim_via_resolution",
+      "discriminator": [
+        98,
+        206,
+        250,
+        87,
+        151,
+        135,
+        162,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_resolution_roots"
+        },
+        {
+          "name": "matched_trade",
+          "writable": true
+        },
+        {
+          "name": "trade_vault",
+          "writable": true
+        },
+        {
+          "name": "winner_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch_day",
+          "type": "u16"
+        },
+        {
+          "name": "interval_index",
+          "type": "u16"
+        },
+        {
+          "name": "merkle_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "close_intent",
+      "discriminator": [
+        112,
+        245,
+        154,
+        249,
+        57,
+        126,
+        54,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order_intent",
+          "writable": true
+        },
+        {
+          "name": "intent_vault",
+          "writable": true
+        },
+        {
+          "name": "maker_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "token_treasury_pda"
+        }
+      ],
+      "args": []
+    },
     {
       "name": "close_pricing_matrix",
       "discriminator": [
@@ -49,6 +308,256 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         }
       ],
       "args": []
+    },
+    {
+      "name": "create_intent",
+      "discriminator": [
+        216,
+        214,
+        79,
+        121,
+        23,
+        194,
+        96,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "order_intent",
+          "writable": true
+        },
+        {
+          "name": "intent_vault",
+          "writable": true
+        },
+        {
+          "name": "maker_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "intent_id",
+          "type": "u64"
+        },
+        {
+          "name": "terms_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "deposit_amount",
+          "type": "u64"
+        },
+        {
+          "name": "expiration_ts",
+          "type": "i64"
+        },
+        {
+          "name": "claim_period",
+          "type": "u16"
+        },
+        {
+          "name": "fixture_id",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "create_trade",
+      "discriminator": [
+        183,
+        82,
+        24,
+        245,
+        248,
+        30,
+        204,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_a",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_b",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "trader_a_token_account",
+          "writable": true
+        },
+        {
+          "name": "trader_b_token_account",
+          "writable": true
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "stake_token_mint"
+        },
+        {
+          "name": "token_treasury_pda",
+          "docs": [
+            "Hold the PDA that owns the vault and acts as freeze authority"
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "stake_a",
+          "type": "u64"
+        },
+        {
+          "name": "stake_b",
+          "type": "u64"
+        },
+        {
+          "name": "trade_terms_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "execute_match",
+      "discriminator": [
+        76,
+        47,
+        91,
+        223,
+        20,
+        10,
+        147,
+        232
+      ],
+      "accounts": [
+        {
+          "name": "solver",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "maker_intent",
+          "writable": true
+        },
+        {
+          "name": "taker_intent",
+          "writable": true
+        },
+        {
+          "name": "maker_vault",
+          "writable": true
+        },
+        {
+          "name": "taker_vault",
+          "writable": true
+        },
+        {
+          "name": "matched_trade",
+          "writable": true
+        },
+        {
+          "name": "trade_vault",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "maker_stake",
+          "type": "u64"
+        },
+        {
+          "name": "taker_stake",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "expose_structs",
+      "discriminator": [
+        142,
+        252,
+        254,
+        118,
+        194,
+        230,
+        160,
+        195
+      ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "_params",
+          "type": {
+            "defined": {
+              "name": "MarketIntentParams"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initialize_pricing_matrix",
@@ -328,6 +837,52 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       ]
     },
     {
+      "name": "publish_resolution_root",
+      "discriminator": [
+        191,
+        161,
+        47,
+        36,
+        163,
+        58,
+        31,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_resolution_roots",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "epoch_day",
+          "type": "u16"
+        },
+        {
+          "name": "interval_index",
+          "type": "u16"
+        },
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "purchase_subscription_token_usdt",
       "discriminator": [
         198,
@@ -397,6 +952,316 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         {
           "name": "txline_amount",
           "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "refund_batch",
+      "discriminator": [
+        227,
+        54,
+        194,
+        2,
+        78,
+        8,
+        104,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "token_mint",
+          "docs": [
+            "The mint is required for transfer_checked logic"
+          ]
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "request_devnet_faucet",
+      "discriminator": [
+        49,
+        178,
+        104,
+        8,
+        23,
+        120,
+        186,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "faucet_tracker",
+          "writable": true
+        },
+        {
+          "name": "usdt_mint",
+          "writable": true
+        },
+        {
+          "name": "user_usdt_ata",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settle_matched_trade",
+      "discriminator": [
+        191,
+        233,
+        149,
+        116,
+        32,
+        239,
+        18,
+        65
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_scores_merkle_roots"
+        },
+        {
+          "name": "matched_trade",
+          "writable": true
+        },
+        {
+          "name": "trade_vault",
+          "writable": true
+        },
+        {
+          "name": "winner_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixture_summary",
+          "type": {
+            "defined": {
+              "name": "ScoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixture_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "main_tree_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "stat_a",
+          "type": {
+            "defined": {
+              "name": "StatTerm"
+            }
+          }
+        },
+        {
+          "name": "stat_b",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "StatTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "MarketIntentParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "settle_trade",
+      "discriminator": [
+        252,
+        176,
+        98,
+        248,
+        73,
+        123,
+        8,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "daily_scores_merkle_roots"
+        },
+        {
+          "name": "trade_escrow",
+          "writable": true
+        },
+        {
+          "name": "escrow_vault",
+          "writable": true
+        },
+        {
+          "name": "winner_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "token_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "trade_id",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixture_summary",
+          "type": {
+            "defined": {
+              "name": "ScoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixture_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "main_tree_proof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "ProofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "predicate",
+          "type": {
+            "defined": {
+              "name": "TraderPredicate"
+            }
+          }
+        },
+        {
+          "name": "stat_a",
+          "type": {
+            "defined": {
+              "name": "StatTerm"
+            }
+          }
+        },
+        {
+          "name": "stat_b",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "StatTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "op",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "BinaryExpression"
+              }
+            }
+          }
         }
       ]
     },
@@ -755,6 +1620,43 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       "returns": "bool"
     },
     {
+      "name": "validate_stat_v2",
+      "discriminator": [
+        208,
+        215,
+        194,
+        214,
+        241,
+        71,
+        246,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "daily_scores_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationInput"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "withdraw_usdt",
       "discriminator": [
         117,
@@ -805,7 +1707,7 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
     }
   ],
   "accounts": [
-     {
+    {
       "name": "FaucetTracker",
       "discriminator": [
         247,
@@ -816,6 +1718,32 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         233,
         215,
         190
+      ]
+    },
+    {
+      "name": "MatchedTrade",
+      "discriminator": [
+        104,
+        54,
+        182,
+        211,
+        94,
+        15,
+        215,
+        142
+      ]
+    },
+    {
+      "name": "OrderIntent",
+      "discriminator": [
+        12,
+        130,
+        12,
+        36,
+        12,
+        221,
+        218,
+        14
       ]
     },
     {
@@ -830,9 +1758,114 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
         110,
         106
       ]
+    },
+    {
+      "name": "TradeEscrow",
+      "discriminator": [
+        251,
+        124,
+        237,
+        23,
+        18,
+        126,
+        198,
+        49
+      ]
     }
   ],
-  "events": [],
+  "events": [
+    {
+      "name": "AuditVerifiedEvent",
+      "discriminator": [
+        249,
+        57,
+        59,
+        176,
+        243,
+        27,
+        132,
+        169
+      ]
+    },
+    {
+      "name": "BatchClaimExecuted",
+      "discriminator": [
+        207,
+        182,
+        115,
+        79,
+        244,
+        25,
+        123,
+        18
+      ]
+    },
+    {
+      "name": "BatchRefundExecuted",
+      "discriminator": [
+        193,
+        25,
+        157,
+        200,
+        184,
+        164,
+        176,
+        252
+      ]
+    },
+    {
+      "name": "IntentClosed",
+      "discriminator": [
+        127,
+        229,
+        67,
+        202,
+        91,
+        56,
+        164,
+        0
+      ]
+    },
+    {
+      "name": "IntentCreated",
+      "discriminator": [
+        184,
+        46,
+        156,
+        205,
+        169,
+        254,
+        11,
+        108
+      ]
+    },
+    {
+      "name": "MatchExecuted",
+      "discriminator": [
+        42,
+        57,
+        255,
+        224,
+        78,
+        10,
+        39,
+        168
+      ]
+    },
+    {
+      "name": "TradeSettled",
+      "discriminator": [
+        22,
+        119,
+        166,
+        225,
+        175,
+        53,
+        93,
+        216
+      ]
+    }
+  ],
   "errors": [
     {
       "code": 6000,
@@ -1163,9 +2196,120 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       "code": 6065,
       "name": "UnauthorizedAdmin",
       "msg": "Unauthorized admin"
+    },
+    {
+      "code": 6066,
+      "name": "InvalidAccount",
+      "msg": "invalid account"
+    },
+    {
+      "code": 6067,
+      "name": "MissingSummary",
+      "msg": "Missing summary"
+    },
+    {
+      "code": 6068,
+      "name": "MissingProof",
+      "msg": "Missing proof"
+    },
+    {
+      "code": 6069,
+      "name": "TooManyStats",
+      "msg": "Stat index exceeds maximum allowed limit"
+    },
+    {
+      "code": 6070,
+      "name": "DuplicateStatCoverage",
+      "msg": "Stat index is evaluated multiple times"
+    },
+    {
+      "code": 6071,
+      "name": "IncompleteStatCoverage",
+      "msg": "Not all extracted stats were evaluated"
+    },
+    {
+      "code": 6072,
+      "name": "MissingDistancePredicate",
+      "msg": "Distance predicate is missing for geometric targets"
+    },
+    {
+      "code": 6073,
+      "name": "IndexOutOfBounds",
+      "msg": "Index out of bounds"
+    },
+    {
+      "code": 6074,
+      "name": "StatNotZero",
+      "msg": "Stat not zero"
     }
   ],
   "types": [
+    {
+      "name": "AuditVerifiedEvent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auditor",
+            "type": "pubkey"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "root_used",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "result",
+            "type": "bool"
+          },
+          {
+            "name": "match_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "audit_timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchClaimExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "trade_count",
+            "type": "u16"
+          },
+          {
+            "name": "total_payout_amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_rent_reclaimed",
+            "type": "u64"
+          }
+        ]
+      }
+    },
     {
       "name": "BatchMetadata",
       "type": {
@@ -1186,6 +2330,26 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
           {
             "name": "overall_batch_end_ts",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BatchRefundExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "payer",
+            "type": "pubkey"
+          },
+          {
+            "name": "trade_count",
+            "type": "u16"
+          },
+          {
+            "name": "total_rent_reclaimed",
+            "type": "u64"
           }
         ]
       }
@@ -1217,6 +2381,18 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
           },
           {
             "name": "EqualTo"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FaucetTracker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "last_request_time",
+            "type": "i64"
           }
         ]
       }
@@ -1331,6 +2507,107 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       }
     },
     {
+      "name": "GeometricTarget",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat_index",
+            "type": "u8"
+          },
+          {
+            "name": "prediction",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IntentClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "intent_id",
+            "type": "u64"
+          },
+          {
+            "name": "refund_amount",
+            "type": "u64"
+          },
+          {
+            "name": "closed_by",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IntentCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "token_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "intent_id",
+            "type": "u64"
+          },
+          {
+            "name": "fixture_id",
+            "type": "i64"
+          },
+          {
+            "name": "deposit_amount",
+            "type": "u64"
+          },
+          {
+            "name": "expiration_ts",
+            "type": "i64"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "IntentState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Locked"
+          },
+          {
+            "name": "Closed"
+          },
+          {
+            "name": "Expired"
+          }
+        ]
+      }
+    },
+    {
       "name": "MarketIntentParams",
       "type": {
         "kind": "struct",
@@ -1374,6 +2651,125 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
           {
             "name": "negation",
             "type": "bool"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchExecuted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_id",
+            "type": "u64"
+          },
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "taker",
+            "type": "pubkey"
+          },
+          {
+            "name": "maker_stake",
+            "type": "u64"
+          },
+          {
+            "name": "taker_stake",
+            "type": "u64"
+          },
+          {
+            "name": "token_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "MatchedTrade",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_id",
+            "type": "u64"
+          },
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "taker",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_maker",
+            "type": "u64"
+          },
+          {
+            "name": "stake_taker",
+            "type": "u64"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "TradeState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NDimensionalStrategy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "geometric_targets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "GeometricTarget"
+                }
+              }
+            }
+          },
+          {
+            "name": "distance_predicate",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "TraderPredicate"
+                }
+              }
+            }
+          },
+          {
+            "name": "discrete_predicates",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatPredicate"
+                }
+              }
+            }
           }
         ]
       }
@@ -1489,6 +2885,67 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
           {
             "name": "max_timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OrderIntent",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "maker",
+            "type": "pubkey"
+          },
+          {
+            "name": "intent_id",
+            "type": "u64"
+          },
+          {
+            "name": "deposit_amount",
+            "type": "u64"
+          },
+          {
+            "name": "remaining_amount",
+            "type": "u64"
+          },
+          {
+            "name": "odds",
+            "type": "u16"
+          },
+          {
+            "name": "terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixture_id",
+            "type": "i64"
+          },
+          {
+            "name": "period",
+            "type": "u16"
+          },
+          {
+            "name": "expiration_ts",
+            "type": "i64"
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "IntentState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
@@ -1642,6 +3099,86 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
       }
     },
     {
+      "name": "StatLeaf",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "ScoreStat"
+              }
+            }
+          },
+          {
+            "name": "stat_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatPredicate",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Single",
+            "fields": [
+              {
+                "name": "index",
+                "type": "u8"
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "TraderPredicate"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "Binary",
+            "fields": [
+              {
+                "name": "index_a",
+                "type": "u8"
+              },
+              {
+                "name": "index_b",
+                "type": "u8"
+              },
+              {
+                "name": "op",
+                "type": {
+                  "defined": {
+                    "name": "BinaryExpression"
+                  }
+                }
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "TraderPredicate"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "StatTerm",
       "type": {
         "kind": "struct",
@@ -1672,6 +3209,176 @@ The TxLINE program IDL (Interface Definition Language) defines the structure and
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixture_summary",
+            "type": {
+              "defined": {
+                "name": "ScoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixture_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "stats",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatLeaf"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradeEscrow",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_id",
+            "type": "u64"
+          },
+          {
+            "name": "trader_a",
+            "type": "pubkey"
+          },
+          {
+            "name": "trader_b",
+            "type": "pubkey"
+          },
+          {
+            "name": "stake_a",
+            "type": "u64"
+          },
+          {
+            "name": "stake_b",
+            "type": "u64"
+          },
+          {
+            "name": "trade_terms_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "state",
+            "type": {
+              "defined": {
+                "name": "TradeState"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "fee_amount",
+            "type": "u64"
+          },
+          {
+            "name": "padding",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradeSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "trade_id",
+            "type": "u64"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "payout_amount",
+            "type": "u64"
+          },
+          {
+            "name": "token_mint",
+            "type": "pubkey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TradeState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Resolved"
+          },
+          {
+            "name": "Disputed"
           }
         ]
       }
@@ -1779,11 +3486,270 @@ export type Txoracle = {
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.2",
+    "version": "1.5.5",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
+    {
+      "name": "auditTradeResult",
+      "discriminator": [
+        50,
+        242,
+        243,
+        5,
+        209,
+        75,
+        76,
+        91
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        }
+      ],
+      "args": [
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "claimBatchLegacy",
+      "discriminator": [
+        254,
+        101,
+        89,
+        255,
+        169,
+        75,
+        207,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots"
+        },
+        {
+          "name": "tokenMint",
+          "docs": [
+            "The Mint is now required to perform decimal-safe transfers (TransferChecked)"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "termsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "winnerIsMaker",
+          "type": "bool"
+        },
+        {
+          "name": "seq",
+          "type": "u32"
+        },
+        {
+          "name": "merkleProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "claimViaResolution",
+      "discriminator": [
+        98,
+        206,
+        250,
+        87,
+        151,
+        135,
+        162,
+        181
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots"
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "merkleProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "closeIntent",
+      "discriminator": [
+        112,
+        245,
+        154,
+        249,
+        57,
+        126,
+        54,
+        122
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true
+        },
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "orderIntent",
+          "writable": true
+        },
+        {
+          "name": "intentVault",
+          "writable": true
+        },
+        {
+          "name": "makerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        }
+      ],
+      "args": []
+    },
     {
       "name": "closePricingMatrix",
       "discriminator": [
@@ -1811,6 +3777,256 @@ export type Txoracle = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "createIntent",
+      "discriminator": [
+        216,
+        214,
+        79,
+        121,
+        23,
+        194,
+        96,
+        104
+      ],
+      "accounts": [
+        {
+          "name": "maker",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "orderIntent",
+          "writable": true
+        },
+        {
+          "name": "intentVault",
+          "writable": true
+        },
+        {
+          "name": "makerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "intentId",
+          "type": "u64"
+        },
+        {
+          "name": "termsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "depositAmount",
+          "type": "u64"
+        },
+        {
+          "name": "expirationTs",
+          "type": "i64"
+        },
+        {
+          "name": "claimPeriod",
+          "type": "u16"
+        },
+        {
+          "name": "fixtureId",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "createTrade",
+      "discriminator": [
+        183,
+        82,
+        24,
+        245,
+        248,
+        30,
+        204,
+        246
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderA",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderB",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "traderATokenAccount",
+          "writable": true
+        },
+        {
+          "name": "traderBTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tradeEscrow",
+          "writable": true
+        },
+        {
+          "name": "escrowVault",
+          "writable": true
+        },
+        {
+          "name": "stakeTokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda",
+          "docs": [
+            "Hold the PDA that owns the vault and acts as freeze authority"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "stakeA",
+          "type": "u64"
+        },
+        {
+          "name": "stakeB",
+          "type": "u64"
+        },
+        {
+          "name": "tradeTermsHash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "executeMatch",
+      "discriminator": [
+        76,
+        47,
+        91,
+        223,
+        20,
+        10,
+        147,
+        232
+      ],
+      "accounts": [
+        {
+          "name": "solver",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "makerIntent",
+          "writable": true
+        },
+        {
+          "name": "takerIntent",
+          "writable": true
+        },
+        {
+          "name": "makerVault",
+          "writable": true
+        },
+        {
+          "name": "takerVault",
+          "writable": true
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "makerStake",
+          "type": "u64"
+        },
+        {
+          "name": "takerStake",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "exposeStructs",
+      "discriminator": [
+        142,
+        252,
+        254,
+        118,
+        194,
+        230,
+        160,
+        195
+      ],
+      "accounts": [],
+      "args": [
+        {
+          "name": "params",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        }
+      ]
     },
     {
       "name": "initializePricingMatrix",
@@ -2090,6 +4306,52 @@ export type Txoracle = {
       ]
     },
     {
+      "name": "publishResolutionRoot",
+      "discriminator": [
+        191,
+        161,
+        47,
+        36,
+        163,
+        58,
+        31,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyResolutionRoots",
+          "writable": true
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "epochDay",
+          "type": "u16"
+        },
+        {
+          "name": "intervalIndex",
+          "type": "u16"
+        },
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "purchaseSubscriptionTokenUsdt",
       "discriminator": [
         198,
@@ -2163,6 +4425,39 @@ export type Txoracle = {
       ]
     },
     {
+      "name": "refundBatch",
+      "discriminator": [
+        227,
+        54,
+        194,
+        2,
+        78,
+        8,
+        104,
+        29
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "tokenMint",
+          "docs": [
+            "The mint is required for transfer_checked logic"
+          ]
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "requestDevnetFaucet",
       "discriminator": [
         49,
@@ -2206,6 +4501,238 @@ export type Txoracle = {
         }
       ],
       "args": []
+    },
+    {
+      "name": "settleMatchedTrade",
+      "discriminator": [
+        191,
+        233,
+        149,
+        116,
+        32,
+        239,
+        18,
+        65
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        },
+        {
+          "name": "matchedTrade",
+          "writable": true
+        },
+        {
+          "name": "tradeVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "terms",
+          "type": {
+            "defined": {
+              "name": "marketIntentParams"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "settleTrade",
+      "discriminator": [
+        252,
+        176,
+        98,
+        248,
+        73,
+        123,
+        8,
+        157
+      ],
+      "accounts": [
+        {
+          "name": "winner",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "dailyScoresMerkleRoots"
+        },
+        {
+          "name": "tradeEscrow",
+          "writable": true
+        },
+        {
+          "name": "escrowVault",
+          "writable": true
+        },
+        {
+          "name": "winnerTokenAccount",
+          "writable": true
+        },
+        {
+          "name": "tokenMint"
+        },
+        {
+          "name": "tokenTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "tradeId",
+          "type": "u64"
+        },
+        {
+          "name": "ts",
+          "type": "i64"
+        },
+        {
+          "name": "fixtureSummary",
+          "type": {
+            "defined": {
+              "name": "scoresBatchSummary"
+            }
+          }
+        },
+        {
+          "name": "fixtureProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "mainTreeProof",
+          "type": {
+            "vec": {
+              "defined": {
+                "name": "proofNode"
+              }
+            }
+          }
+        },
+        {
+          "name": "predicate",
+          "type": {
+            "defined": {
+              "name": "traderPredicate"
+            }
+          }
+        },
+        {
+          "name": "statA",
+          "type": {
+            "defined": {
+              "name": "statTerm"
+            }
+          }
+        },
+        {
+          "name": "statB",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "statTerm"
+              }
+            }
+          }
+        },
+        {
+          "name": "op",
+          "type": {
+            "option": {
+              "defined": {
+                "name": "binaryExpression"
+              }
+            }
+          }
+        }
+      ]
     },
     {
       "name": "subscribe",
@@ -2555,6 +5082,43 @@ export type Txoracle = {
               "defined": {
                 "name": "binaryExpression"
               }
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
+      "name": "validateStatV2",
+      "discriminator": [
+        208,
+        215,
+        194,
+        214,
+        241,
+        71,
+        246,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "dailyScoresMerkleRoots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "statValidationInput"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "nDimensionalStrategy"
             }
           }
         }
@@ -3101,6 +5665,51 @@ export type Txoracle = {
       "code": 6065,
       "name": "unauthorizedAdmin",
       "msg": "Unauthorized admin"
+    },
+    {
+      "code": 6066,
+      "name": "invalidAccount",
+      "msg": "invalid account"
+    },
+    {
+      "code": 6067,
+      "name": "missingSummary",
+      "msg": "Missing summary"
+    },
+    {
+      "code": 6068,
+      "name": "missingProof",
+      "msg": "Missing proof"
+    },
+    {
+      "code": 6069,
+      "name": "tooManyStats",
+      "msg": "Stat index exceeds maximum allowed limit"
+    },
+    {
+      "code": 6070,
+      "name": "duplicateStatCoverage",
+      "msg": "Stat index is evaluated multiple times"
+    },
+    {
+      "code": 6071,
+      "name": "incompleteStatCoverage",
+      "msg": "Not all extracted stats were evaluated"
+    },
+    {
+      "code": 6072,
+      "name": "missingDistancePredicate",
+      "msg": "Distance predicate is missing for geometric targets"
+    },
+    {
+      "code": 6073,
+      "name": "indexOutOfBounds",
+      "msg": "Index out of bounds"
+    },
+    {
+      "code": 6074,
+      "name": "statNotZero",
+      "msg": "Stat not zero"
     }
   ],
   "types": [
@@ -3367,6 +5976,22 @@ export type Txoracle = {
       }
     },
     {
+      "name": "geometricTarget",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "statIndex",
+            "type": "u8"
+          },
+          {
+            "name": "prediction",
+            "type": "i32"
+          }
+        ]
+      }
+    },
+    {
       "name": "intentClosed",
       "type": {
         "kind": "struct",
@@ -3576,6 +6201,44 @@ export type Txoracle = {
           {
             "name": "bump",
             "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "nDimensionalStrategy",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "geometricTargets",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "geometricTarget"
+                }
+              }
+            }
+          },
+          {
+            "name": "distancePredicate",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "traderPredicate"
+                }
+              }
+            }
+          },
+          {
+            "name": "discretePredicates",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "statPredicate"
+                }
+              }
+            }
           }
         ]
       }
@@ -3905,6 +6568,86 @@ export type Txoracle = {
       }
     },
     {
+      "name": "statLeaf",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "scoreStat"
+              }
+            }
+          },
+          {
+            "name": "statProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "statPredicate",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "single",
+            "fields": [
+              {
+                "name": "index",
+                "type": "u8"
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "traderPredicate"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "name": "binary",
+            "fields": [
+              {
+                "name": "indexA",
+                "type": "u8"
+              },
+              {
+                "name": "indexB",
+                "type": "u8"
+              },
+              {
+                "name": "op",
+                "type": {
+                  "defined": {
+                    "name": "binaryExpression"
+                  }
+                }
+              },
+              {
+                "name": "predicate",
+                "type": {
+                  "defined": {
+                    "name": "traderPredicate"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "name": "statTerm",
       "type": {
         "kind": "struct",
@@ -3932,6 +6675,65 @@ export type Txoracle = {
               "vec": {
                 "defined": {
                   "name": "proofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "statValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixtureSummary",
+            "type": {
+              "defined": {
+                "name": "scoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixtureProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "mainTreeProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "eventStatRoot",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "stats",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "statLeaf"
                 }
               }
             }
@@ -4139,6 +6941,7 @@ export type Txoracle = {
     }
   ]
 };
+
 ```
   </Tab>
 </Tabs>
