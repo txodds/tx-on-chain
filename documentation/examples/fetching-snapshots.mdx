@@ -19,6 +19,10 @@ Get all fixtures for a specific competition or all competitions.
 `Participant1IsHome` is the feed's home/away designation for mapping `Participant1` and `Participant2`; it is not a venue guarantee. For neutral competitions such as the World Cup, `Participant1IsHome: true` means `Participant1` is listed as the home side for feed purposes, even if the match is not played in that team's country.
 </Note>
 
+<Info>
+Fixture payloads include `GameState` in a backward-compatible format. Current values are `1` for scheduled fixtures and `6` for cancelled fixtures.
+</Info>
+
 ```typescript
 import axios from "axios";
 
@@ -51,6 +55,7 @@ fixtures.slice(0, 3).forEach((fixture, index) => {
 
   console.log(`${index + 1}. ${homeTeam} vs ${awayTeam}`);
   console.log(`   ID: ${fixture.FixtureId}, Start: ${new Date(fixture.StartTime).toISOString()}`);
+  console.log(`   GameState: ${fixture.GameState ?? fixture.gameState}`);
 });
 
 // Get all fixtures

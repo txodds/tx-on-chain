@@ -5,12 +5,16 @@ description: "Access World Cup and International Friendlies data for free with T
 
 ## Start Building with Free World Cup Data
 
-Experience the power of TxLINE's sports data API with our complimentary free tiers. Get instant access to World Cup and International Friendlies data with no payment required, no credit card needed, and no commitment. Choose between 60-second delayed data or real-time data - both completely free!
+Experience the power of TxLINE's sports data API with our complimentary free tiers. Get access to World Cup and International Friendlies data with no TxL purchase, no credit card, and no commitment. Mainnet offers documented 60-second and real-time options; devnet service levels and sampling intervals follow its current on-chain pricing matrix.
+
+<Note>
+Free means no TxL subscription payment. You still need SOL on the selected Solana network to pay transaction fees and any account rent required by the on-chain `subscribe` transaction. On devnet, request devnet SOL before starting.
+</Note>
 
 ## What's Included
 
 <CardGroup cols={2}>
-  <Card title="Two Free Tiers Available" icon="trophy">
+  <Card title="Mainnet Free Tiers" icon="trophy">
     **Service Level 1**: World Cup & Int Friendlies with 60-second delay
     **Service Level 12**: World Cup & Int Friendlies in real-time
   </Card>
@@ -26,7 +30,7 @@ Experience the power of TxLINE's sports data API with our complimentary free tie
 </CardGroup>
 
 <Info>
-**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before upgrading to real-time data.
+**Perfect For**: Developers building proof-of-concepts, hobbyist projects, learning platforms, or testing TxLINE before a production rollout.
 </Info>
 
 ## Getting Started
@@ -35,9 +39,25 @@ Experience the power of TxLINE's sports data API with our complimentary free tie
 
 Use the same network for every step: the Solana RPC, TxLINE program ID, guest JWT, and activation endpoint must all match. A devnet subscription transaction cannot be activated on the mainnet API host.
 
+| Network | Free service levels | Program ID | API host |
+|---------|---------------------|------------|----------|
+| Mainnet | `1` for 60-second delay, `12` for real-time | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `https://txline.txodds.com` |
+| Devnet | `1`; current row reports `samplingIntervalSec = 0` | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `https://txline-dev.txodds.com` |
+
+Before you subscribe, confirm that you have:
+
+- A Solana wallet on the selected network.
+- Enough SOL on that network for fees and possible rent.
+- The matching TxLINE IDL/types for that network.
+- The matching `apiOrigin` and `programId` values from the table above.
+
 ```bash
 npm install @coral-xyz/anchor @solana/web3.js @solana/spl-token axios tweetnacl
 ```
+
+<Info>
+The repository also includes runnable devnet free-tier scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). Those examples use the current devnet IDL/types and require Node.js `20+` because of the SSE client dependency in the lockfile.
+</Info>
 
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
@@ -92,11 +112,11 @@ if (!program.programId.equals(programId)) {
 
 ### Step 2: Subscribe to Free Tier
 
-Choose between the free service levels that are enabled on your network. Mainnet offers service level `1` for 60-second delayed World Cup and International Friendlies data and service level `12` for real-time data. Devnet currently documents service level `1`; check the on-chain pricing matrix before using any other devnet row.
+Choose between the free service levels that are enabled on your network. Mainnet offers service level `1` for 60-second delayed World Cup and International Friendlies data and service level `12` for real-time data. The current devnet pricing matrix exposes service level `1` with `samplingIntervalSec = 0`; check the on-chain pricing matrix before relying on any devnet row or interval.
 
 ```typescript
 // Free tier configuration - choose one:
-const SERVICE_LEVEL_ID = 1;  // World Cup & Int Friendlies (60-second delay)
+const SERVICE_LEVEL_ID = 1;  // Devnet: samplingIntervalSec = 0; mainnet: 60 seconds
 // const SERVICE_LEVEL_ID = 12; // Mainnet real-time World Cup & Int Friendlies
 const DURATION_WEEKS = 4; // Subscribe for 4 weeks at a time
 const SELECTED_LEAGUES: number[] = []; // Empty for standard bundle
@@ -147,7 +167,7 @@ console.log("Subscription transaction:", txSig);
 ```
 
 <Note>
-**No Payment Required**: Free tiers require no TxL payment. The transaction still registers your wallet subscription on-chain and must be activated with the matching TxLINE API host.
+**No TxL Payment Required**: Free tiers require no TxL payment. The transaction still registers your wallet subscription on-chain, consumes SOL for normal Solana fees, and must be activated with the matching TxLINE API host.
 </Note>
 
 ### Step 3: Activate Your API Access
@@ -201,6 +221,14 @@ const apiToken = activationResponse.data.token || activationResponse.data;
 console.log("API Token activated successfully!");
 ```
 
+For the standard free bundle, `SELECTED_LEAGUES = []`, so the exact message signed by your wallet is:
+
+```text
+${txSig}::${jwt}
+```
+
+Use a base64-encoded detached signature, and make sure the signing wallet is the same wallet that submitted the `subscribe` transaction. Do not share your guest JWT or activated API token in public support channels.
+
 ### Step 4: Make Your First API Call
 
 You're all set! Start fetching World Cup and International Friendlies data using your activated API credentials.
@@ -212,7 +240,13 @@ Check out the complete [API Reference](/api-reference/authentication/start-a-new
 - **Scores** - Fetch snapshots, historical updates, and stream score events
 - **Validation Proofs** - Retrieve fixture, odds, and score proofs for on-chain validation
 
+Use [Runnable Devnet Examples](/documentation/examples/devnet-examples) for complete scripts that subscribe to the free tier, activate an API token, connect to streams, and run fixture or score validation simulations.
+
 Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
+
+<Info>
+If activation or data access fails, use [Troubleshooting](/documentation/examples/troubleshooting) before opening a support ticket. Most activation failures come from a network mismatch, a different signing wallet, or signing the wrong message string.
+</Info>
 
 ## Ready for More?
 
@@ -244,7 +278,11 @@ View our [Subscription Tiers](/documentation/subscription-tiers) to see all avai
   </Accordion>
 
   <Accordion title="Is there a rate limit on free tier?">
-    No rate limits on API calls. However, data has a 60-second delay compared to premium real-time tiers.
+    No rate limits on API calls. Mainnet service level `1` has a 60-second delay, while mainnet service level `12` is real-time. Devnet sampling follows its on-chain pricing matrix; the current level `1` row reports `samplingIntervalSec = 0`.
+  </Accordion>
+
+  <Accordion title="Do I need SOL for the free tier?">
+    Yes. No TxL purchase is required for the free tier, but the Solana wallet still needs SOL on the selected network to submit the on-chain subscription transaction and cover any account rent.
   </Accordion>
 
   <Accordion title="What happens if I don't renew?">
@@ -259,5 +297,5 @@ View our [Subscription Tiers](/documentation/subscription-tiers) to see all avai
 ---
 
 <Info>
-**Ready to start?** Follow the steps above to get your free API access in under 5 minutes. No credit card required.
+**Ready to start?** Follow the steps above to subscribe on-chain, activate your API access, and start calling the World Cup data endpoints. No credit card or TxL purchase is required for the free tier.
 </Info>

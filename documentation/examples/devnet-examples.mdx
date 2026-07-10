@@ -1,0 +1,103 @@
+---
+title: "Runnable Devnet Examples"
+description: "End-to-end devnet scripts for activation, streaming, and on-chain validation"
+---
+
+The repository includes runnable devnet scripts under [`examples/devnet`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet). They exercise the current activation, streaming, fixture validation, and score validation flows against `https://txline-dev.txodds.com`.
+
+<Info>
+The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest mainnet program types.
+</Info>
+
+## Requirements
+
+- Node.js `20` or newer. The current lockfile resolves `eventsource@4.1.0`, which declares `node >=20.0.0`.
+- A funded devnet wallet for `ANCHOR_WALLET`.
+- `ANCHOR_PROVIDER_URL="https://api.devnet.solana.com"`.
+- `TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG`.
+
+Install dependencies from the repository root:
+
+```bash
+yarn install
+```
+
+Run a script with the devnet environment values:
+
+```bash
+TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG \
+ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" \
+ANCHOR_WALLET="./_keys/testuser-wallet-1.json" \
+yarn ts-node examples/devnet/scripts/subscription_free_tier.ts
+```
+
+## Script Index
+
+| Script | What it demonstrates |
+|--------|----------------------|
+| `subscription_free_tier.ts` | Free-tier subscription activation, odds snapshot fetches, and odds SSE streams. |
+| `subscription_scores.ts` | Scores snapshots, recent score scanning, legacy `validateStat` with `statKey`, and scores SSE streams. |
+| `subscription_scores_1stat.ts` | Latest V2 score validation with one requested `statKeys` entry and `validateStatV2`. |
+| `subscription_scores_v2.ts` | V2 validation with two stats, binary predicates, and geometric distance predicates. |
+| `subscription_scores_v2a.ts` | Rich multi-leg V2 validation with `statKeys=1,2,3001,3002` and two-, three-, and four-leg strategies. |
+| `fixture_validation_view_only.ts` | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. |
+
+The shared helpers are in `examples/devnet/common`:
+
+| File | Purpose |
+|------|---------|
+| `config.ts` | Devnet API and guest JWT hosts. |
+| `users.ts` | Wallet setup, free-tier subscription, activation signing, JWT renewal, API client setup, and transaction safety helpers. |
+
+## Score Validation Paths
+
+There are two score validation styles:
+
+| API request | On-chain method | Use case |
+|-------------|-----------------|----------|
+| `/scores/stat-validation?fixtureId=...&seq=...&statKey=...` | `validateStat` | Single-stat or legacy two-stat examples using `statKey` and optional `statKey2`. |
+| `/scores/stat-validation?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed predicates and multi-leg strategies. |
+
+For V2, the `statKeys` order is part of the proof contract. The response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions.
+
+```typescript
+const url = "/scores/stat-validation?fixtureId=18175981&seq=991&statKeys=1,2,3001,3002";
+const val = (await users.apiClient.get(url)).data;
+
+const payload = {
+  ts: new BN(val.summary.updateStats.minTimestamp),
+  fixtureSummary,
+  fixtureProof: mapProof(val.subTreeProof),
+  mainTreeProof: mapProof(val.mainTreeProof),
+  eventStatRoot: Array.from(val.eventStatRoot),
+  stats: val.statsToProve.map((statObj, index) => ({
+    stat: statObj,
+    statProof: mapProof(val.statProofs[index]),
+  })),
+};
+```
+
+<Warning>
+The fixed `fixtureId` and `seq` pairs in the example scripts are demo fixtures. In production, derive `fixtureId`, `seq`, phase, and status from an observed score record from snapshot, updates, historical data, or the scores stream.
+</Warning>
+
+## Final Outcome and Fixtures
+
+On the current devnet and mainnet releases, final scores records use `action=game_finalised` with `statusId=100` and `period=100`. Use those records when validating or settling the final match outcome, regardless of whether the match ended after regulation time, extra time, penalties, or abandonment.
+
+Fixture payloads include a backward-compatible `GameState` field. Current values are:
+
+| GameState | Meaning |
+|-----------|---------|
+| `1` | Scheduled |
+| `6` | Cancelled |
+
+Use `fixture_validation_view_only.ts` for the runnable fixture proof flow. The script demonstrates fetching fixture validation data, deriving the ten-day fixture roots PDA, and simulating `validateFixture`.
+
+## Related Guides
+
+- [Quickstart](/documentation/quickstart)
+- [World Cup Free Tier](/documentation/worldcup)
+- [Streaming Data](/documentation/examples/streaming-data)
+- [On-Chain Validation](/documentation/examples/onchain-validation)
+- [Troubleshooting](/documentation/examples/troubleshooting)

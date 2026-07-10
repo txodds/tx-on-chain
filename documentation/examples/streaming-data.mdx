@@ -11,6 +11,33 @@ description: "Real-time odds and scores updates via Server-Sent Events"
 **Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) or [World Cup Free Tier activation](/documentation/worldcup) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
+## Stream Expectations
+
+An open SSE connection means your credentials and stream request are accepted. It does not guarantee that a covered fixture is producing data at that exact moment.
+
+If the stream opens but you only see heartbeats or no data messages for a while:
+
+- Check [Scores Schedule](/documentation/scores/schedule) for active or upcoming covered fixtures.
+- Keep the stream open during a covered live fixture window.
+- Use `/api/scores/historical/{fixtureId}` when you need replay data for a completed fixture within the historical availability window.
+- Confirm you are using the correct network host for your subscription.
+
+<Note>
+If a stream returns `401`, renew the guest JWT from the same host and reconnect with the same `X-Api-Token`. If it returns `403`, check that the API token belongs to the same network and subscription bundle.
+</Note>
+
+## Runnable Devnet Streams
+
+The repository includes runnable devnet stream scripts that handle activation, API token headers, JWT renewal, and SSE connections:
+
+| Script | Stream coverage |
+|--------|-----------------|
+| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Odds snapshots and odds SSE streams. |
+| [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, score validation, and scores SSE streams. |
+| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
+
+See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the required devnet environment variables and Node.js runtime notes.
+
 ## SSE Parsing Helper
 
 ```typescript
@@ -111,6 +138,8 @@ for await (const message of readSseMessages(streamResponse)) {
 }
 ```
 
+Use `https://txline-dev.txodds.com/api/odds/stream` for a devnet subscription.
+
 ## Stream Scores Updates
 
 Connect to the scores stream for real-time updates.
@@ -134,6 +163,10 @@ for await (const message of readSseMessages(streamResponse)) {
   console.log(message.event ?? "message", parseSseData(message.data));
 }
 ```
+
+Use `https://txline-dev.txodds.com/api/scores/stream` for a devnet subscription.
+
+Scores stream messages can be used as validation inputs. When a message contains a real sequence field, use its observed `Seq` or `seq` value with `/api/scores/stat-validation`; do not replace it with `0` or a synthetic sequence number.
 
 ## Historical Scores
 
@@ -161,6 +194,8 @@ historicalScores.data.forEach((update, index) => {
 });
 ```
 
+Use the observed sequence from a historical record when requesting a validation proof for that record.
+
 <Info>
 **Historical Availability**: This endpoint only returns data for fixtures with start times between two weeks and six hours in the past from the current time.
 </Info>
@@ -168,3 +203,7 @@ historicalScores.data.forEach((update, index) => {
 <Info>
 **Stream Compression**: To reduce bandwidth usage by up to 70-80%, add `"Accept-Encoding": "gzip"` to your headers. You'll need to decompress the response chunks using `gunzipSync()` from Node's `zlib` module before decoding.
 </Info>
+
+## Troubleshooting
+
+For activation, credential, and stream diagnostics, see [Troubleshooting](/documentation/examples/troubleshooting).

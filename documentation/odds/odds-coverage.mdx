@@ -11,7 +11,13 @@ StablePrice odds coverage currently includes:
 - **NCAAB (College Basketball)**: competition ID `300043`.
 - **NCAAF (College Football)**: competition IDs `550001`, `10005930`, `500005`, and `10005302`.
 
-Available markets are returned by the odds API for each covered fixture.
+Available markets are returned by the odds API for each covered fixture. Do not assume that a market such as both-teams-to-score, cards, corners, bookings, or player props is available unless it appears in the odds response for that fixture and network.
+
+<Info>
+For each fixture, inspect the returned `SuperOddsType` and market parameters from `/api/odds/snapshot/{fixtureId}` or `/api/odds/updates/...`. The competition coverage list tells you which competitions can be covered; the odds response tells you which markets are actually available for a specific fixture.
+</Info>
+
+## Market Availability
 
 ### Soccer
 
@@ -22,6 +28,8 @@ Available markets are returned by the odds API for each covered fixture.
 >
   Complete list of all supported soccer leagues
 </Card>
+
+Soccer market availability can vary by fixture and feed state. Common core markets may include result, handicap, and totals-style markets when returned by the API, but integrations should branch from the actual odds payload instead of hard-coding an assumed market catalog.
 
 ### NCAAB (College Basketball)
 

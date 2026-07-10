@@ -12,12 +12,37 @@ description: "Validate scores data using cryptographic Merkle proofs"
 </Info>
 
 <Info>
-**Program setup**: The `Txoracle` type used below comes from the generated types in [IDL & Types (Mainnet)](/documentation/programs/mainnet) or [IDL & Types (Devnet)](/documentation/programs/devnet). Use [Program Addresses](/documentation/programs/addresses) for program IDs and PDA derivation.
+**Program setup**: Use generated types that match your selected network, and use [Program Addresses](/documentation/programs/addresses), [Program Reference (Mainnet)](/documentation/programs/mainnet), or [Program Reference (Devnet)](/documentation/programs/devnet) for program IDs and PDA derivation.
 </Info>
 
 ## Overview
 
-This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform both single-stat and two-stat validations.
+This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, and V2 multi-stat validations.
+
+The public `/api/scores/stat-validation` endpoint supports both validation shapes:
+
+| Query shape | On-chain method | Notes |
+|-------------|-----------------|-------|
+| `statKey=...` and optional `statKey2=...` | `validateStat` | Legacy single-stat and two-stat validation. |
+| `statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed strategy predicates. |
+
+Use the same network for the API request, IDL/types, program ID, and on-chain root PDA.
+
+<Info>
+The repository now includes runnable devnet examples for both paths in [`examples/devnet/scripts`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet/scripts). See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for setup and script mapping.
+</Info>
+
+## Validation Checklist
+
+Before calling `validateStat`, confirm:
+
+- The proof came from the same API host as your activated subscription.
+- The program ID matches the network used for the proof.
+- `daily_scores_roots` is derived from the same timestamp you pass into `validateStat`.
+- The epoch day is encoded as u16 little-endian.
+- Every proof hash is decoded to exactly 32 bytes.
+- The fixture ID and sequence number refer to the score update you intend to validate.
+- For V2, each strategy index refers to the same position in the requested `statKeys` array.
 
 ## Setup
 
@@ -41,6 +66,8 @@ const httpClient = axios.create({
   },
   baseURL: "https://txline.txodds.com",
 });
+
+// For devnet, use baseURL: "https://txline-dev.txodds.com".
 
 function toBytes32(value: string | number[] | Uint8Array): number[] {
   const bytes = Array.isArray(value)
@@ -89,6 +116,42 @@ const updates = await httpClient.get(`/api/scores/updates/${epochDay}/${hourOfDa
 console.log(`Updates found:`, updates.data);
 ```
 
+## Choosing the Score Sequence
+
+The `seq` parameter is not a placeholder. Use the sequence value from a real score record observed through one of the scores data endpoints:
+
+- `/api/scores/snapshot/{fixtureId}`
+- `/api/scores/updates/{epochDay}/{hourOfDay}/{interval}`
+- `/api/scores/historical/{fixtureId}`
+- `/api/scores/stream`
+
+Do not call `/api/scores/stat-validation` with `seq=0`. Score sequences start at `1` for a fixture and increment as new score records are produced. Depending on your client and response mapper, the payload field may appear as `Seq` or `seq`; use that observed value when requesting the validation proof.
+
+```typescript
+const scoreRecord = updates.data[0];
+const seq = scoreRecord.Seq ?? scoreRecord.seq;
+
+if (!Number.isInteger(seq) || seq < 1) {
+  throw new Error("Use a real score record sequence; seq=0 is not valid");
+}
+
+const validation = await httpClient.get("/api/scores/stat-validation", {
+  params: {
+    fixtureId: scoreRecord.FixtureId ?? scoreRecord.fixtureId,
+    seq,
+    statKey: 1002
+  }
+});
+```
+
+## Phase and Status Semantics
+
+Pick the score record whose game phase matches the condition you want to prove. For example, "final score of the first half" should use the record for the completed first-half phase or halftime/rest state, not an arbitrary in-running first-half update.
+
+If you validate an in-running first-half record, the predicate means the condition was true at that observed moment. That is different from proving the final first-half result. Check the sport-specific phase tables, such as [Soccer Feed](/documentation/scores/soccer-feed), and use the score record's `statusId`, `StatusId`, `gameState`, or equivalent phase field when deciding whether a record is suitable for settlement.
+
+For final match outcome settlement on the current devnet and mainnet releases, use a scores record with `action=game_finalised`. These finalisation records set `statusId` and `period` to `100`, so the same final-outcome validation path covers regulation-time wins, extra-time wins, penalty wins, and abandoned matches.
+
 ## Single-Stat Validation
 
 Validate a single statistic against on-chain Merkle roots:
@@ -131,6 +194,13 @@ const predicate = {
   threshold: 0,
   comparison: { greaterThan: {} },
 };
+
+// For a first sanity check, use exact equality if the response exposes
+// validation.statToProve.value:
+// const predicate = {
+//   threshold: validation.statToProve.value,
+//   comparison: { equalTo: {} },
+// };
 
 // Find the daily scores PDA
 const targetTs = validation.summary.updateStats.minTimestamp;
@@ -227,6 +297,110 @@ const isValid2 = await program.methods
 
 console.log("Two-stat validation result:", isValid2);
 ```
+
+## V2 Multi-Stat Validation
+
+Use `statKeys` when you need the current V2 payload and strategy model. The requested key order is important: the response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions. Every stat in `payload.stats` must be covered exactly once by the strategy, or the program returns `IncompleteStatCoverage`.
+
+```typescript
+const responseV2 = await httpClient.get("/api/scores/stat-validation", {
+  params: {
+    fixtureId: 18175981,
+    seq: 991,
+    statKeys: "1,2,3001",
+  },
+});
+const validationV2 = responseV2.data;
+
+const targetTsV2 = validationV2.summary.updateStats.minTimestamp;
+const epochDayV2 = Math.floor(targetTsV2 / (24 * 60 * 60 * 1000));
+
+const [dailyScoresPdaV2] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("daily_scores_roots"),
+    new BN(epochDayV2).toArrayLike(Buffer, "le", 2),
+  ],
+  program.programId
+);
+
+const payload = {
+  ts: new BN(targetTsV2),
+  fixtureSummary: {
+    fixtureId: new BN(validationV2.summary.fixtureId),
+    updateStats: {
+      updateCount: validationV2.summary.updateStats.updateCount,
+      minTimestamp: new BN(validationV2.summary.updateStats.minTimestamp),
+      maxTimestamp: new BN(validationV2.summary.updateStats.maxTimestamp),
+    },
+    eventsSubTreeRoot: toBytes32(validationV2.summary.eventStatsSubTreeRoot),
+  },
+  fixtureProof: toProofNodes(validationV2.subTreeProof),
+  mainTreeProof: toProofNodes(validationV2.mainTreeProof),
+  eventStatRoot: toBytes32(validationV2.eventStatRoot),
+  stats: validationV2.statsToProve.map((stat: unknown, index: number) => ({
+    stat,
+    statProof: toProofNodes(validationV2.statProofs[index]),
+  })),
+};
+
+const strategy = {
+  geometricTargets: [],
+  distancePredicate: null,
+  discretePredicates: [
+    {
+      binary: {
+        indexA: 0, // statKeys[0] -> 1
+        indexB: 1, // statKeys[1] -> 2
+        op: { subtract: {} },
+        predicate: {
+          threshold: 0,
+          comparison: { equalTo: {} },
+        },
+      },
+    },
+    {
+      single: {
+        index: 2, // statKeys[2] -> 3001
+        predicate: {
+          threshold: 0,
+          comparison: { greaterThan: {} },
+        },
+      },
+    },
+  ],
+};
+
+const isValidV2 = await program.methods
+  .validateStatV2(payload, strategy)
+  .accounts({
+    dailyScoresMerkleRoots: dailyScoresPdaV2,
+  })
+  .preInstructions([computeBudgetIx])
+  .view();
+
+console.log("V2 validation result:", isValidV2);
+```
+
+For complete runnable versions, use:
+
+| Script | V2 coverage |
+|--------|-------------|
+| [`subscription_scores_1stat.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_1stat.ts) | One requested stat with `validateStatV2`. |
+| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Two-stat strategies and geometric validation. |
+| [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Multi-leg strategies using four requested stat keys. |
+
+## Common Validation Errors
+
+| Symptom | What to check |
+|---------|---------------|
+| `InvalidMainTreeProof` | Use the same `targetTs` for `validateStat` and `daily_scores_roots` PDA derivation. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
+| Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(targetTs / 86400000)`. |
+| Predicate returns false | First test with an exact predicate against the returned stat value, then replace it with your application predicate. |
+| `IncompleteStatCoverage` | Ensure every entry in `payload.stats` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
+| V2 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
+| `401` or `403` from the proof endpoint | Renew the guest JWT, keep the `X-Api-Token`, and confirm both credentials came from the same network host. |
+
+See [Troubleshooting](/documentation/examples/troubleshooting) for the full activation, streaming, and validation checklist.
 
 ## Real-Time Scores Streaming
 

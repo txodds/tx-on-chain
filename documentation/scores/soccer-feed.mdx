@@ -45,7 +45,7 @@ These specifications define how soccer game phases and statistics are encoded fo
 
 ### Stat Period Encoding
 
-Stats are encoded with a formula: `(period * 1000) + base_key`
+Stats are encoded as `period_prefix + base_key`.
 
 These encodings are used for on-chain validation proofs and trading settlement.
 
@@ -62,21 +62,46 @@ These encodings are used for on-chain validation proofs and trading settlement.
 | 7   | Participant 1 Total Corners        |
 | 8   | Participant 2 Total Corners        |
 
-**Period-Specific Stats** - Add period multiplier to base keys:
-- **First Half (H1)**: Add 1000 (e.g., key 1001 = Participant 1 H1 Goals)
-- **Second Half (H2)**: Add 2000 (e.g., key 2001 = Participant 1 H2 Goals)
-- **Extra Time 1 (ET1)**: Add 3000 (e.g., key 3001 = Participant 1 ET1 Goals)
-- **Extra Time 2 (ET2)**: Add 4000 (e.g., key 4001 = Participant 1 ET2 Goals)
-- **Penalty Shootout (PE)**: Add 5000 (e.g., key 5001 = Participant 1 PE Goals)
+**Period Prefixes:**
+
+| Prefix | Period  | Example |
+|--------|---------|---------|
+| 0      | Total   | `8` = Participant 2 total corners |
+| 1000   | H1      | `1001` = Participant 1 H1 goals |
+| 2000   | HT      | `2001` = Participant 1 halftime goals |
+| 3000   | H2      | `3001` = Participant 1 H2 goals |
+| 4000   | ET1     | `4001` = Participant 1 ET1 goals |
+| 5000   | ET2     | `5001` = Participant 1 ET2 goals |
+| 6000   | PE      | `6001` = Participant 1 penalty shootout goals |
+| 7000   | ETTotal | `7008` = Participant 2 ETTotal corners |
 
 **Usage:** These encodings are required when validating score data against on-chain Merkle roots, creating trading offers, or settling trades with cryptographic proofs.
+
+### Integrator Notes
+
+- Hydration breaks are represented as `comment` actions with `Data.Text = "Water-drinking break"`. They are not numeric `Stats` keys or a dedicated action type.
+- Fouls are not exposed as a separate documented `foul` action in the soccer feed. Use `free_kick` with `Data.FreeKickType != "Offside"` for foul/free-kick handling; offside is `free_kick` with `Data.FreeKickType = "Offside"`.
+- Current documented enums include:
+  - `shot.Data.Outcome`: `OnTarget`, `OffTarget`, `Woodwork`, `Blocked`
+  - `Data.FreeKickType`: `Safe`, `Attack`, `Danger`, `HighDanger`, `Offside`
+  - `var.Data.Type`: `Goal`, `Penalty`, `RedCard`, `SecondYellowCard`, `CornerKick`, `MistakenIdentity`, `Other`
+  - `var_end.Data.Outcome`: `Stands`, `Overturned`
+  - penalty outcomes: `Scored`, `Missed`, `Retake`
 
 ## Documentation
 
 <Card
   title="Download"
   icon="file-pdf"
-  href="https://txodds.github.io/tx-on-chain/assets/txodds-soccer-feed-v1.0.pdf"
+  href="https://txodds.github.io/tx-on-chain/assets/txodds-soccer-feed-v1.1.pdf"
 >
   Complete documentation for the TxODDS Soccer data feed
 </Card>
+
+### Version 1.1 Updates
+
+The v1.1 Soccer Feed PDF includes the following integrator-facing updates:
+
+- `Substitution` messages can include `FollowsAction`, linking a confirmed substitution to the originating unconfirmed action.
+- `Action Amend` can include `Participant`, identifying the team related to the original action being amended.
+- `halftime_finalised` indicates halftime data has been reviewed and verified, and may be sent more than once for the same halftime period.

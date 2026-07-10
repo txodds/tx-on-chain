@@ -1,0 +1,159 @@
+---
+title: "Troubleshooting"
+description: "Diagnose common TxLINE onboarding, activation, streaming, and validation errors"
+---
+
+## Before You Debug
+
+Most integration issues come from one of four causes:
+
+- Mixing devnet and mainnet values.
+- Signing the wrong activation message.
+- Using an expired or missing guest JWT.
+- Deriving validation PDAs from a timestamp that does not match the proof payload.
+
+Use one network consistently for every value:
+
+| Network | Program ID | Guest JWT URL | Activation URL | API Base |
+|---------|------------|---------------|----------------|----------|
+| Mainnet | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `https://txline.txodds.com/auth/guest/start` | `https://txline.txodds.com/api/token/activate` | `https://txline.txodds.com/api/` |
+| Devnet | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `https://txline-dev.txodds.com/auth/guest/start` | `https://txline-dev.txodds.com/api/token/activate` | `https://txline-dev.txodds.com/api/` |
+
+<Warning>
+Never share your guest JWT, activated API token, wallet secret key, or unredacted request headers in public support channels.
+</Warning>
+
+## Activation Checklist
+
+Before calling `/api/token/activate`, confirm:
+
+- The on-chain `subscribe(serviceLevelId, durationWeeks)` transaction is confirmed.
+- The `txSig` is from the same network as the activation endpoint.
+- The guest JWT came from the same network host.
+- The signing wallet is the same wallet that submitted the `subscribe` transaction.
+- `walletSignature` is a base64-encoded detached signature.
+- `leagues` is `[]` for the standard free World Cup and International Friendlies bundle.
+
+The activation message is:
+
+```text
+${txSig}:${selectedLeagues.join(",")}:${jwt}
+```
+
+For `selectedLeagues = []`, sign:
+
+```text
+${txSig}::${jwt}
+```
+
+## Runnable Example Checklist
+
+When running the repository examples in `examples/devnet`, confirm:
+
+- You are using Node.js `20` or newer. The current lockfile resolves `eventsource@4.1.0`, which requires `node >=20.0.0`.
+- `ANCHOR_PROVIDER_URL` points to `https://api.devnet.solana.com`.
+- `TOKEN_MINT_ADDRESS` is the devnet TxL mint `4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG`.
+- The script imports the devnet IDL/types from `examples/devnet/idl` and `examples/devnet/types`.
+- The wallet in `ANCHOR_WALLET` has enough devnet SOL for subscription transactions and account rent.
+- Fixed `fixtureId` and `seq` pairs in example scripts are demo fixtures. For production, derive them from an observed score record.
+- Final match outcome settlement should use scores records with `action=game_finalised`, `statusId=100`, and `period=100`.
+- Fixture examples should expect the backward-compatible `GameState` field; current values are `1` for scheduled and `6` for cancelled.
+
+## Common Errors
+
+| Symptom | Likely cause | What to check |
+|---------|--------------|---------------|
+| Example script fails before connecting to TxLINE | Node runtime or environment variables do not match the current examples | Use Node.js `20+`, set `ANCHOR_PROVIDER_URL`, `ANCHOR_WALLET`, and `TOKEN_MINT_ADDRESS`, then run from the repository root |
+| `504 Gateway Timeout` from `/api/token/activate` | Often a network mismatch, such as a devnet transaction sent to the mainnet activation host, or a backend timeout | Confirm `txSig`, guest JWT, program ID, and activation URL are all mainnet or all devnet |
+| `403 signature verification failed` | Wrong signing preimage, wrong wallet, wrong signature encoding, or wrong JWT host | Sign the exact message string, use the subscribe wallet, send base64 detached signature, and use the matching network JWT |
+| `401 Unauthorized` on data endpoints | Missing or expired guest JWT | Request a fresh guest JWT from the same host and retry with the same `X-Api-Token` |
+| `403 Access denied` on data endpoints | Invalid API token, expired subscription, wrong network token, or insufficient subscription permissions | Confirm the `X-Api-Token` came from the same network and subscription bundle |
+| `Invalid public key input` | Placeholder value was not replaced with a real Solana public key | Replace all placeholders with the program ID, TxL mint, and wallet public key for the selected network |
+| SSE connection opens but no data messages arrive | The stream can be healthy even when no covered fixture is actively producing updates | Check the [Schedule](/documentation/scores/schedule), keep the stream open, or use historical endpoints for completed fixtures |
+| `/api/scores/stat-validation` called with `seq=0` or a random `seq` | The sequence was treated as a placeholder instead of coming from a real score record | Get a score record from snapshot, updates, historical data, or the scores stream, then pass that record's observed `Seq` or `seq` value |
+| `InvalidMainTreeProof` during validation | Timestamp, epoch day PDA, proof decoding, or fixture/update selection mismatch | Derive `daily_scores_roots` from the same timestamp passed to `validateStat`, decode hashes to exactly 32 bytes, and verify you are using the intended fixture and sequence |
+| `validateStatV2` strategy checks the wrong value | `statKeys` order and positional strategy indexes were mixed up | Keep the requested `statKeys` order next to the strategy. `index`, `indexA`, `indexB`, and `statIndex` refer to `statsToProve[0..N]`, not to the numeric stat key itself |
+| Final outcome settlement uses the wrong phase | The client selected an in-running or period-specific record instead of the match finalisation record | Use a scores record with `action=game_finalised`, `statusId=100`, and `period=100` |
+
+## Auth Headers
+
+Most data endpoints require both credentials:
+
+| Header | Value |
+|--------|-------|
+| `Authorization` | `Bearer <guest-jwt>` from `/auth/guest/start` |
+| `X-Api-Token` | Activated API token from `/api/token/activate` |
+
+If the guest JWT expires, request a new JWT from the same network host. You do not need to reactivate the API token unless the subscription or token itself is invalid.
+
+## Stream Debugging
+
+Server-Sent Events streams can send connection-level events, heartbeats, or no data for a period when there is no active covered fixture update.
+
+When debugging streams:
+
+- Use the matching host: `https://txline.txodds.com/api/...` for mainnet or `https://txline-dev.txodds.com/api/...` for devnet.
+- Send both `Authorization` and `X-Api-Token`.
+- Set `Accept: text/event-stream`.
+- Treat an open connection with heartbeats as a live connection, not necessarily a data failure.
+- Check [Scores Schedule](/documentation/scores/schedule) for active or upcoming covered fixtures.
+- Use `/api/scores/historical/{fixtureId}` for a full replay when the fixture is already historical and within the supported historical window.
+
+## Validation Debugging
+
+For score validation, keep the API proof, PDA derivation, and on-chain call aligned:
+
+```typescript
+const targetTs = validation.summary.updateStats.minTimestamp;
+const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
+
+const [dailyScoresPda] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("daily_scores_roots"),
+    new BN(epochDay).toArrayLike(Buffer, "le", 2),
+  ],
+  program.programId
+);
+```
+
+Pass the same `targetTs` into `validateStat`, and make sure every proof hash is decoded to exactly 32 bytes before passing it to Anchor.
+
+Use a real score record sequence for `/api/scores/stat-validation`; `seq=0` is not valid. For settlement conditions tied to a period result, choose a record whose phase or status represents that completed period. An in-running record proves the condition at that moment, not the final result of the period.
+
+For final match outcome settlement, use `action=game_finalised` records. Current devnet and mainnet releases set both `statusId` and `period` to `100` for those records.
+
+For V2 validation, request multiple stats with `statKeys=1,2,...` and keep that order stable when building `statsToProve`, `statProofs`, and strategy predicates. See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for complete `validateStatV2` scripts.
+
+For a first sanity check, use an exact predicate against the returned stat value if your response shape includes `validation.statToProve.value`:
+
+```typescript
+const predicate = {
+  threshold: validation.statToProve.value,
+  comparison: { equalTo: {} },
+};
+```
+
+After this exact predicate succeeds, replace it with your application-specific predicate.
+
+## Support Template
+
+When opening a support ticket, include:
+
+- Network: mainnet or devnet.
+- Endpoint path and HTTP status.
+- Program ID used.
+- Service level ID and duration.
+- Redacted transaction signature prefix/suffix.
+- For activation: the selected leagues array and whether the signed message was `txSig::jwt`.
+- For validation: fixture ID, sequence number, stat key, timestamp used, epoch day, and PDA.
+- For V2 validation: the full `statKeys` list and the strategy indexes being checked.
+- For final outcome validation: whether the selected score record had `action=game_finalised`, `statusId=100`, and `period=100`.
+- For fixture validation: the fixture `GameState` value.
+- Response body with secrets removed.
+
+Do not include:
+
+- Guest JWT.
+- `X-Api-Token`.
+- Wallet secret key.
+- Full private request logs with authorization headers.
