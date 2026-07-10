@@ -161,6 +161,7 @@ async function main(): Promise<void> {
     jwt: () => users.authState.jwt,
     apiToken: () => users.authState.apiToken,
     renewJwt: () => users.renewJwt(name),
+    expectedFixtureId: fixtureId,
     durationSeconds: sseSeconds,
   });
   summarizeSse("Odds SSE", observation);

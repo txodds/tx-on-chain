@@ -62,6 +62,7 @@ async function main(): Promise<void> {
     jwt: () => users.authState.jwt,
     apiToken: () => users.authState.apiToken,
     renewJwt: () => users.renewJwt(name),
+    expectedFixtureId: selection.fixtureId,
     durationSeconds: sseSeconds,
   });
   summarizeSse("Scores SSE", observation);

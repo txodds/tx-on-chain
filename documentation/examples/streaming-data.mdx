@@ -37,6 +37,8 @@ The repository includes runnable devnet stream scripts that handle activation, A
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
 | [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Historical score discovery and replay within the documented retention window. |
 
+See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the required devnet environment variables and Node.js runtime notes.
+
 ## SSE Parsing Helper
 
 ```typescript
@@ -250,3 +252,7 @@ Use the observed sequence from a historical record when requesting a validation 
 <Info>
 **Stream Compression**: Let native `fetch`/Undici negotiate and decompress the response. Do not set `Accept-Encoding` manually, and do not pass already-decoded chunks to `gunzipSync`. For command-line probes, use `curl --compressed`. If a lower-level client exposes a genuinely raw gzip body, pipe the complete byte stream through `createGunzip` before SSE decoding; a gzip frame can span transport chunks.
 </Info>
+
+## Troubleshooting
+
+For activation, credential, and stream diagnostics, see [Troubleshooting](/documentation/examples/troubleshooting).

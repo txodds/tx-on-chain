@@ -47,7 +47,9 @@ test("mandatory scripts reject invalid overrides before provider or network setu
       cwd: root,
       env,
       encoding: "utf8",
-      timeout: 20_000,
+      // ts-node startup can be CPU-bound when Node's test runner executes
+      // multiple test files concurrently, especially on Windows CI hosts.
+      timeout: 60_000,
     });
 
     assert.equal(result.error, undefined, `${script} failed to launch`);

@@ -88,7 +88,7 @@ The following diagram shows how users typically move from subscription setup to 
 Use one network consistently. Devnet subscribe transactions must use the devnet API host (`https://txline-dev.txodds.com`), and mainnet subscribe transactions must use the mainnet API host (`https://txline.txodds.com`).
 
 1. **Start a guest session** - call `POST /auth/guest/start` on the matching TxLINE host to receive the guest JWT.
-2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, which returns a serialized transaction. The current Quickstart deserializes and signs that backend-provided transaction but does not implement a local verifier; parse and validate every program, instruction, writable or signing account, fee payer, mint, recipient, amount, blockhash assumption, and unrelated instruction before using the flow with funds. Free World Cup tiers do not require a TxL purchase.
+2. **Purchase TxL if needed** - paid tiers use `POST /api/guest/purchase/quote`, which returns a serialized transaction. The Quickstart deserializes it for inspection and deliberately stops before signing or broadcasting. An integration must first implement and review exact checks for every program, instruction, writable or signing account, fee payer, mint, recipient, amount, blockhash assumption, and unrelated instruction. Free World Cup tiers do not require a TxL purchase.
 3. **Subscribe on-chain** - call `program.methods.subscribe(serviceLevelId, durationWeeks)` with the `pricing_matrix` PDA and `token_treasury_v2` PDA/vault accounts.
 4. **Activate API access** - sign `${txSig}:${selectedLeagues.join(",")}:${jwt}` with the subscription wallet, then call `POST /api/token/activate` on the matching TxLINE host. For the free standard bundle, `selectedLeagues = []`, so the exact signed message is `${txSig}::${jwt}`.
 5. **Call data APIs** - send `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <activated-api-token>` on fixtures, odds, and scores requests.
@@ -103,31 +103,27 @@ The hosted documentation contains copy-paste snippets, and `examples/devnet` con
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
 - [Runnable Devnet Examples](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet) - dynamic score discovery, bounded streams, historical replay, and fail-closed on-chain simulations.
 
-## Trading Flow
+## Validation Phase Semantics
 
-The following section gives an overview of how binary options prediction markets work with TxODDS Oracle.
-
-Trading is based on predictions of what one or two stats will be in a given phase of the game (currently covering US Football).
-
-> Note: this trading section is a protocol-level overview of the on-chain/off-chain flow. The hosted OpenAPI reference currently documents the data-access APIs, not the `/api/trading/*` endpoints below, so treat those REST snippets as illustrative until trading endpoints are published in the hosted API reference. The `settleTrade` instruction is available in the Devnet IDL; the current Mainnet IDL exposes `validateStat` for on-chain score proof checks.
+Score proofs distinguish the phase in which an observation was recorded from the period over which a statistic was computed. Public integrations should use the validation methods in the network-matched IDL and the hosted data APIs; internal transaction-construction flows are not part of the public examples.
 
 Importantly, there are two time periods involved:
 
 1. **Claim period**: the phase of the game where an event that matches the prediction will happen.
 2. **Stat period**: the phase of the game for which the respective stats are computed.
 
-A prediction will be confirmed IF AND ONLY IF there exists a record with confirmed stats within the given **claim period/game phase** that meets the prediction condition. For the prediction to be settled and funds dispersed according to the result, the winner side submits a proof of such record matching the trade details in their favour that can be validated on-chain to have existed within this phase of the game.
+A condition is proven only when a record with confirmed stats exists within the selected **claim period/game phase** and its Merkle proof validates on-chain.
 
-This is an example to help with understanding these two time periods.
+The following example explains the distinction between these two time periods.
 
 ### Example
 
 Prediction might concern the margin of difference between the counts of touchdowns in Q2 of the game. In this case, Q2 is the **stat period**. The question is when it is predicted this margin will have occurred.
 The **claim period** could be set to end of Q2, that is what is known in the TxODDS scores product as HT--the half-time break in the game.
 
-Another prediction could be set to be based on a stat that is related to the first half of the game, so the **stat period** could be easily adjusted to become H1 and then the nature of the prediction changes accordingly.
+Another condition could use a stat related to the first half of the game, so the **stat period** would become H1 and the meaning of the proof changes accordingly.
 
-There is a further important question: what is the difference between a prediction for the **claim period** Q2 and HT? The latter is very easy to understand: if the prediction concerns a record with confirmed game stats for HT, the stats will correspond to the Q2 (the chosen stat) result--because once the game is in a break, the stats correspond to the result of the previous active phase of the game, which is, in the example, Q2. What happens if the **claim period** is set to Q2 itself? The prediction logic outlined above dictates that there must exist at least a single record within the whole Q2 that matches the full set of prediction conditions. This latter type of predictions could be fully settled as soon as the current 5-minute interval expires (as long as the qualifying event had occurred before its end) supporting very fast turnaround of bets and settlements.
+There is a further important question: what is the difference between a condition for the **claim period** Q2 and HT? For HT, confirmed stats correspond to the preceding active Q2 phase. If the **claim period** is Q2 itself, a matching record can occur at any observed moment within Q2. These are different proof semantics and must not be interchanged in settlement logic.
 
 ## Game phase encoding for US Football
 
@@ -683,299 +679,6 @@ The stat period is also encoded economically as follows:
 | 40036 | Participant 2 Total Used timeouts | |
 
 ---
-
-## Trading offer definition
-
-### Specify the stat term
-
-The stat used in offers and settlements is wrapped in the `StatTerm` class. For example:
-
-```
-{ key: 1 } // Stat key for "Participant1_Score"
-```
-
-### Specify a trading predicate
-
-A trading predicate is wrapped in the `Predicate` class with a nested `ComparisonEnum`. Here is an example in TypeScript:
-
-```
-const predicate = {
-  threshold: 11,
-  comparison: { greaterThan: {} }, 
-};    
-```
-
-Essentially, the trading predicate sets a bar to compare against and accepts three modes for comparison: `greaterThan`, `lessThan`, and `equalTo`. Predicates do not specify what expression 
-or statistics to use, instead, they just capture the actual comparison being made against the specified quantity (threshold).
-
-### Specify an optional binary expression
-
-A binary expression (when not-null) is either `add` or `subtract` is wrapped in the `BinaryOpEnum` class. For example,
-
-binaryOp = {
-   add: {}
-}
-
-## Create a new offer
-
-An `Offer` structure wraps all necessary information for specifying the prediction and associated terms made by the offer originator side (trader). Here is an example of a one-stat prediction:
-
-```
-const predicate = {
-  threshold: 11,
-  comparison: { greaterThan: {} }, 
-};    
-
-const offer = new schema.Offer({
-   fixtureId: new BN(17271370),
-   period: 5, // HT (halftime after Q2)
-   predicate,
-   binaryOp: null, // This is a single-stat predicate
-   statA: { key: 1 }, // Stat key for "Participant1_Score"
-   statB: null,
-   stake: new BN(500_000_000), // 0.5 SOL
-   odds: 2000, // 2.0 decimal odds
-   expiration: new BN(Date.now() + 60 * 60 * 1000), // Expires in 1 hour
-   traderPubkey: user.publicKey,
-});
-```
-
-The `odds` are decimal odds, multiplied by 1000 to preserve a three-decimal point precision. The decimal odds mean that if the prediction turns out to be true, trader A stands to double their original stake--with
-the eventual counter-party losing the amount of tokens equivalent to 0.5 SOL.
-The offer states that the specified fixture during the half-time break is going to have the team A's total score greater than 11--this being the result after the two quarters are fully played. The offer will be self-managed so that after an hour from the offer submission, the matching by counter-parties will be disabled.
-
-Once the offer is acknowledged by the TxODDS off-chain service, the subscribers to the `/trading/stream` will receive a notification `NewOffer` that looks like this:
-
-```
-{ offerId: 6,
-  offer:
-   {
-      fixtureId: 17271370,
-      period: 5,
-      predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
-      binaryOp: null,
-      statA: { key: 1 },
-      statB: null,
-      stake: 500000000,
-      odds: 2000,
-      expiration: 1758365295729,
-      traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
-      }
-}
-```
-
-### Accept a new offer
-
-A counter-party trader B may elect to accept this offer, which means that they are confident that the odds of 2.0 that trader A specified are too low, meaning trader B believes the prediction in the offer is unlikely to succeed at these odds. This is how trader B accepts the offer:
-
-```
-// The exact accept preimage must match the published trading API contract.
-// This illustrative flow signs the offer ID as a little-endian u64.
-const messageBuffer = new BN(offerIdToAccept).toArrayLike(Buffer, "le", 8);
-const signature = nacl.sign.detached(messageBuffer, user.secretKey);
-
-const acceptancePayload = {
-   offerId: offerIdToAccept,
-   acceptingTraderPubkey: user.publicKey.toBase58(),
-   signature: bs58.encode(signature),
-};
-
-const response = await axios.post(`${API_BASE_URL}/api/trading/accept`, acceptancePayload, {
-   headers: {
-      'Authorization': `Bearer ${jwt}`,
-      'X-Api-Token': apiToken
-   }
-});
-```
-
-Once the TxODDS off-chain service receives a counter-offer on the `accept` endpoint, it creates a new unsigned Solana transaction `create_trade` and sends it to both traders for signing via this `SigningRequest` message:
-
-```
-{
-   tradeId: 6,
-   partiallySignedTx: 'abc',
-   recipientPubkey: 'abc'
-}
-```
-
-### Both parties sign the trade
-
-For the `create_trade` to be executable on blockchain, it needs to have three signers: both traders and the authority behind the `txoracle` program belonging to TxODDS. The latter is obviously readily available to our off-chain service but the former two signatures need to be explicitly collected from traders. The above `SigningRequest` is received by both traders and each use a similar method to sign and send it back to the TxODDS service.
-
-```
-const transaction = anchor.web3.Transaction.from(
-   Buffer.from(data.partiallySignedTx, "base64")
-);
-
-// Solana transaction signatures are over the transaction message bytes.
-const messageToSign = transaction.serializeMessage();
-const signature = nacl.sign.detached(messageToSign, user.secretKey);
-
-const signaturePayload = {
-   tradeId: data.tradeId,
-   signer: user.publicKey.toBase58(),
-   signature: bs58.encode(signature),
-};
-
-await axios.post(`${API_BASE_URL}/api/trading/sign`, signaturePayload, {
-   headers: {
-   'Authorization': `Bearer ${jwt}`,
-   'X-Api-Token': apiToken
-   }
-});
-```
-
-Once the TxODDS off-chain service receives both signatures, it signs the unsigned transaction with those signatures, adds the TxODDS authority signature and submits the trade to the Solana blockchain using a fully signed `create_trade` transaction.
-
-The TxODDS service then copies the same `TradeMatched` notifications to respective trading streams for both traders.
-
-```
-{
-   offer: {
-   fixtureId: 17271370,
-   period: 5,
-   predicate: { threshold: 11, comparison: { type: 'GreaterThan' } },
-   binaryOp: null,
-   statA: { key: 1 },
-   statB: null,
-   stake: 500000000,
-   odds: 2000,
-   expiration: 1758366631894,
-   traderPubkey: '8g2nck8iiaZNjaXA9doPRabA9k1CBKqThPcADfhvC1tF'
-   }
-}
-```
-
-### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
-
-Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the prediction can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
-
-```
-const url = `${API_BASE_URL}/api/scores/stat-validation?fixtureId=17271370&seq=401&statKey=1`
-const response = await axios.get(url, {
-   headers: {
-      'Authorization': `Bearer ${jwt}`,
-      'X-Api-Token': apiToken
-   }
-});
-```
-
-The `seq` uniquely identifies the scores update from the scores feed for the fixture in the original offer. The putative winner can locally check that the scores event they consumed will be resolved in their favour. In our worked example, trader B is the winner because the actual team A score was not greater than 11. Here is the call to on-chain to settle the trade.
-
-```
-const validation = response.data;
-
-function toBytes32(value) {
-   const bytes = Array.isArray(value)
-      ? Uint8Array.from(value)
-      : value instanceof Uint8Array
-         ? value
-         : value.startsWith("0x")
-            ? Buffer.from(value.slice(2), "hex")
-            : Buffer.from(value, "base64");
-
-   if (bytes.length !== 32) {
-      throw new Error(`Expected 32 bytes, received ${bytes.length}`);
-   }
-
-   return Array.from(bytes);
-}
-
-const toProofNodes = (nodes) =>
-   nodes.map((node) => ({
-      hash: toBytes32(node.hash),
-      isRightSibling: node.isRightSibling,
-   }));
-
-const fixtureSummary = {
-   fixtureId: new BN(validation.summary.fixtureId),
-   updateStats: {
-      updateCount: validation.summary.updateStats.updateCount,
-      minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
-      maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
-   },
-   eventsSubTreeRoot: toBytes32(validation.summary.eventStatsSubTreeRoot),
-};
-
-const fixtureProof = toProofNodes(validation.subTreeProof);
-const mainTreeProof = toProofNodes(validation.mainTreeProof);
-
-const stat1 = {
-   statToProve: validation.statToProve,
-   eventStatRoot: toBytes32(validation.eventStatRoot),
-   statProof: toProofNodes(validation.statProof),
-};
-
-const epochDay = Math.floor(validation.ts / (24 * 60 * 60 * 1000));
-
-const [dailyScoresPda, _] = anchor.web3.PublicKey.findProgramAddressSync(
-   [
-      Buffer.from("daily_scores_roots"),
-      new BN(epochDay).toArrayLike(Buffer, "le", 2), // epochDay is u16, so 2 bytes little-endian
-   ],
-   program.programId
-);
-
-const tradeIdBn = new BN(tradeId);
-
-const [tradeEscrowPda] = PublicKey.findProgramAddressSync(
-   [
-      Buffer.from("escrow"), 
-      tradeIdBn.toArrayLike(Buffer, "le", 8)
-   ],
-   program.programId
-);
-
-const [escrowVaultPda] = PublicKey.findProgramAddressSync(
-   [
-      Buffer.from("escrow_vault"), 
-      tradeIdBn.toArrayLike(Buffer, "le", 8)
-   ],
-   program.programId
-);
-
-const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-   [
-      Buffer.from("token_treasury_v2")
-   ],
-   program.programId
-);
-
-const txSignature = await program.methods
-   .settleTrade(
-      tradeIdBn,
-      new BN(validation.ts),
-      fixtureSummary,
-      fixtureProof,
-      mainTreeProof,
-      predicate,
-      stat1,
-      null, // stat2
-      null // op
-   )
-   .accounts({
-      winner: user.publicKey,
-      dailyScoresMerkleRoots: dailyScoresPda,
-      tradeEscrow: tradeEscrowPda,
-      escrowVault: escrowVaultPda,
-      winnerTokenAccount: tokenAccount.address,
-      tokenMint: STAKE_TOKEN_MINT,
-      tokenTreasuryPda,
-      tokenProgram: STAKE_TOKEN_PROGRAM_ID, // TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID, matching STAKE_TOKEN_MINT
-      systemProgram: SystemProgram.programId,
-   })
-   .preInstructions([
-      ComputeBudgetProgram.setComputeUnitLimit({
-      units: 600_000, // max: 1.4M
-      }),
-   ])
-   .signers([user])
-   .rpc();
-```
-
-The outcome of a successfully settled trade is that the funds are released from the escrow account and transferred to trader B's token account and then the escrow is fully closed. Here is an example of such settlement on DevNet:
-
-https://explorer.solana.com/tx/f7t9VqWyumtqAeFuFqRhp8t6QX693h68ZZ5Wa4pe1ebbEusuuRyLDgo4ARpQ4GS8P1CkW6xvstBtQi4z8cyfSup?cluster=devnet
 
 ## Additional Documentation
 

@@ -22,6 +22,10 @@
   },
   "homepage": "https://github.com/txodds/tx-on-chain#readme",
   "description": "",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "packageManager": "yarn@1.22.22",
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@microsoft/fetch-event-source": "^2.0.1",
@@ -35,7 +39,6 @@
     "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
-    "@tsconfig/node18": "^18.2.4",
     "@types/bn.js": "^5.1.0",
     "@types/bs58": "^5.0.0",
     "@types/chai": "^4.3.0",

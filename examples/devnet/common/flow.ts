@@ -411,6 +411,7 @@ export type SseObservation = {
   opened: true;
   heartbeatCount: number;
   dataCount: number;
+  rejectedDataCount: number;
   lastEventId?: string;
 };
 
@@ -419,18 +420,54 @@ type SseOptions = {
   jwt: () => string;
   apiToken: () => string;
   renewJwt: () => Promise<string>;
+  expectedFixtureId: number;
   durationSeconds?: number;
   initialLastEventId?: string;
 };
 
-export type ParsedSse = { heartbeatCount: number; dataCount: number; lastEventId?: string };
+export type ParsedSse = {
+  heartbeatCount: number;
+  dataCount: number;
+  rejectedDataCount: number;
+  lastEventId?: string;
+};
 
 class FatalSseError extends Error {}
 
-export function parseSseFrame(frame: string, state: ParsedSse): void {
+function fixtureIdsInSsePayload(value: unknown): number[] {
+  const fixtureIds = new Set<number>();
+  const seen = new Set<object>();
+  const visit = (current: unknown, depth: number): void => {
+    if (depth > 8 || current === null || typeof current !== "object") return;
+    if (seen.has(current as object)) return;
+    seen.add(current as object);
+    if (Array.isArray(current)) {
+      current.forEach(item => visit(item, depth + 1));
+      return;
+    }
+    const object = current as JsonObject;
+    const rawFixtureId = firstField(object, ["FixtureId", "fixtureId"]);
+    if (rawFixtureId !== undefined) {
+      try {
+        fixtureIds.add(requiredSafeInteger(rawFixtureId, "SSE fixture ID", 1));
+      } catch {
+        // A malformed domain identifier cannot satisfy the requested fixture.
+      }
+    }
+    Object.values(object).forEach(child => visit(child, depth + 1));
+  };
+  visit(value, 0);
+  return [...fixtureIds];
+}
+
+export function parseSseFrame(
+  frame: string,
+  state: ParsedSse,
+  expectedFixtureId?: number,
+): void {
   const lines = frame.split(/\r?\n/);
   let eventName = "message";
-  let hasData = false;
+  const dataLines: string[] = [];
   let commentHeartbeat = false;
   for (const line of lines) {
     if (line.startsWith(":")) {
@@ -441,13 +478,27 @@ export function parseSseFrame(frame: string, state: ParsedSse): void {
       const id = line.slice(3).trim();
       if (!id.includes("\0")) state.lastEventId = id || undefined;
     } else if (line.startsWith("data:")) {
-      hasData = true;
+      const data = line.slice(5);
+      dataLines.push(data.startsWith(" ") ? data.slice(1) : data);
     }
   }
   if (eventName === "heartbeat" || eventName === "ping") {
     state.heartbeatCount++;
-  } else if (hasData) {
-    state.dataCount++;
+  } else if (dataLines.length > 0) {
+    if (expectedFixtureId === undefined) {
+      state.dataCount++;
+    } else {
+      try {
+        const payload = JSON.parse(dataLines.join("\n"));
+        if (fixtureIdsInSsePayload(payload).includes(expectedFixtureId)) {
+          state.dataCount++;
+        } else {
+          state.rejectedDataCount++;
+        }
+      } catch {
+        state.rejectedDataCount++;
+      }
+    }
   } else if (commentHeartbeat) {
     state.heartbeatCount++;
   }
@@ -463,9 +514,15 @@ export async function observeSse(options: SseOptions): Promise<SseObservation> {
   if (durationSeconds < 30 || durationSeconds > 45) {
     throw new Error("SSE duration must be between 30 and 45 seconds");
   }
+  requiredSafeInteger(options.expectedFixtureId, "SSE expected fixture ID", 1);
 
   const deadline = Date.now() + durationSeconds * 1_000;
-  const parsed: ParsedSse = { heartbeatCount: 0, dataCount: 0, lastEventId: options.initialLastEventId };
+  const parsed: ParsedSse = {
+    heartbeatCount: 0,
+    dataCount: 0,
+    rejectedDataCount: 0,
+    lastEventId: options.initialLastEventId,
+  };
   let renewed = false;
   let reconnects = 0;
   let opened = false;
@@ -532,7 +589,7 @@ export async function observeSse(options: SseOptions): Promise<SseObservation> {
           while ((boundary = buffer.search(/\r?\n\r?\n/)) >= 0) {
             const match = buffer.slice(boundary).match(/^\r?\n\r?\n/);
             if (!match) break;
-            parseSseFrame(buffer.slice(0, boundary), parsed);
+            parseSseFrame(buffer.slice(0, boundary), parsed, options.expectedFixtureId);
             buffer = buffer.slice(boundary + match[0].length);
           }
         }
@@ -562,17 +619,21 @@ export async function observeSse(options: SseOptions): Promise<SseObservation> {
     opened: true,
     heartbeatCount: parsed.heartbeatCount,
     dataCount: parsed.dataCount,
+    rejectedDataCount: parsed.rejectedDataCount,
     lastEventId: parsed.lastEventId,
   };
 }
 
 export function summarizeSse(label: string, observation: SseObservation): void {
   if (observation.outcome === "data") {
-    console.log(`${label}: data-flow pass (${observation.dataCount} data event(s))`);
+    console.log(
+      `${label}: covered-fixture data-flow pass (${observation.dataCount} validated data event(s))`,
+    );
     return;
   }
   throw new InconclusiveError(
     `${label}: authentication/transport smoke pass with ${observation.heartbeatCount} heartbeat(s), `
-    + "but data flow is inconclusive because no covered-fixture data event arrived",
+    + `${observation.rejectedDataCount} rejected payload(s), but data flow is inconclusive because `
+    + "no validated covered-fixture data event arrived",
   );
 }

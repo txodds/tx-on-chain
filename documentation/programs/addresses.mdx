@@ -1,6 +1,6 @@
 ---
 title: "Program Addresses"
-description: "TxLINE Solana program addresses and key accounts"
+description: "TxLINE Solana program addresses and public validation accounts"
 ---
 
 ## Mainnet Addresses
@@ -9,7 +9,6 @@ description: "TxLINE Solana program addresses and key accounts"
 |------|---------|
 | Program ID | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` |
 | TxL Token Mint | `Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL` |
-| USDT Mint | `Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB` |
 | API Endpoint | `https://txline.txodds.com/api/` |
 
 ## Devnet Addresses
@@ -18,12 +17,20 @@ description: "TxLINE Solana program addresses and key accounts"
 |------|---------|
 | Program ID | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` |
 | TxL Token Mint | `4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG` |
-| USDT Mint | `ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh` |
 | API Endpoint | `https://txline-dev.txodds.com/api/` |
 
 <Warning>
 Use all values from one network only. A devnet subscribe transaction from `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` must be activated with `https://txline-dev.txodds.com`, and a mainnet subscribe transaction from `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` must be activated with `https://txline.txodds.com`.
 </Warning>
+
+## Network Consistency Checklist
+
+| Network | Solana RPC | Program ID | TxL Mint | Guest JWT URL | Activation URL |
+|---------|------------|------------|----------|---------------|----------------|
+| Mainnet | `https://api.mainnet-beta.solana.com` | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL` | `https://txline.txodds.com/auth/guest/start` | `https://txline.txodds.com/api/token/activate` |
+| Devnet | `https://api.devnet.solana.com` | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG` | `https://txline-dev.txodds.com/auth/guest/start` | `https://txline-dev.txodds.com/api/token/activate` |
+
+The transaction signature, guest JWT, activation endpoint, and program ID must all come from the same row. If any one value comes from a different row, activation can fail even when the on-chain transaction itself confirmed.
 
 ## API Hosts
 
@@ -34,91 +41,84 @@ Use all values from one network only. A devnet subscribe transaction from `6pW64
 
 Use the host root for `/auth/guest/start`, then use the matching `/api/token/activate` endpoint after the on-chain `subscribe` transaction confirms.
 
-## Deriving Program Derived Addresses (PDAs)
+## Program References
 
-The program uses several PDAs that you'll need to derive when interacting with it:
+| Network | Reference |
+|---------|-----------|
+| Mainnet | [Program Reference (Mainnet)](/documentation/programs/mainnet) |
+| Devnet | [Program Reference (Devnet)](/documentation/programs/devnet) |
+
+For runnable code, use the examples that match your network and keep the program ID, generated types, API host, and proof data aligned.
+
+## Activation Message
+
+After `subscribe(serviceLevelId, durationWeeks)` confirms, activate the API token by signing this exact message with the same wallet that submitted the transaction:
+
+```text
+${txSig}:${selectedLeagues.join(",")}:${jwt}
+```
+
+For the standard free bundle, `selectedLeagues = []`, so the message is:
+
+```text
+${txSig}::${jwt}
+```
+
+Send the detached wallet signature as base64 in `walletSignature`, and send the guest JWT from the matching network as `Authorization: Bearer <jwt>`.
+
+## Public Validation Accounts
+
+| Account | Seed(s) | Purpose |
+|---------|---------|---------|
+| Daily scores roots | `daily_scores_roots`, `epochDay` as u16 little-endian | On-chain root account used for score proof validation |
+| Daily batch roots | `daily_batch_roots`, `epochDay` as u16 little-endian | On-chain root account used for odds proof validation |
+| Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | On-chain root account used for fixture proof validation |
+
+<Warning>
+Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. Recompute it for every proof.
+</Warning>
 
 ```typescript
 import { PublicKey } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@coral-xyz/anchor";
 
 const programId = new PublicKey("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA");
-const txlTokenMint = new PublicKey("Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL");
 
-// For devnet, replace both constants with the devnet values above.
+// For devnet, replace programId with:
+// 6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J
 
-// Token Treasury PDA - owns the vault that collects subscription fees
-const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-  [Buffer.from("token_treasury_v2")],
-  programId
-);
+function epochDayFromProofTimestamp(proofTimestampMs: number): number {
+  if (!Number.isSafeInteger(proofTimestampMs) || proofTimestampMs < 0) {
+    throw new Error("Expected a non-negative proof timestamp in milliseconds");
+  }
 
-// Token Treasury Vault - the ATA that holds collected TxL tokens
-const tokenTreasuryVault = getAssociatedTokenAddressSync(
-  txlTokenMint,
-  tokenTreasuryPda,
-  true, // Allow PDA owner
-  TOKEN_2022_PROGRAM_ID
-);
+  const epochDay = Math.floor(proofTimestampMs / 86400000);
+  if (epochDay > 0xffff) {
+    throw new Error("Proof timestamp is outside the u16 epoch-day range");
+  }
+  return epochDay;
+}
 
-// Pricing Matrix PDA - contains service tier pricing information
-const [pricingMatrixPda] = PublicKey.findProgramAddressSync(
-  [Buffer.from("pricing_matrix")],
-  programId
-);
+function deriveDailyValidationPda(
+  seed: "daily_scores_roots" | "daily_batch_roots",
+  proofTimestampMs: number
+): PublicKey {
+  const epochDay = epochDayFromProofTimestamp(proofTimestampMs);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from(seed), new BN(epochDay).toArrayLike(Buffer, "le", 2)],
+    programId
+  )[0];
+}
 
-// USDT Treasury PDA - owns the vault that collects USDT for token purchases
-const [usdtTreasuryPda] = PublicKey.findProgramAddressSync(
-  [Buffer.from("usdt_treasury")],
-  programId
-);
-
-const usdtMint = new PublicKey("Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB");
-
-// USDT Treasury Vault - the ATA that holds collected USDT
-const usdtTreasuryVault = getAssociatedTokenAddressSync(
-  usdtMint,
-  usdtTreasuryPda,
-  true,
-  TOKEN_2022_PROGRAM_ID
-);
-
-// Daily Scores Merkle Roots PDA - for validating scores data
-const epochDay = Math.floor(Date.now() / (24 * 60 * 60 * 1000));
-const [dailyScoresPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_scores_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2)
-  ],
-  programId
-);
-
-// Daily Batch Roots PDA - for validating odds data
-const [dailyBatchRootsPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_batch_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2)
-  ],
-  programId
-);
-
-// Ten Daily Fixtures Roots PDA - for validating fixtures data
-const alignedEpochDay = Math.floor(epochDay / 10) * 10;
-const [tenDailyFixturesRootsPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("ten_daily_fixtures_roots"),
-    new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2)
-  ],
-  programId
-);
-
-console.log("Token Treasury PDA:", tokenTreasuryPda.toBase58());
-console.log("Token Treasury Vault:", tokenTreasuryVault.toBase58());
-console.log("USDT Treasury PDA:", usdtTreasuryPda.toBase58());
-console.log("USDT Treasury Vault:", usdtTreasuryVault.toBase58());
-console.log("Pricing Matrix PDA:", pricingMatrixPda.toBase58());
-console.log("Daily Scores PDA:", dailyScoresPda.toBase58());
-console.log("Daily Batch Roots PDA:", dailyBatchRootsPda.toBase58());
-console.log("Ten Daily Fixtures Roots PDA:", tenDailyFixturesRootsPda.toBase58());
+function deriveTenDailyFixturesPda(fixtureProofTimestampMs: number): PublicKey {
+  const epochDay = epochDayFromProofTimestamp(fixtureProofTimestampMs);
+  const alignedEpochDay = Math.floor(epochDay / 10) * 10;
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("ten_daily_fixtures_roots"),
+      new BN(alignedEpochDay).toArrayLike(Buffer, "le", 2),
+    ],
+    programId
+  )[0];
+}
 ```

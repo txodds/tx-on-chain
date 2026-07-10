@@ -9,6 +9,8 @@ import {
 } from "@solana/spl-token"
 import * as config from './config';
 import * as fs from "fs";
+import * as path from "path";
+import { randomBytes } from "crypto";
 import axios from "axios";
 import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
@@ -29,6 +31,8 @@ export type UserAuthState = {
   authGeneration: number;
   /** Last confirmed subscription, retained until activation succeeds or the state is cleared. */
   confirmedTxSig?: string;
+  /** Locally signed transaction whose RPC submission/confirmation outcome was ambiguous. */
+  submittedTxSig?: string;
 };
 
 export type SubscriptionConfirmation = {
@@ -45,6 +49,33 @@ export type ActivationOptions = {
   maxTransientRetries?: number;
   retryBaseDelayMs?: number;
 };
+
+const SUBSCRIPTION_RECOVERY_SCHEMA = "txline-subscription-recovery/v1" as const;
+
+type SubscriptionRecoveryContext = {
+  wallet: string;
+  genesisHash: string;
+  programId: string;
+  tokenMint: string;
+  apiBaseUrl: string;
+  serviceLevelId: number;
+  weeks: number;
+  selectedLeagues: number[];
+};
+
+type SubscriptionRecoveryRecord = SubscriptionRecoveryContext & {
+  schema: typeof SUBSCRIPTION_RECOVERY_SCHEMA;
+  source: "locally-signed" | "provided";
+  txSig: string;
+  createdAt: string;
+  recentBlockhash?: string;
+  lastValidBlockHeight?: number;
+};
+
+type BeforeSubscriptionBroadcast = (
+  txSig: string,
+  latestBlockhash: Readonly<{ blockhash: string; lastValidBlockHeight: number }>,
+) => Promise<void>;
 
 /**
  * Redacted HTTP error safe to print. It deliberately omits request config,
@@ -91,6 +122,23 @@ export class SubscriptionActivationError extends Error {
   }
 }
 
+/** A signed transaction may have reached the cluster, but its outcome is unknown. */
+export class SubscriptionSubmissionError extends Error {
+  readonly txSig: string;
+  readonly phase: "broadcast" | "confirmation";
+
+  constructor(txSig: string, phase: "broadcast" | "confirmation") {
+    super(
+      `Subscription transaction ${txSig} was signed, but its ${phase} outcome is unknown. `
+      + "Keep the recovery sidecar and rerun the same command to check this public signature; "
+      + "do not submit another subscription."
+    );
+    this.name = "SubscriptionSubmissionError";
+    this.txSig = txSig;
+    this.phase = phase;
+  }
+}
+
 // Global fallback state populated by the first user for backwards compatibility
 export const authState = {
   apiToken: '', // Long-lived B2B token
@@ -122,6 +170,18 @@ function httpStatus(error: unknown): number | undefined {
 function httpCode(error: unknown): string | undefined {
   if (error instanceof SafeHttpError) return error.code;
   return axios.isAxiosError(error) ? error.code : undefined;
+}
+
+function isHeaderCredential(value: unknown): value is string {
+  return typeof value === "string" && /^[\x21-\x7e]+$/.test(value);
+}
+
+function providedCredential(value: string | undefined, label: string): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  if (!isHeaderCredential(value)) {
+    throw new Error(`${label} must contain visible ASCII characters only.`);
+  }
+  return value;
 }
 
 function getOrStartJwtRefresh(name?: string): Promise<string> {
@@ -163,7 +223,7 @@ export async function renewJwt(name?: string): Promise<string> {
   let newJwt: string;
   try {
     const response = await axios.post(config.JWT_URL, undefined, { timeout: 10_000 });
-    if (typeof response.data?.token !== "string" || response.data.token.length === 0) {
+    if (!isHeaderCredential(response.data?.token)) {
       throw new SafeHttpError("Guest JWT issuance");
     }
     newJwt = response.data.token;
@@ -208,6 +268,12 @@ apiClient.interceptors.request.use(requestConfig => {
     ? state.authGeneration
     : globalAuthGeneration;
 
+  if (jwt && !isHeaderCredential(jwt)) {
+    throw new Error("Guest JWT must contain visible ASCII characters only.");
+  }
+  if (apiToken && !isHeaderCredential(apiToken)) {
+    throw new Error("API token must contain visible ASCII characters only.");
+  }
   if (jwt) {
     requestConfig.headers['Authorization'] = `Bearer ${jwt}`;
   }
@@ -280,6 +346,249 @@ function validateTransactionSignature(txSig: string): void {
   }
 }
 
+function isCanonicalPublicKey(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  try {
+    return new anchor.web3.PublicKey(value).toBase58() === value;
+  } catch {
+    return false;
+  }
+}
+
+function isCanonicalBase58Identifier(value: unknown): value is string {
+  if (typeof value !== "string" || value.length < 16 || value.length > 96) return false;
+  try {
+    const decoded = bs58.decode(value);
+    return decoded.length >= 16 && decoded.length <= 64 && bs58.encode(decoded) === value;
+  } catch {
+    return false;
+  }
+}
+
+function subscriptionRecoveryPath(keypairLocation: string): string {
+  const override = process.env.TXLINE_RECOVERY_FILE;
+  if (override !== undefined) {
+    if (override.length === 0 || /[\u0000\r\n]/.test(override)) {
+      throw new Error("TXLINE_RECOVERY_FILE must be a non-empty filesystem path.");
+    }
+    return path.resolve(override);
+  }
+  return `${path.resolve(keypairLocation)}.txline-subscription-recovery.json`;
+}
+
+function validateRecoveryRecord(value: unknown): SubscriptionRecoveryRecord {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("Subscription recovery record must be a JSON object.");
+  }
+  const object = value as Record<string, unknown>;
+  const source = object.source;
+  if (source !== "locally-signed" && source !== "provided") {
+    throw new Error("Subscription recovery record has an unsupported source.");
+  }
+  const baseKeys = [
+    "apiBaseUrl", "createdAt", "genesisHash", "programId", "schema", "selectedLeagues",
+    "serviceLevelId", "source", "tokenMint", "txSig", "wallet", "weeks",
+  ];
+  const expectedKeys = source === "locally-signed"
+    ? [...baseKeys, "lastValidBlockHeight", "recentBlockhash"].sort()
+    : baseKeys.sort();
+  const actualKeys = Object.keys(object).sort();
+  if (actualKeys.length !== expectedKeys.length
+    || actualKeys.some((key, index) => key !== expectedKeys[index])) {
+    throw new Error("Subscription recovery record has unexpected or missing fields.");
+  }
+  if (object.schema !== SUBSCRIPTION_RECOVERY_SCHEMA
+    || !isCanonicalPublicKey(object.wallet)
+    || !isCanonicalBase58Identifier(object.genesisHash)
+    || !isCanonicalPublicKey(object.programId)
+    || !isCanonicalPublicKey(object.tokenMint)
+    || typeof object.apiBaseUrl !== "string"
+    || typeof object.txSig !== "string"
+    || typeof object.createdAt !== "string"
+    || !Array.isArray(object.selectedLeagues)) {
+    throw new Error("Subscription recovery record contains invalid public context.");
+  }
+  try {
+    new URL(object.apiBaseUrl);
+    if (new Date(object.createdAt).toISOString() !== object.createdAt) throw new Error("invalid date");
+  } catch {
+    throw new Error("Subscription recovery record contains an invalid URL or timestamp.");
+  }
+  validateTransactionSignature(object.txSig);
+  validateSubscriptionInputs(object.serviceLevelId as number, object.weeks as number);
+  validateSelectedLeagues(object.selectedLeagues as number[]);
+  if (source === "locally-signed" && (
+    !isCanonicalPublicKey(object.recentBlockhash)
+    || !Number.isSafeInteger(object.lastValidBlockHeight)
+    || (object.lastValidBlockHeight as number) < 0
+  )) {
+    throw new Error("Subscription recovery record contains invalid blockhash context.");
+  }
+  return object as SubscriptionRecoveryRecord;
+}
+
+async function readSubscriptionRecovery(
+  recoveryPath: string,
+): Promise<SubscriptionRecoveryRecord | undefined> {
+  let stat: fs.Stats;
+  try {
+    stat = await fs.promises.lstat(recoveryPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return undefined;
+    throw error;
+  }
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 8_192) {
+    throw new Error("Subscription recovery path must be a regular JSON file no larger than 8 KiB.");
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(await fs.promises.readFile(recoveryPath, "utf8"));
+  } catch {
+    throw new Error("Subscription recovery record is not valid JSON.");
+  }
+  return validateRecoveryRecord(parsed);
+}
+
+type SubscriptionRecoveryLock = {
+  handle: Awaited<ReturnType<typeof fs.promises.open>>;
+  lockPath: string;
+  released: boolean;
+};
+
+async function acquireSubscriptionRecoveryLock(
+  recoveryPath: string,
+): Promise<SubscriptionRecoveryLock> {
+  await fs.promises.mkdir(path.dirname(recoveryPath), { recursive: true });
+  const lockPath = `${recoveryPath}.lock`;
+  let handle: Awaited<ReturnType<typeof fs.promises.open>>;
+  try {
+    handle = await fs.promises.open(lockPath, "wx", 0o600);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+      throw new Error(
+        `Subscription recovery lock already exists at ${lockPath}; refusing to submit another transaction.`,
+      );
+    }
+    throw error;
+  }
+  try {
+    await handle.writeFile(`${process.pid}\n`, "utf8");
+    await handle.sync();
+  } catch (error) {
+    await handle.close();
+    await fs.promises.unlink(lockPath).catch(() => undefined);
+    throw error;
+  }
+  return { handle, lockPath, released: false };
+}
+
+async function releaseSubscriptionRecoveryLock(lock: SubscriptionRecoveryLock): Promise<void> {
+  if (lock.released) return;
+  lock.released = true;
+  await lock.handle.close();
+  try {
+    await fs.promises.unlink(lock.lockPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+}
+
+async function syncParentDirectory(filePath: string): Promise<void> {
+  if (process.platform === "win32") return;
+  const directory = await fs.promises.open(path.dirname(filePath), "r");
+  try {
+    await directory.sync();
+  } finally {
+    await directory.close();
+  }
+}
+
+async function writeSubscriptionRecovery(
+  recoveryPath: string,
+  record: SubscriptionRecoveryRecord,
+): Promise<void> {
+  if (await readSubscriptionRecovery(recoveryPath)) {
+    throw new Error("A subscription recovery record already exists; refusing to overwrite it.");
+  }
+  const temporaryPath = `${recoveryPath}.${process.pid}.${randomBytes(8).toString("hex")}.tmp`;
+  const handle = await fs.promises.open(temporaryPath, "wx", 0o600);
+  try {
+    await handle.writeFile(`${JSON.stringify(record)}\n`, "utf8");
+    await handle.sync();
+  } finally {
+    await handle.close();
+  }
+  try {
+    await fs.promises.rename(temporaryPath, recoveryPath);
+    await syncParentDirectory(recoveryPath);
+  } catch (error) {
+    await fs.promises.unlink(temporaryPath).catch(() => undefined);
+    throw error;
+  }
+}
+
+function assertRecoveryContext(
+  record: SubscriptionRecoveryRecord,
+  context: SubscriptionRecoveryContext,
+  providedTxSig: string | undefined,
+): void {
+  const mismatches: string[] = [];
+  const scalarKeys: Array<keyof Omit<SubscriptionRecoveryContext, "selectedLeagues">> = [
+    "wallet", "genesisHash", "programId", "tokenMint", "apiBaseUrl", "serviceLevelId", "weeks",
+  ];
+  for (const key of scalarKeys) {
+    if (record[key] !== context[key]) mismatches.push(key);
+  }
+  if (JSON.stringify(record.selectedLeagues) !== JSON.stringify(context.selectedLeagues)) {
+    mismatches.push("selectedLeagues");
+  }
+  if (providedTxSig !== undefined && record.txSig !== providedTxSig) mismatches.push("txSig");
+  if (mismatches.length > 0) {
+    throw new Error(
+      `Subscription recovery does not match the current ${mismatches.join(", ")}; `
+      + "the existing record was retained and no transaction was submitted.",
+    );
+  }
+}
+
+async function requireConfirmedRecovery(
+  connection: Pick<anchor.web3.Connection, "getSignatureStatuses">,
+  record: SubscriptionRecoveryRecord,
+  name: string,
+): Promise<void> {
+  let status: Awaited<ReturnType<anchor.web3.Connection["getSignatureStatuses"]>>["value"][number];
+  try {
+    const response = await connection.getSignatureStatuses(
+      [record.txSig],
+      { searchTransactionHistory: true },
+    );
+    status = response.value[0];
+  } catch {
+    throw new Error(
+      `[${name}] Could not verify subscription transaction ${record.txSig}; `
+      + "the recovery record was retained and no transaction was submitted.",
+    );
+  }
+  if (!status) {
+    throw new Error(
+      `[${name}] Subscription transaction ${record.txSig} is not confirmed; `
+      + "the recovery record was retained and no transaction was submitted.",
+    );
+  }
+  if (status.err) {
+    throw new Error(
+      `[${name}] Subscription transaction ${record.txSig} failed on-chain; `
+      + "the recovery record was retained and no transaction was submitted.",
+    );
+  }
+  if (status.confirmationStatus !== "confirmed" && status.confirmationStatus !== "finalized") {
+    throw new Error(
+      `[${name}] Subscription transaction ${record.txSig} is only processed, not confirmed; `
+      + "the recovery record was retained and no transaction was submitted.",
+    );
+  }
+}
+
 async function tryFetchUserTokenAccount(
   connection: anchor.web3.Connection,
   userTokenAccountAddress: anchor.web3.PublicKey
@@ -296,6 +605,47 @@ async function tryFetchUserTokenAccount(
   }
 }
 
+export async function broadcastAndConfirmSubscription(
+  connection: Pick<anchor.web3.Connection, "sendRawTransaction" | "confirmTransaction">,
+  tx: anchor.web3.Transaction,
+  latestBlockhash: Readonly<{ blockhash: string; lastValidBlockHeight: number }>,
+  name: string,
+  beforeBroadcast?: BeforeSubscriptionBroadcast,
+): Promise<string> {
+  if (!tx.signature || tx.signature.length !== 64) {
+    throw new Error(`[${name}] Signed subscription transaction has no canonical signature.`);
+  }
+  const txSig = bs58.encode(tx.signature);
+  const serialized = tx.serialize();
+  if (beforeBroadcast) await beforeBroadcast(txSig, latestBlockhash);
+
+  let rpcSignature: string;
+  try {
+    rpcSignature = await connection.sendRawTransaction(serialized);
+  } catch {
+    throw new SubscriptionSubmissionError(txSig, "broadcast");
+  }
+  if (rpcSignature !== txSig) {
+    throw new SubscriptionSubmissionError(txSig, "broadcast");
+  }
+
+  let confirmation: Awaited<ReturnType<typeof connection.confirmTransaction>>;
+  try {
+    confirmation = await connection.confirmTransaction({
+      signature: txSig,
+      blockhash: latestBlockhash.blockhash,
+      lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+    }, "confirmed");
+  } catch {
+    throw new SubscriptionSubmissionError(txSig, "confirmation");
+  }
+
+  if (confirmation.value.err) {
+    throw new Error(`[${name}] Subscription transaction was confirmed with an execution error.`);
+  }
+  return txSig;
+}
+
 /**
  * Submit and confirm exactly one subscription transaction. Activation is a
  * separate operation so callers retain the public txSig if the backend is down.
@@ -307,7 +657,8 @@ export async function submitSubscription(
   connection: anchor.web3.Connection,
   program: anchor.Program<Txoracle>,
   serviceLevelId: number,
-  weeks: number
+  weeks: number,
+  beforeBroadcast: BeforeSubscriptionBroadcast,
 ): Promise<SubscriptionConfirmation> {
   validateSubscriptionInputs(serviceLevelId, weeks);
 
@@ -417,16 +768,13 @@ export async function submitSubscription(
   tx.feePayer = user.publicKey;
   tx.sign(user);
 
-  const txSig = await connection.sendRawTransaction(tx.serialize());
-  const confirmation = await connection.confirmTransaction({
-    signature: txSig,
-    blockhash: latestBlockhash.blockhash,
-    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-  }, "confirmed");
-
-  if (confirmation.value.err) {
-    throw new Error(`[${name}] Subscription transaction was not confirmed successfully.`);
-  }
+  const txSig = await broadcastAndConfirmSubscription(
+    connection,
+    tx,
+    latestBlockhash,
+    name,
+    beforeBroadcast,
+  );
 
   console.log(`[${name}] Transaction confirmed: ${txSig}`);
   return { txSig, userTokenAccount };
@@ -501,11 +849,12 @@ export async function activateSubscription(options: ActivationOptions): Promise<
         }
       );
       const apiToken = typeof response.data === "string" ? response.data : response.data?.token;
-      if (typeof apiToken !== "string" || apiToken.length === 0) {
+      if (!isHeaderCredential(apiToken)) {
         throw new SafeHttpError("Subscription activation");
       }
       userState.apiToken = apiToken;
       if (userState.confirmedTxSig === txSig) delete userState.confirmedTxSig;
+      if (userState.submittedTxSig === txSig) delete userState.submittedTxSig;
       if (userAuthMap.size === 1) authState.apiToken = apiToken;
       return apiToken;
     } catch (error) {
@@ -565,23 +914,26 @@ export async function setupUser(
   } catch {
     throw new Error(`[${name}] Could not load user keypair at ${keypairLocation}.`);
   }
+  validateSubscriptionInputs(serviceLevelId, weeks);
   validateSelectedLeagues(selectedLeagues);
+  const normalizedExistingJwt = providedCredential(existingJwt, "Provided guest JWT");
+  const normalizedExistingApiToken = providedCredential(existingApiToken, "Provided API token");
 
   let userState = userAuthMap.get(name);
   if (!userState) {
     userState = {
-      apiToken: existingApiToken || "",
-      jwt: existingJwt || "",
+      apiToken: normalizedExistingApiToken || "",
+      jwt: normalizedExistingJwt || "",
       refreshPromise: null,
       authGeneration: 0,
     };
     userAuthMap.set(name, userState);
   } else {
-    if (existingJwt && existingJwt !== userState.jwt) {
-      userState.jwt = existingJwt;
+    if (normalizedExistingJwt && normalizedExistingJwt !== userState.jwt) {
+      userState.jwt = normalizedExistingJwt;
       userState.authGeneration++;
     }
-    if (existingApiToken) userState.apiToken = existingApiToken;
+    if (normalizedExistingApiToken) userState.apiToken = normalizedExistingApiToken;
   }
 
   if (!userState.jwt) {
@@ -612,30 +964,109 @@ export async function setupUser(
     };
   }
 
-  const providedTxSig = existingTxSig ?? process.env.TXLINE_TX_SIG ?? userState.confirmedTxSig;
-  const activationOnlyTxSig = providedTxSig?.trim() ?? "";
+  const providedTxSig = existingTxSig
+    ?? process.env.TXLINE_TX_SIG
+    ?? userState.confirmedTxSig
+    ?? userState.submittedTxSig;
   // A present-but-invalid recovery value must fail closed, never fall through to subscribe.
-  if (providedTxSig !== undefined) validateTransactionSignature(activationOnlyTxSig);
-  let txSig = activationOnlyTxSig;
+  if (providedTxSig !== undefined) validateTransactionSignature(providedTxSig);
+
+  const recoveryPath = subscriptionRecoveryPath(keypairLocation);
+  const genesisHash = await connection.getGenesisHash();
+  if (!isCanonicalBase58Identifier(genesisHash)) {
+    throw new Error("RPC returned a non-canonical genesis hash; refusing subscription recovery.");
+  }
+  const recoveryContext: SubscriptionRecoveryContext = {
+    wallet: user.publicKey.toBase58(),
+    genesisHash,
+    programId: program.programId.toBase58(),
+    tokenMint: tokenMint.toBase58(),
+    apiBaseUrl: config.API_BASE_URL,
+    serviceLevelId,
+    weeks,
+    selectedLeagues: [...selectedLeagues],
+  };
+  const loadRecovery = async (): Promise<SubscriptionRecoveryRecord | undefined> => {
+    const record = await readSubscriptionRecovery(recoveryPath);
+    if (record) assertRecoveryContext(record, recoveryContext, providedTxSig);
+    return record;
+  };
+
+  let recovery = await loadRecovery();
+  if (!recovery && providedTxSig !== undefined) {
+    const lock = await acquireSubscriptionRecoveryLock(recoveryPath);
+    try {
+      recovery = await loadRecovery();
+      if (!recovery) {
+        recovery = {
+          ...recoveryContext,
+          schema: SUBSCRIPTION_RECOVERY_SCHEMA,
+          source: "provided",
+          txSig: providedTxSig,
+          createdAt: new Date().toISOString(),
+        };
+        await writeSubscriptionRecovery(recoveryPath, recovery);
+      }
+    } finally {
+      await releaseSubscriptionRecoveryLock(lock);
+    }
+  }
+
+  let txSig = "";
   let userTokenAccount: Account | undefined;
 
-  if (txSig) {
+  if (recovery) {
+    await requireConfirmedRecovery(connection, recovery, name);
+    txSig = recovery.txSig;
     console.log(`[${name}] Reusing confirmed transaction ${txSig}; no subscription will be submitted.`);
     userTokenAccount = await tryFetchUserTokenAccount(connection, userTokenAccountAddress);
   } else {
-    const confirmation = await submitSubscription(
-      name,
-      user,
-      tokenMint,
-      connection,
-      program,
-      serviceLevelId,
-      weeks
-    );
-    txSig = confirmation.txSig;
-    userTokenAccount = confirmation.userTokenAccount;
+    let lock: SubscriptionRecoveryLock | undefined = await acquireSubscriptionRecoveryLock(recoveryPath);
+    try {
+      const racedRecovery = await loadRecovery();
+      if (racedRecovery) {
+        await releaseSubscriptionRecoveryLock(lock);
+        lock = undefined;
+        await requireConfirmedRecovery(connection, racedRecovery, name);
+        txSig = racedRecovery.txSig;
+        userTokenAccount = await tryFetchUserTokenAccount(connection, userTokenAccountAddress);
+      } else {
+        const confirmation = await submitSubscription(
+          name,
+          user,
+          tokenMint,
+          connection,
+          program,
+          serviceLevelId,
+          weeks,
+          async (signedTxSig, latestBlockhash) => {
+            await writeSubscriptionRecovery(recoveryPath, {
+              ...recoveryContext,
+              schema: SUBSCRIPTION_RECOVERY_SCHEMA,
+              source: "locally-signed",
+              txSig: signedTxSig,
+              createdAt: new Date().toISOString(),
+              recentBlockhash: latestBlockhash.blockhash,
+              lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+            });
+            await releaseSubscriptionRecoveryLock(lock!);
+            lock = undefined;
+          },
+        );
+        txSig = confirmation.txSig;
+        userTokenAccount = confirmation.userTokenAccount;
+      }
+    } catch (error) {
+      if (error instanceof SubscriptionSubmissionError) {
+        userState.submittedTxSig = error.txSig;
+      }
+      throw error;
+    } finally {
+      if (lock) await releaseSubscriptionRecoveryLock(lock);
+    }
   }
   userState.confirmedTxSig = txSig;
+  delete userState.submittedTxSig;
 
   console.log(`[${name}] Activating confirmed subscription transaction.`);
   try {
@@ -646,6 +1077,11 @@ export async function setupUser(
       toSafeHttpError(error, "Subscription activation")
     );
   }
+
+  console.log(
+    `[${name}] Activation succeeded; retaining the public recovery record to prevent `
+    + "a duplicate subscription after restart.",
+  );
 
   if (userAuthMap.size === 1) authState.apiToken = userState.apiToken;
 

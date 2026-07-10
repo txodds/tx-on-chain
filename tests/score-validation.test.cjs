@@ -196,6 +196,20 @@ test("V2 rejects response length and positional-key mismatches before view", asy
   assert.equal(orderProgram.calls.length, 0);
 });
 
+test("V2 rejects an unexpected release-specific finalisation period before view", async () => {
+  const program = fakeProgram(true);
+  await assert.rejects(
+    validateV2Exact(
+      program,
+      api(validationBody([{ key: 1, value: 11, period: 7 }])),
+      selection([1]),
+      { expectedPeriod: 100 },
+    ),
+    /expected 100/,
+  );
+  assert.equal(program.calls.length, 0);
+});
+
 test("V2 rejects malformed roots and false exact predicates", async () => {
   const stat = { key: 1, value: 11, period: 1 };
   const malformed = validationBody([stat]);

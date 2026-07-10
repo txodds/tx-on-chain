@@ -260,7 +260,7 @@ test("SSE duration is bounded to 30 through 45 seconds", () => {
 });
 
 test("SSE parser distinguishes heartbeat, data, and resume ID across frame boundaries", () => {
-  const state = { heartbeatCount: 0, dataCount: 0 };
+  const state = { heartbeatCount: 0, dataCount: 0, rejectedDataCount: 0 };
   const chunks = [": heart", "beat\n\nid: 17\nev", "ent: score\ndata: {\"ok\":true}\n\n"];
   let buffer = "";
   for (const chunk of chunks) {
@@ -271,11 +271,25 @@ test("SSE parser distinguishes heartbeat, data, and resume ID across frame bound
       buffer = buffer.slice(boundary + 2);
     }
   }
-  assert.deepEqual(state, { heartbeatCount: 1, dataCount: 1, lastEventId: "17" });
+  assert.deepEqual(state, {
+    heartbeatCount: 1,
+    dataCount: 1,
+    rejectedDataCount: 0,
+    lastEventId: "17",
+  });
   parseSseFrame("event: heartbeat", state);
   assert.equal(state.heartbeatCount, 2);
   parseSseFrame("id:", state);
   assert.equal(state.lastEventId, undefined);
+});
+
+test("SSE parser rejects control, malformed, and wrong-fixture payloads", () => {
+  const state = { heartbeatCount: 0, dataCount: 0, rejectedDataCount: 0 };
+  parseSseFrame("event: error\ndata: denied", state, 42);
+  parseSseFrame("event: connected\ndata: {}", state, 42);
+  parseSseFrame("event: score\ndata: {\"fixtureId\":999}", state, 42);
+  parseSseFrame("event: score\ndata: {\"record\":{\"FixtureId\":42}}", state, 42);
+  assert.deepEqual(state, { heartbeatCount: 0, dataCount: 1, rejectedDataCount: 3 });
 });
 
 test("observeSse renews one 401 with a fresh JWT and the same API token", async (t) => {
@@ -289,7 +303,7 @@ test("observeSse renews one 401 with a fresh JWT and the same API token", async 
     if (requests.length === 1) {
       return statusResponse(401, { onCancel: () => { cancellations += 1; } });
     }
-    return sseResponse(["data: {\"ok\":true}\n\n"], { afterChunk: () => clock.expire() });
+    return sseResponse(["data: {\"fixtureId\":42}\n\n"], { afterChunk: () => clock.expire() });
   });
 
   const observation = await observeSse({
@@ -301,6 +315,7 @@ test("observeSse renews one 401 with a fresh JWT and the same API token", async 
       jwt = "fresh.jwt";
       return jwt;
     },
+    expectedFixtureId: 42,
     durationSeconds: 30,
   });
 
@@ -337,6 +352,7 @@ test("observeSse fails after one JWT renewal when 401 persists", async (t) => {
       jwt = "fresh.jwt";
       return jwt;
     },
+    expectedFixtureId: 42,
     durationSeconds: 30,
   }), /after one bounded JWT renewal/);
 
@@ -366,6 +382,7 @@ test("observeSse treats persistent 403 as terminal without renewal or reconnect"
       renewals += 1;
       return "must-not-be-used.jwt";
     },
+    expectedFixtureId: 42,
     durationSeconds: 30,
   }), /verify API token, subscription, and bundle entitlement/);
 
@@ -385,6 +402,7 @@ test("observeSse gives real data precedence over a comment in the same frame", a
     jwt: () => "valid.jwt",
     apiToken: () => "valid-api-token",
     renewJwt: async () => "must-not-be-used.jwt",
+    expectedFixtureId: 42,
     durationSeconds: 30,
   });
 
@@ -404,6 +422,7 @@ test("observeSse reports an accepted heartbeat-only stream as inconclusive", asy
     jwt: () => "valid.jwt",
     apiToken: () => "valid-api-token",
     renewJwt: async () => "must-not-be-used.jwt",
+    expectedFixtureId: 42,
     durationSeconds: 30,
   });
 
@@ -412,6 +431,7 @@ test("observeSse reports an accepted heartbeat-only stream as inconclusive", asy
     opened: true,
     heartbeatCount: 1,
     dataCount: 0,
+    rejectedDataCount: 0,
     lastEventId: undefined,
   });
 });
@@ -422,7 +442,7 @@ test("observeSse reconnects once with the last event ID from the first stream", 
   installFetch(t, async (_url, init) => {
     requests.push(headerSnapshot(init.headers));
     if (requests.length === 1) {
-      return sseResponse(["id: event-17\ndata: {\"seq\":17}\n\n"]);
+      return sseResponse(["id: event-17\ndata: {\"fixtureId\":42,\"seq\":17}\n\n"]);
     }
     return sseResponse([": heartbeat\n\n"], { afterChunk: () => clock.expire() });
   });
@@ -432,6 +452,7 @@ test("observeSse reconnects once with the last event ID from the first stream", 
     jwt: () => "valid.jwt",
     apiToken: () => "valid-api-token",
     renewJwt: async () => "must-not-be-used.jwt",
+    expectedFixtureId: 42,
     durationSeconds: 30,
     initialLastEventId: "seed-event",
   });

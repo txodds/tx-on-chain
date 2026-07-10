@@ -986,7 +986,7 @@ export type Txoracle = {
     {
       "code": 6027,
       "name": "overflow",
-      "msg": "overflow"
+      "msg": "Overflow"
     },
     {
       "code": 6028,

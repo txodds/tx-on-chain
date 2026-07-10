@@ -21,15 +21,17 @@
 
 ## Solana Programs
 
-- [Program Addresses](https://txline.txodds.com/documentation/programs/addresses): Current mainnet/devnet addresses and PDA derivation.
-- [IDL & Types (Mainnet)](https://txline.txodds.com/documentation/programs/mainnet): Mainnet IDL and TypeScript types.
-- [IDL & Types (Devnet)](https://txline.txodds.com/documentation/programs/devnet): Devnet IDL and TypeScript types.
+- [Program Addresses](https://txline.txodds.com/documentation/programs/addresses): Current mainnet/devnet addresses and public validation account derivation.
+- [Program Reference (Mainnet)](https://txline.txodds.com/documentation/programs/mainnet): Public mainnet integration values and validation accounts.
+- [Program Reference (Devnet)](https://txline.txodds.com/documentation/programs/devnet): Public devnet integration values and validation accounts.
 
 ## Examples
 
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots): Fixtures, odds, and scores snapshot examples.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data): Server-Sent Events examples for odds and scores.
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation): Fetch proofs and validate data on-chain.
+- [Runnable Devnet Examples](https://txline.txodds.com/documentation/examples/devnet-examples): End-to-end devnet scripts for activation, streaming, fixture validation, and validateStatV2.
+- [Troubleshooting](https://txline.txodds.com/documentation/examples/troubleshooting): Diagnose activation, streaming, authentication, and validation errors.
 
 ## API Reference
 

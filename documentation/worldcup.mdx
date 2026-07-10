@@ -5,14 +5,14 @@ description: "Access World Cup and International Friendlies data for free with T
 
 ## Start Building with Free World Cup Data
 
-Experience the power of TxLINE's sports data API with our complimentary free tiers. Get instant access to World Cup and International Friendlies data with no payment required, no credit card needed, and no commitment. Choose between 60-second delayed data or real-time data - both completely free!
+Experience the power of TxLINE's sports data API with complimentary World Cup and International Friendlies access. Mainnet currently offers both 60-second delayed and real-time free service levels; devnet documents service level `1`, whose current pricing row should be checked before relying on its sampling interval.
 
 ## What's Included
 
 <CardGroup cols={2}>
-  <Card title="Two Free Tiers Available" icon="trophy">
-    **Service Level 1**: World Cup & Int Friendlies with 60-second delay
-    **Service Level 12**: World Cup & Int Friendlies in real-time
+  <Card title="Mainnet Free Tiers" icon="trophy">
+    **Service Level 1**: World Cup & Int Friendlies with 60-second delay on mainnet
+    **Service Level 12**: World Cup & Int Friendlies in real-time on mainnet
   </Card>
   <Card title="Historical Replay" icon="clock-rotate-left">
     Replay scores for fixtures whose start times fall between two weeks and six hours ago.
@@ -35,9 +35,20 @@ Experience the power of TxLINE's sports data API with our complimentary free tie
 
 Use the same network for every step: the Solana RPC, TxLINE program ID, guest JWT, and activation endpoint must all match. A devnet subscription transaction cannot be activated on the mainnet API host.
 
+| Network | Free service levels | Program ID | API host |
+|---------|---------------------|------------|----------|
+| Mainnet | `1` for 60-second delay, `12` for real-time | `9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA` | `https://txline.txodds.com` |
+| Devnet | `1`; read the current pricing row before relying on its sampling interval | `6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J` | `https://txline-dev.txodds.com` |
+
+Before you subscribe, confirm that you have a wallet and SOL on the selected network, the matching TxLINE IDL/types, and the matching API host and program ID.
+
 ```bash
 npm install @coral-xyz/anchor @solana/web3.js @solana/spl-token axios tweetnacl
 ```
+
+<Info>
+The repository includes runnable devnet free-tier scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). They require Node.js `20.18+` for the dependency versions in the lockfile.
+</Info>
 
 ```typescript
 import * as anchor from "@coral-xyz/anchor";
@@ -96,7 +107,7 @@ Choose between the free service levels that are enabled on your network. Mainnet
 
 ```typescript
 // Free tier configuration - choose one:
-const SERVICE_LEVEL_ID = 1;  // World Cup & Int Friendlies (60-second delay)
+const SERVICE_LEVEL_ID = 1;  // Standard free row; verify its sampling interval on the selected network
 // const SERVICE_LEVEL_ID = 12; // Mainnet real-time World Cup & Int Friendlies
 const DURATION_WEEKS = 4; // Subscribe for 4 weeks at a time
 const SELECTED_LEAGUES: number[] = []; // Empty for standard bundle
@@ -203,8 +214,8 @@ const activationResponse = await axios.post(
 const apiToken = typeof activationResponse.data === "string"
   ? activationResponse.data
   : activationResponse.data?.token;
-if (typeof apiToken !== "string" || apiToken.length === 0) {
-  throw new Error("Activation response did not contain an API token");
+if (typeof apiToken !== "string" || !/^[\x21-\x7e]+$/.test(apiToken)) {
+  throw new Error("Activation response did not contain a header-safe API token");
 }
 console.log("API Token activated successfully!");
 ```
@@ -217,7 +228,7 @@ ${txSig}::${jwt}
 
 Use a base64-encoded, 64-byte detached Ed25519 signature, and make sure the signing wallet is the same wallet that submitted the `subscribe` transaction. Do not share your guest JWT, detached wallet signature, or activated API token in public support channels.
 
-Keep the confirmed `txSig` if activation fails. It is a public Solana transaction identifier and can be reused for activation-only recovery. After a `401`, obtain a fresh guest JWT and re-sign because the JWT is part of the message. Retry transient `5xx` responses, including `504`, only with bounded backoff. Do not send another `subscribe` transaction automatically, and do not retry or refresh the JWT in response to `400` or `403`.
+Keep the locally signed `txSig` if submission is ambiguous or activation fails. It is a public Solana transaction identifier and can be reused for status checks and activation-only recovery. The runnable repository examples persist it in a public recovery sidecar before broadcast and retain that record after activation as a tombstone against duplicate subscriptions on later process runs. Delete it only when you intentionally want to permit a new on-chain subscription. After a `401`, obtain a fresh guest JWT and re-sign because the JWT is part of the message. Retry transient `5xx` responses, including `504`, only with bounded backoff. Do not send another `subscribe` transaction automatically, and do not retry or refresh the JWT in response to `400` or `403`.
 
 ### Step 4: Make Your First API Call
 
@@ -229,6 +240,12 @@ Check out the complete [API Reference](/api-reference/authentication/start-a-new
 - **Odds** - Fetch snapshots, historical updates, and stream StablePrice odds
 - **Scores** - Fetch snapshots, historical updates, and stream score events
 - **Validation Proofs** - Retrieve fixture, odds, and score proofs for on-chain validation
+
+Use [Runnable Devnet Examples](/documentation/examples/devnet-examples) for complete activation, streaming, and validation scripts.
+
+<Info>
+If activation or data access fails, use [Troubleshooting](/documentation/examples/troubleshooting). Most activation failures come from a network mismatch, a different signing wallet, or signing the wrong message string.
+</Info>
 
 Data API endpoints use `Authorization: Bearer ${jwt}` for the guest JWT and `X-Api-Token: ${apiToken}` for the activated API token.
 
