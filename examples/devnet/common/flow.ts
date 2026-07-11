@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from "axios";
+import * as config from './config';
 
 export type JsonObject = Record<string, unknown>;
 
@@ -24,8 +25,11 @@ function asObject(value: unknown): JsonObject | undefined {
 }
 
 export function firstField(object: JsonObject, names: readonly string[]): unknown {
-  for (const name of names) {
-    if (object[name] !== undefined && object[name] !== null) return object[name];
+  const lowerNames = names.map(n => n.toLowerCase());
+  for (const [key, value] of Object.entries(object)) {
+    if (lowerNames.includes(key.toLowerCase()) && value !== undefined && value !== null) {
+      return value;
+    }
   }
   return undefined;
 }
@@ -92,7 +96,7 @@ export function statKeysInRecord(record: JsonObject): number[] {
 
     const object = value as JsonObject;
     const isStatContainer = /stat/i.test(parentName);
-    const isScoreRow = parentName === "__scoreRecords" || (
+    const isScoreRow = (
       firstField(object, ["FixtureId", "fixtureId"]) !== undefined
       && firstField(object, ["Seq", "seq"]) !== undefined
       && firstField(object, ["Ts", "ts"]) !== undefined
@@ -198,8 +202,8 @@ export function validateScoreOverrides(expectedStatCount: number): void {
 function fixtureIdsInHistoricalWindow(value: unknown, now: number): number[] {
   const fixtureIds = new Set<number>();
   const seen = new Set<object>();
-  const earliest = now - 14 * 86_400_000;
-  const latest = now - 6 * 60 * 60_000;
+  const earliest = now - config.HISTORICAL_RETENTION_DAYS * 86_400_000;
+  const latest = now - config.HISTORICAL_DELAY_HOURS * 60 * 60_000;
 
   const visit = (current: unknown, depth: number): void => {
     if (depth > 8 || current === null || typeof current !== "object") return;
@@ -331,7 +335,7 @@ export async function discoverScoreRecord(
     // from the documented 6-hour-to-14-day UTC window, then query only those
     // actual IDs. One fixture snapshot plus ten histories uses at most 11
     // requests, below the shared 36-request discovery cap.
-    const startEpochDay = Math.floor((now - 14 * 86_400_000) / 86_400_000);
+    const startEpochDay = Math.floor((now - config.HISTORICAL_RETENTION_DAYS * 86_400_000) / 86_400_000);
     const fixtureSnapshot = await boundedGetBody(
       `/fixtures/snapshot?startEpochDay=${startEpochDay}`,
       true,
@@ -368,10 +372,11 @@ export async function discoverScoreRecord(
     const base = options.finalOnly
       ? group.find(hasFinalAction) ?? group[0]
       : group[0];
-    return { ...base, __scoreRecords: group } as JsonObject;
+    return { base, group };
   });
 
-  for (const record of groupedCandidates) {
+  for (const item of groupedCandidates) {
+    const record = item.base;
     let identity: ReturnType<typeof scoreIdentity>;
     try {
       identity = scoreIdentity(record);
@@ -384,7 +389,7 @@ export async function discoverScoreRecord(
     // period are separate assertions made by the final-record caller.
     if (options.finalOnly && !hasFinalAction(record)) continue;
 
-    const availableKeys = statKeysInRecord(record);
+    const availableKeys = Array.from(new Set(item.group.flatMap(r => statKeysInRecord(r))));
     const selectedKeys = exactKeys ?? availableKeys.slice(0, minimumStatCount);
     if (selectedKeys.length < minimumStatCount) continue;
     if (!selectedKeys.every(key => availableKeys.includes(key))) continue;
@@ -402,8 +407,8 @@ export async function discoverScoreRecord(
 }
 
 export function sseDurationSeconds(): number {
-  const raw = process.env.TXLINE_SSE_SECONDS ?? "30";
-  return requiredSafeInteger(raw, "TXLINE_SSE_SECONDS", 30, 45);
+  const raw = process.env.TXLINE_SSE_SECONDS ?? String(config.SSE_DURATION_MIN_SECONDS);
+  return requiredSafeInteger(raw, "TXLINE_SSE_SECONDS", config.SSE_DURATION_MIN_SECONDS, config.SSE_DURATION_MAX_SECONDS);
 }
 
 export type SseObservation = {
@@ -420,7 +425,7 @@ type SseOptions = {
   jwt: () => string;
   apiToken: () => string;
   renewJwt: () => Promise<string>;
-  expectedFixtureId: number;
+  expectedFixtureId?: number;
   durationSeconds?: number;
   initialLastEventId?: string;
 };
@@ -511,10 +516,12 @@ export function parseSseFrame(
  */
 export async function observeSse(options: SseOptions): Promise<SseObservation> {
   const durationSeconds = options.durationSeconds ?? sseDurationSeconds();
-  if (durationSeconds < 30 || durationSeconds > 45) {
-    throw new Error("SSE duration must be between 30 and 45 seconds");
+  if (durationSeconds < config.SSE_DURATION_MIN_SECONDS || durationSeconds > config.SSE_DURATION_MAX_SECONDS) {
+    throw new Error(`SSE duration must be between ${config.SSE_DURATION_MIN_SECONDS} and ${config.SSE_DURATION_MAX_SECONDS} seconds`);
   }
-  requiredSafeInteger(options.expectedFixtureId, "SSE expected fixture ID", 1);
+  if (options.expectedFixtureId !== undefined) {
+    requiredSafeInteger(options.expectedFixtureId, "SSE expected fixture ID", 1);
+  }
 
   const deadline = Date.now() + durationSeconds * 1_000;
   const parsed: ParsedSse = {
@@ -574,8 +581,7 @@ export async function observeSse(options: SseOptions): Promise<SseObservation> {
       opened = true;
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
+      let buffer = Buffer.alloc(0);
       let endedEarly = false;
       try {
         while (Date.now() < deadline) {
@@ -584,13 +590,37 @@ export async function observeSse(options: SseOptions): Promise<SseObservation> {
             endedEarly = Date.now() < deadline;
             break;
           }
-          buffer += decoder.decode(value, { stream: true });
-          let boundary: number;
-          while ((boundary = buffer.search(/\r?\n\r?\n/)) >= 0) {
-            const match = buffer.slice(boundary).match(/^\r?\n\r?\n/);
-            if (!match) break;
-            parseSseFrame(buffer.slice(0, boundary), parsed, options.expectedFixtureId);
-            buffer = buffer.slice(boundary + match[0].length);
+          if (value) {
+            buffer = Buffer.concat([buffer, Buffer.from(value)]);
+          }
+          let boundary = -1;
+          let matchLen = 0;
+          const rnIndex = buffer.indexOf('\r\n\r\n');
+          const nnIndex = buffer.indexOf('\n\n');
+          if (rnIndex >= 0 && (nnIndex === -1 || rnIndex < nnIndex)) {
+            boundary = rnIndex;
+            matchLen = 4;
+          } else if (nnIndex >= 0) {
+            boundary = nnIndex;
+            matchLen = 2;
+          }
+          
+          while (boundary >= 0) {
+            const frame = buffer.subarray(0, boundary).toString('utf-8');
+            parseSseFrame(frame, parsed, options.expectedFixtureId);
+            buffer = buffer.subarray(boundary + matchLen);
+            
+            const nextRn = buffer.indexOf('\r\n\r\n');
+            const nextNn = buffer.indexOf('\n\n');
+            if (nextRn >= 0 && (nextNn === -1 || nextRn < nextNn)) {
+              boundary = nextRn;
+              matchLen = 4;
+            } else if (nextNn >= 0) {
+              boundary = nextNn;
+              matchLen = 2;
+            } else {
+              boundary = -1;
+            }
           }
         }
       } finally {

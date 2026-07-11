@@ -142,18 +142,18 @@ async function main(): Promise<void> {
   const rawSnapshot = object(validation.snapshot, "validation.snapshot");
   const rawSummary = object(validation.summary, "validation.summary");
   const rawUpdateStats = object(rawSummary.updateStats, "validation.summary.updateStats");
-  const packedId = requiredSafeInteger(
-    firstField(rawSnapshot, ["FixtureId", "fixtureId"]),
-    "validation.snapshot.FixtureId",
-    1,
-  );
-  const packedDivisor = 281_474_976_710_656; // 2^48
-  const pureFixtureId = packedId % packedDivisor;
-  const requestedPureId = selected.fixtureId % packedDivisor;
-  if (pureFixtureId !== requestedPureId) {
+  const packedIdRaw = firstField(rawSnapshot, ["FixtureId", "fixtureId"]);
+  if (packedIdRaw === undefined || packedIdRaw === null) {
+    throw new Error("Missing validation.snapshot.FixtureId");
+  }
+  const packedId = new anchor.BN(String(packedIdRaw));
+  const packedDivisor = new anchor.BN(2).pow(new anchor.BN(48));
+  const pureFixtureIdBN = packedId.mod(packedDivisor);
+  const requestedPureIdBN = new anchor.BN(selected.fixtureId).mod(packedDivisor);
+  if (!pureFixtureIdBN.eq(requestedPureIdBN)) {
     throw new Error("Validation response packed FixtureId does not match the requested fixture");
   }
-  const gameState = Math.floor(packedId / packedDivisor);
+  const gameState = packedId.div(packedDivisor).toNumber();
   const separateGameState = firstField(rawSnapshot, ["GameState", "gameState"]);
   if (separateGameState !== undefined) {
     const separateStateCode = requiredSafeInteger(
@@ -170,7 +170,7 @@ async function main(): Promise<void> {
     "summary.fixtureId",
     1,
   );
-  if (summaryFixtureId % packedDivisor !== requestedPureId) {
+  if (new anchor.BN(summaryFixtureId).mod(packedDivisor).toNumber() !== requestedPureIdBN.toNumber()) {
     throw new Error("Fixture validation summary does not match the requested fixture");
   }
   const snapshotTs = requiredSafeInteger(
@@ -196,7 +196,7 @@ async function main(): Promise<void> {
     participant1: requiredString(firstField(rawSnapshot, ["Participant1", "participant1"]), "snapshot.Participant1"),
     participant2Id: requiredSafeInteger(firstField(rawSnapshot, ["Participant2Id", "participant2Id"]), "snapshot.Participant2Id"),
     participant2: requiredString(firstField(rawSnapshot, ["Participant2", "participant2"]), "snapshot.Participant2"),
-    fixtureId: new anchor.BN(packedId),
+    fixtureId: packedId,
     participant1IsHome,
   };
   const summary = {
@@ -239,7 +239,7 @@ async function main(): Promise<void> {
     .view();
   if (result !== true) throw new Error("validateFixture exact packed-ID proof returned false");
   console.log(
-    `Fixture validation passed for packed ID ${packedId} (pure ${pureFixtureId}, GameState ${gameState})`,
+    `Fixture validation passed for packed ID ${packedId.toString()} (pure ${pureFixtureIdBN.toString()}, GameState ${gameState})`,
   );
 }
 
