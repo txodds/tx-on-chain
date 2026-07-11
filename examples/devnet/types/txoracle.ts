@@ -8,7 +8,7 @@ export type Txoracle = {
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.5",
+    "version": "1.5.6",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -783,6 +783,43 @@ export type Txoracle = {
       "returns": "bool"
     },
     {
+      "name": "validateStatV3",
+      "discriminator": [
+        150,
+        37,
+        155,
+        89,
+        141,
+        190,
+        77,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "dailyScoresMerkleRoots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "statValidationInputV3"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "nDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "withdrawUsdt",
       "discriminator": [
         117,
@@ -986,7 +1023,7 @@ export type Txoracle = {
     {
       "code": 6027,
       "name": "overflow",
-      "msg": "Overflow"
+      "msg": "overflow"
     },
     {
       "code": 6028,
@@ -1222,6 +1259,26 @@ export type Txoracle = {
       "code": 6074,
       "name": "statNotZero",
       "msg": "Stat not zero"
+    },
+    {
+      "code": 6075,
+      "name": "lengthMismatch",
+      "msg": "Length mismatch"
+    },
+    {
+      "code": 6076,
+      "name": "invalidMultiproof",
+      "msg": "Invalid multiproof"
+    },
+    {
+      "code": 6077,
+      "name": "missingProofNode",
+      "msg": "Missing proof node"
+    },
+    {
+      "code": 6078,
+      "name": "invalidProofPath",
+      "msg": "Invalid proof path"
     }
   ],
   "types": [
@@ -1888,6 +1945,81 @@ export type Txoracle = {
       }
     },
     {
+      "name": "statValidationInputV3",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixtureSummary",
+            "type": {
+              "defined": {
+                "name": "scoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixtureProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "mainTreeProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "eventStatRoot",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "leaves",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "statLeaf"
+                }
+              }
+            }
+          },
+          {
+            "name": "multiproofHashes",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "leafIndices",
+            "type": {
+              "vec": "u32"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "traderPredicate",
       "type": {
         "kind": "struct",
@@ -1912,7 +2044,7 @@ export type Txoracle = {
     {
       "name": "backendAdminPubkey",
       "type": "pubkey",
-      "value": "Ah5xwzHxRYBBV3BWHDCHdfzQJfBehzGQcc7A9QX1DLUB"
+      "value": "54Wot8oX53yKTtfoJwMc8RHrsqL1p6WC71devAoB1GGT"
     },
     {
       "name": "lamportsPerSol",
@@ -1932,17 +2064,17 @@ export type Txoracle = {
     {
       "name": "stakeAmount",
       "type": "u64",
-      "value": "1"
+      "value": "250000000"
     },
     {
       "name": "subscriptionDuration",
       "type": "i64",
-      "value": "3600"
+      "value": "604800"
     },
     {
       "name": "subscriptionPriceToken",
       "type": "u64",
-      "value": "1"
+      "value": "25000000"
     },
     {
       "name": "tokenDecimals",
@@ -1962,7 +2094,7 @@ export type Txoracle = {
     {
       "name": "txlineMint",
       "type": "pubkey",
-      "value": "4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG"
+      "value": "Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL"
     },
     {
       "name": "usdtDecimalsFactor",
@@ -1972,7 +2104,7 @@ export type Txoracle = {
     {
       "name": "usdtMint",
       "type": "pubkey",
-      "value": "ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh"
+      "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
     }
   ]
 };
