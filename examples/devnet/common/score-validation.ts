@@ -282,3 +282,119 @@ export async function validateV2Exact(
     + `stat order [${selection.statKeys.join(",")}]`,
   );
 }
+
+async function getValidationV3(
+  apiClient: AxiosInstance,
+  selection: ScoreSelection,
+  params: Record<string, string | number>,
+): Promise<JsonObject> {
+  try {
+    const response = await apiClient.get("/scores/stat-validation-v3", {
+      params: { fixtureId: selection.fixtureId, seq: selection.seq, ...params },
+      timeout: 15_000,
+    });
+    if (response.status < 200 || response.status >= 300) {
+      throw new Error(`unexpected HTTP ${response.status}`);
+    }
+    const body = object(response.data, "stat-validation-v3 response");
+    assertRequestEchoes(body, selection);
+    return body;
+  } catch (error) {
+    throw safeError(error, "stat-validation-v3 request");
+  }
+}
+
+export async function validateV3Exact(
+  program: anchor.Program<any>,
+  apiClient: AxiosInstance,
+  selection: ScoreSelection,
+  options: { expectedPeriod?: number } = {},
+): Promise<void> {
+  if (selection.statKeys.length === 0) throw new Error("V3 validation requires at least one stat key");
+  if (selection.statKeys.length > 5) throw new Error("V3 validation supports at most 5 stat keys");
+  const body = await getValidationV3(apiClient, selection, { statKeys: selection.statKeys.join(",") });
+  const statsToProve = array(body.statsToProve, "statsToProve");
+  if (statsToProve.length !== selection.statKeys.length) {
+    throw new Error(
+      `V3 response length mismatch: requested=${selection.statKeys.length}, statsToProve=${statsToProve.length}`,
+    );
+  }
+
+  const multiproof = object(body.multiproof, "multiproof");
+  const indices = array(multiproof.indices, "multiproof.indices");
+  const hashes = array(multiproof.hashes, "multiproof.hashes");
+  if (indices.length === 0) throw new Error("V3 multiproof.indices must not be empty");
+  if (hashes.length === 0) throw new Error("V3 multiproof.hashes must not be empty");
+
+  const canonicalStats = statsToProve.map((entry, index) => {
+    const leaf = object(entry, `statsToProve[${index}]`);
+    const stat = canonicalStat(leaf.stat ?? leaf, `statsToProve[${index}].stat`);
+    return { stat, leaf };
+  });
+  canonicalStats.forEach(({ stat }, index) => {
+    if (stat.key !== selection.statKeys[index]) {
+      throw new Error(
+        `V3 positional key mismatch at ${index}: requested ${selection.statKeys[index]}, returned ${stat.key}`,
+      );
+    }
+    if (
+      options.expectedPeriod !== undefined
+      && stat.period !== options.expectedPeriod
+    ) {
+      throw new Error(
+        `V3 stat period mismatch at ${index}: expected ${options.expectedPeriod}`,
+      );
+    }
+  });
+
+  const shared = buildSharedPayload(body);
+  const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("daily_scores_roots"), shared.dailyScoresPdaSeed],
+    program.programId,
+  );
+  const payload = {
+    ts: shared.ts,
+    fixtureSummary: shared.fixtureSummary,
+    fixtureProof: shared.fixtureProof,
+    mainTreeProof: shared.mainTreeProof,
+    eventStatRoot: shared.eventStatRoot,
+    leaves: canonicalStats.map(({ stat, leaf }, index) => ({
+      stat,
+      statProof: decodeProofNodes(
+        (leaf as JsonObject).statProof ?? (leaf as JsonObject).StatProof,
+        `statsToProve[${index}].statProof`,
+      ),
+    })),
+    leafIndices: indices.map((v, i) =>
+      requiredSafeInteger(v, `multiproof.indices[${i}]`, 0),
+    ),
+    multiproofHashes: decodeProofNodes(hashes, "multiproof.hashes"),
+  };
+  const strategy = {
+    geometricTargets: [],
+    distancePredicate: null,
+    discretePredicates: canonicalStats.map(({ stat }, index) => ({
+      single: {
+        index,
+        predicate: {
+          threshold: stat.value,
+          comparison: { equalTo: {} },
+        },
+      },
+    })),
+  };
+
+  const methods = program.methods as any;
+  const result = await methods
+    .validateStatV3(payload, strategy)
+    .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
+    .preInstructions([
+      anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
+    ])
+    .view();
+  if (result !== true) throw new Error("V3 exact-value on-chain predicate returned false");
+  console.log(
+    `V3 multiproof validation passed for fixture ${selection.fixtureId}, seq ${selection.seq}, `
+    + `stat order [${selection.statKeys.join(",")}]`,
+  );
+}
