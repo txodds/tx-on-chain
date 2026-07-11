@@ -8,6 +8,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
 import * as users from '../common/users';
+import { InconclusiveError, discoverScoreRecord } from '../common/flow';
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -65,7 +66,7 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   );
-  console.log("API Token:", users.authState.apiToken);
+  console.log("Authentication established; credentials are redacted");
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);
@@ -83,8 +84,9 @@ async function main() {
       }));
     };
 
-    // Fetch single V2 payload requesting four stats at once
-    const url = `/scores/stat-validation?fixtureId=18179550&seq=1315&statKeys=1`;
+    // Dynamically discover a score record with at least 1 stat
+    const selection = await discoverScoreRecord(users.apiClient, 1);
+    const url = `/scores/stat-validation?fixtureId=${selection.fixtureId}&seq=${selection.seq}&statKeys=${selection.statKeys[0]}`;
 
     const response = await users.apiClient.get(url, { userName: name } as any);
     const val = response.data;
@@ -164,9 +166,18 @@ async function main() {
     } else {
       console.error("Error:", error);
     }
-    process.exit(1);
+    throw error;
   }
-
 }
 
-main().then(() => process.exit(0));
+main().then(
+  () => process.exit(0),
+  error => {
+    if (error instanceof InconclusiveError) {
+      console.error(`INCONCLUSIVE: ${error.message}`);
+      process.exit(2);
+    }
+    console.error(error instanceof Error ? error.message : "1-stat example failed");
+    process.exit(1);
+  },
+);
