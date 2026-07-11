@@ -17,14 +17,15 @@ description: "Validate scores data using cryptographic Merkle proofs"
 
 ## Overview
 
-This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, and V2 multi-stat validations.
+This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, V2 multi-stat, and V3 multiproof validations.
 
-The public `/api/scores/stat-validation` endpoint supports both validation shapes:
+The score validation endpoints support three validation shapes:
 
-| Query shape | On-chain method | Notes |
-|-------------|-----------------|-------|
-| `statKey=...` and optional `statKey2=...` | `validateStat` | Legacy single-stat and two-stat validation. |
-| `statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed strategy predicates. |
+| Endpoint | Query shape | On-chain method | Notes |
+|----------|-------------|-----------------|-------|
+| `/api/scores/stat-validation` | `statKey=...` and optional `statKey2=...` | `validateStat` | Legacy single-stat and two-stat validation. |
+| `/api/scores/stat-validation` | `statKeys=1,2,...` | `validateStatV2` | Multi-stat validation with indexed strategy predicates. |
+| `/api/scores/stat-validation-v3` | `statKeys=1,2,...` (up to 5) | `validateStatV3` | Optimised multiproof validation with compressed proof data (v1.5.6+). |
 
 Use the same network for the API request, IDL/types, program ID, and on-chain root PDA.
 
@@ -42,8 +43,9 @@ Before calling either validation method, confirm:
 - The epoch day is encoded as u16 little-endian.
 - Every proof hash is decoded to exactly 32 bytes.
 - The fixture ID and sequence number refer to the score update you intend to validate.
-- For V2, each strategy index refers to the same position in the requested `statKeys` array.
-- The returned fixture ID and stat keys match the request, and V2 response arrays have the requested length and order.
+- For V2 and V3, each strategy index refers to the same position in the requested `statKeys` array.
+- The returned fixture ID and stat keys match the request, and V2/V3 response arrays have the requested length and order.
+- For V3, confirm `multiproof.indices` and `multiproof.hashes` are present and non-empty.
 - Every `.view()` result is exactly `true`; a thrown simulation or `false` result is a failure.
 
 ## Setup
@@ -502,13 +504,122 @@ console.log("On-chain V2 validation passed");
 
 Exercise positional behavior with one key, an ordered pair, the reversed pair, and a supported multi-stat record. A reversed request must produce the same reversed positional mapping; do not sort it after the response arrives. Reject duplicate, empty, negative, or greater-than-u32 keys locally. The hosted OpenAPI defines legacy `statKey`/`statKey2` and V2 `statKeys` as mutually exclusive modes, so do not send both. The live malformed-input status matrix was unavailable without an activated covered bundle; do not claim a particular `4xx` response until it is verified.
 
+## V3 Multiproof Validation
+
+Starting with v1.5.6, the program supports `validateStatV3` — an optimised validation method that uses compressed Merkle multiproofs. The V3 endpoint `/api/scores/stat-validation-v3` accepts up to 5 `statKeys` and returns a `ScoresStatValidationV3` payload containing `multiproof` data (indices and hashes) alongside the familiar fixture and tree proofs.
+
+V3 uses the same `NDimensionalStrategy` as V2 for defining predicates and coverage, but the proof payload is structured differently: instead of individual `statProof` arrays per stat, V3 provides `leaves` (stat data with per-leaf proofs), `leafIndices`, and `multiproofHashes` for compressed verification.
+
+```typescript
+const multi = await discoverScoreRecord(httpClient, 3);
+const requestedKeys = multi.statKeys.slice(0, 3);
+const responseV3 = await httpClient.get("/scores/stat-validation-v3", {
+  params: {
+    fixtureId: multi.fixtureId,
+    seq: multi.seq,
+    statKeys: requestedKeys.join(","),
+  },
+});
+const valV3 = responseV3.data;
+
+if (
+  Number(valV3.summary.fixtureId) !== multi.fixtureId ||
+  !Array.isArray(valV3.statsToProve) ||
+  !valV3.multiproof ||
+  !Array.isArray(valV3.multiproof.indices) ||
+  !Array.isArray(valV3.multiproof.hashes)
+) {
+  throw new Error("V3 response shape does not match the request");
+}
+
+const targetTsV3 = valV3.summary.updateStats.minTimestamp;
+const epochDayV3 = Math.floor(targetTsV3 / (24 * 60 * 60 * 1000));
+
+const [dailyScoresPdaV3] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("daily_scores_roots"),
+    new BN(epochDayV3).toArrayLike(Buffer, "le", 2),
+  ],
+  program.programId
+);
+
+const payloadV3 = {
+  ts: new BN(targetTsV3),
+  fixtureSummary: {
+    fixtureId: new BN(valV3.summary.fixtureId),
+    updateStats: {
+      updateCount: valV3.summary.updateStats.updateCount,
+      minTimestamp: new BN(valV3.summary.updateStats.minTimestamp),
+      maxTimestamp: new BN(valV3.summary.updateStats.maxTimestamp),
+    },
+    eventsSubTreeRoot: toBytes32(valV3.summary.eventStatsSubTreeRoot),
+  },
+  fixtureProof: toProofNodes(valV3.subTreeProof),
+  mainTreeProof: toProofNodes(valV3.mainTreeProof),
+  eventStatRoot: toBytes32(valV3.eventStatRoot),
+  leaves: valV3.statsToProve.map((leaf: any) => ({
+    stat: leaf.stat,
+    statProof: toProofNodes(leaf.statProof),
+  })),
+  leafIndices: valV3.multiproof.indices,
+  multiproofHashes: toProofNodes(valV3.multiproof.hashes),
+};
+
+const strategyV3 = {
+  geometricTargets: [],
+  distancePredicate: null,
+  discretePredicates: [
+    {
+      binary: {
+        indexA: 0,
+        indexB: 1,
+        op: { subtract: {} },
+        predicate: {
+          threshold:
+            valV3.statsToProve[0].stat.value
+            - valV3.statsToProve[1].stat.value,
+          comparison: { equalTo: {} },
+        },
+      },
+    },
+    {
+      single: {
+        index: 2,
+        predicate: {
+          threshold: valV3.statsToProve[2].stat.value,
+          comparison: { equalTo: {} },
+        },
+      },
+    },
+  ],
+};
+
+const isValidV3 = await program.methods
+  .validateStatV3(payloadV3, strategyV3)
+  .accounts({
+    dailyScoresMerkleRoots: dailyScoresPdaV3,
+  })
+  .preInstructions([computeBudgetIx])
+  .view();
+
+if (isValidV3 !== true) {
+  throw new Error("On-chain V3 validation returned false");
+}
+console.log("On-chain V3 multiproof validation passed");
+```
+
+<Info>
+V3 uses the same `NDimensionalStrategy` type as V2. The only difference is the proof payload shape: V3 replaces per-stat `statProofs` with a compressed multiproof structure (`leaves`, `leafIndices`, `multiproofHashes`). All strategy predicates (`single`, `binary`, geometric) work identically.
+</Info>
+
 For complete runnable versions, use:
 
-| Script | V2 coverage |
-|--------|-------------|
+| Script | Coverage |
+|--------|----------|
 | [`subscription_scores_1stat.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_1stat.ts) | One requested stat with `validateStatV2`. |
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Two requested keys, positional response checks, and exact predicates. |
 | [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Four requested keys with every returned leaf covered exactly once. |
+| [`subscription_scores_v3c.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v3c.ts) | V3 multiproof validation with 2-, 3-, and 4-leg strategies using `validateStatV3` (v1.5.6+). |
 
 ## Common Validation Errors
 
@@ -517,8 +628,11 @@ For complete runnable versions, use:
 | `InvalidMainTreeProof` | Use the same `targetTs` for `validateStat` and `daily_scores_roots` PDA derivation. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
 | Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(targetTs / 86400000)`. |
 | Predicate returns false | First test with an exact predicate against the returned stat value, then replace it with your application predicate. |
-| `IncompleteStatCoverage` | Ensure every entry in `payload.stats` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
-| V2 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
+| `IncompleteStatCoverage` | Ensure every entry in `payload.stats` (V2) or `payload.leaves` (V3) is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
+| V2/V3 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
+| `LengthMismatch` (V3) | The `leafIndices` length must match the number of `leaves`. Ensure the multiproof payload was not modified after fetching. |
+| `InvalidMultiproof` (V3) | The `multiproofHashes` do not reconstruct the expected event stat root. Verify each hash is exactly 32 bytes and the proof was fetched from the correct endpoint. |
+| `MissingProofNode` / `InvalidProofPath` (V3) | A required multiproof node is absent or in the wrong position. Re-fetch the V3 proof and do not reorder or filter any arrays. |
 | `401` from the proof endpoint | Renew the guest JWT once and retry with the same `X-Api-Token`. |
 | `403` from the proof endpoint | Check the API token, subscription, network, and bundle permission. Do not renew the JWT automatically. |
 

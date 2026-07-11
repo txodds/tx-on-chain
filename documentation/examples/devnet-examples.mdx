@@ -6,7 +6,7 @@ description: "End-to-end devnet scripts for activation, streaming, and on-chain 
 The repository includes runnable devnet scripts under [`examples/devnet`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet). They exercise the current activation, streaming, fixture validation, and score validation flows against `https://txline-dev.txodds.com`.
 
 <Info>
-The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest mainnet program types.
+The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`, updated to v1.5.6 with `validateStatV3` support. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest mainnet program types.
 </Info>
 
 ## Requirements
@@ -44,6 +44,7 @@ The scripts create `<ANCHOR_WALLET>.txline-subscription-recovery.json` before br
 | `subscription_scores_1stat.ts` | Latest V2 score validation with one requested `statKeys` entry and `validateStatV2`. |
 | `subscription_scores_v2.ts` | V2 validation with two stats, binary predicates, and geometric distance predicates. |
 | `subscription_scores_v2a.ts` | Rich multi-leg V2 validation with `statKeys=1,2,3001,3002` and two-, three-, and four-leg strategies. |
+| `subscription_scores_v3c.ts` | V3 multiproof validation with compressed proofs using `validateStatV3`, exercising 2-, 3-, and 4-leg strategies (v1.5.6+). |
 | `fixture_validation_view_only.ts` | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. |
 
 The shared helpers are in `examples/devnet/common`:
@@ -55,14 +56,15 @@ The shared helpers are in `examples/devnet/common`:
 
 ## Score Validation Paths
 
-There are two score validation styles:
+There are three score validation styles:
 
 | API request | On-chain method | Use case |
 |-------------|-----------------|----------|
 | `/scores/stat-validation?fixtureId=...&seq=...&statKey=...` | `validateStat` | Single-stat or legacy two-stat examples using `statKey` and optional `statKey2`. |
-| `/scores/stat-validation?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed predicates and multi-leg strategies. |
+| `/scores/stat-validation?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV2` | Multi-stat validation with indexed predicates and multi-leg strategies. |
+| `/scores/stat-validation-v3?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV3` | Optimised multiproof validation with compressed proof data (v1.5.6+, up to 5 keys). |
 
-For V2, the `statKeys` order is part of the proof contract. The response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions.
+For V2 and V3, the `statKeys` order is part of the proof contract. The response arrays `statsToProve` and `statProofs` (V2) or `leaves` (V3) are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions.
 
 ```typescript
 const url = "/scores/stat-validation?fixtureId=18175981&seq=991&statKeys=1,2,3001,3002";
@@ -79,6 +81,33 @@ const payload = {
     statProof: mapProof(val.statProofs[index]),
   })),
 };
+```
+
+For V3 multiproof validation, use the dedicated endpoint:
+
+```typescript
+const urlV3 = "/scores/stat-validation-v3?fixtureId=18218149&seq=1087&statKeys=1002,1007,2007";
+const valV3 = (await users.apiClient.get(urlV3)).data;
+
+const payloadV3 = {
+  ts: new BN(valV3.summary.updateStats.minTimestamp),
+  fixtureSummary,
+  fixtureProof: mapProof(valV3.subTreeProof),
+  mainTreeProof: mapProof(valV3.mainTreeProof),
+  eventStatRoot: Array.from(valV3.eventStatRoot),
+  leaves: valV3.statsToProve.map((leaf: any) => ({
+    stat: leaf.stat,
+    statProof: mapProof(leaf.statProof),
+  })),
+  leafIndices: valV3.multiproof.indices,
+  multiproofHashes: mapProof(valV3.multiproof.hashes),
+};
+
+const isValid = await program.methods
+  .validateStatV3(payloadV3, strategy)
+  .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
+  .preInstructions([computeBudgetIx])
+  .view();
 ```
 
 <Info>
