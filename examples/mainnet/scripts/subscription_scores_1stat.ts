@@ -88,14 +88,14 @@ async function main() {
     const selection = await discoverScoreRecord(users.apiClient, 1);
     const url = `/scores/stat-validation?fixtureId=${selection.fixtureId}&seq=${selection.seq}&statKeys=${selection.statKeys[0]}`;
 
-    const response = await users.apiClient.get(url, { userName: name } as any);
+    const response = await users.apiClient.get(url);
     const val = response.data;
 
     const targetTs = val.summary.updateStats.minTimestamp;
     const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
 
     const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("daily_scores_roots"), new BN(epochDay).toBuffer("le", 2)],
+      [Buffer.from("daily_scores_roots"), new BN(epochDay).toArrayLike(Buffer, "le", 2)],
       program.programId
     );
 
@@ -162,7 +162,7 @@ async function main() {
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error("Request Failed:", error.response?.data || error.message);
+      console.error("Request Failed:", error.message);
     } else {
       console.error("Error:", error);
     }

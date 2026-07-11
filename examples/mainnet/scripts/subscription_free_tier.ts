@@ -50,10 +50,13 @@ async function main() {
 
   try {
     // Dynamically calculate recent epoch day for free tier competition discovery
-    const MS_PER_DAY = 24 * 3600 * 1000;
+    const MS_PER_DAY = 24 * 60 * 60 * 1000;
     const currentEpochDay = Math.floor(Date.now() / MS_PER_DAY);
     // Scan a recent window to find any available snapshots
-    let sampleOdds: any = null;
+    interface OddsSnapshot {
+      [key: string]: unknown;
+    }
+    let sampleOdds: OddsSnapshot | null = null;
     let foundFixtureId: number | null = null;
 
     for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
@@ -70,13 +73,13 @@ async function main() {
       } catch (e) {
         // Continue searching
       }
+      await new Promise(r => setTimeout(r, 200));
     }
 
     if (foundFixtureId) {
       const baseUrl = `/odds/snapshot/${foundFixtureId}?asOf=${Date.now()}`;
       try {
         const response = await users.apiClient.get(baseUrl);
-        console.log(`Snapshot for fixture ${foundFixtureId}:`, response.data);
         if (response.data && response.data.length > 0) {
           sampleOdds = response.data[0];
           console.log(`Captured sample odds for validation:`, sampleOdds);
@@ -109,7 +112,7 @@ async function main() {
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      console.error("Request Failed:", error.response?.data || error.message);
+      console.error("Request Failed:", error.message);
     } else {
       console.error("Error:", error);
     }

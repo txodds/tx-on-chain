@@ -49,7 +49,13 @@ async function main() {
   );
   console.log("Authentication established; credentials are redacted");
 
-  const scanLast7Days = async (): Promise<any> => {
+  interface FixtureUpdate {
+    FixtureId: number;
+    Ts: number;
+    [key: string]: unknown;
+  }
+
+  const scanLast7Days = async (): Promise<FixtureUpdate> => {
     const MS_PER_HOUR = 3600000;
     const now = new Date();
 
@@ -70,7 +76,7 @@ async function main() {
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          console.error(`Request Failed for ${updateUrl}:`, error.response?.data || error.message);
+          console.error(`Request Failed for ${updateUrl}:`, error.message);
         } else {
           console.error("Error:", error);
         }
@@ -90,15 +96,15 @@ async function main() {
     const validation = vResponse.data;
 
     // Extract the game state and pure identifier
-    const packedId = validation.snapshot.FixtureId;
-    const shiftDivisor = 281474976710656; // 2^48
+    const packedId = new BN(validation.snapshot.FixtureId);
+    const shiftDivisor = new BN(2).pow(new BN(48));
     
-    const pureFixtureId = packedId % shiftDivisor;
-    const gameState = Math.floor(packedId / shiftDivisor);
+    const pureFixtureId = packedId.mod(shiftDivisor);
+    const gameState = packedId.div(shiftDivisor);
 
-    console.log(`Packed FixtureId: ${packedId}`);
-    console.log(`Actual FixtureId: ${pureFixtureId}`);
-    console.log(`Game State: ${gameState}`);
+    console.log(`Packed FixtureId: ${packedId.toString()}`);
+    console.log(`Actual FixtureId: ${pureFixtureId.toString()}`);
+    console.log(`Game State: ${gameState.toString()}`);
 
     // Map the API response to Anchor structs
     const snapshot = {

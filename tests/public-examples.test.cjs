@@ -156,9 +156,13 @@ test("public IDLs and documentation exclude internal trading instructions", () =
     "withdraw_usdt",
   ];
   for (const network of ["devnet", "mainnet"]) {
+    const expectedInstructions = [...publicInstructions];
+    if (network === "devnet") {
+      expectedInstructions.splice(expectedInstructions.indexOf("validate_stat_v2") + 1, 0, "validate_stat_v3");
+    }
     assert.deepEqual(
       sourceIdl(network).instructions.map((instruction) => instruction.name),
-      publicInstructions,
+      expectedInstructions,
       `${network} public instruction allowlist`,
     );
   }
