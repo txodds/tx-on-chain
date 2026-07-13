@@ -69,7 +69,8 @@ async function main() {
       }
     }
 
-    await fetchHistoricalScores(18187298);
+    // Norway v England -- July 11, 2026
+    await fetchHistoricalScores(18213979);
 
 } catch (error) {
     if (axios.isAxiosError(error)) {
