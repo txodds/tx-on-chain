@@ -2,7 +2,7 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.5",
+    "version": "1.5.6",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -777,6 +777,43 @@
       "returns": "bool"
     },
     {
+      "name": "validate_stat_v3",
+      "discriminator": [
+        150,
+        37,
+        155,
+        89,
+        141,
+        190,
+        77,
+        203
+      ],
+      "accounts": [
+        {
+          "name": "daily_scores_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationInputV3"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "withdraw_usdt",
       "discriminator": [
         117,
@@ -1216,6 +1253,26 @@
       "code": 6074,
       "name": "StatNotZero",
       "msg": "Stat not zero"
+    },
+    {
+      "code": 6075,
+      "name": "LengthMismatch",
+      "msg": "Length mismatch"
+    },
+    {
+      "code": 6076,
+      "name": "InvalidMultiproof",
+      "msg": "Invalid multiproof"
+    },
+    {
+      "code": 6077,
+      "name": "MissingProofNode",
+      "msg": "Missing proof node"
+    },
+    {
+      "code": 6078,
+      "name": "InvalidProofPath",
+      "msg": "Invalid proof path"
     }
   ],
   "types": [
@@ -1876,6 +1933,81 @@
                   "name": "StatLeaf"
                 }
               }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatValidationInputV3",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixture_summary",
+            "type": {
+              "defined": {
+                "name": "ScoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixture_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "leaves",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatLeaf"
+                }
+              }
+            }
+          },
+          {
+            "name": "multiproof_hashes",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "leaf_indices",
+            "type": {
+              "vec": "u32"
             }
           }
         ]
