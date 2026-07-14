@@ -1,7 +1,7 @@
 // Demo stat validation using rich multi-leg strategies
 
 // Run with
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v2a.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/subscription_scores_v2a.ts
 
 import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
@@ -98,7 +98,7 @@ async function main() {
       }
     }
 
-    await getScoresSnapshot(18175981, Date.now());
+    await getScoresSnapshot(18202783, Date.now());
 
     var sampleScores: any = null
 
@@ -154,7 +154,7 @@ async function main() {
 
     // Fetch single V2 payload requesting four stats at once
     // Note that the statKeys order is important as they are referenced by indexes 0..N in validation strategy predicates
-    const url = `/scores/stat-validation?fixtureId=18175981&seq=991&statKeys=1,2,3001,3002`;    
+    const url = `/scores/stat-validation?fixtureId=18193785&seq=991&statKeys=1,2,3001,3002`;    
 
     const response = await users.apiClient.get(url, { userName: name } as any);
     const val = response.data;
