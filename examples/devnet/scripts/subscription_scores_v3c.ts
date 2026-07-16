@@ -153,10 +153,17 @@ async function main() {
       discretePredicates: []
     };
 
+    // Spain v Belgium: July 10, 2026
+    // const fixtureId = 18218149;
+    // const seq = 1087;
+    // England v Argentina: July 15, 2026
+    const fixtureId = 18241006;
+    const seq = 962;
+
     // Execute V2 legacy validations
     console.log(`\n[${name}] Initiating V2 validations`);
 
-    const urlV2 = `/scores/stat-validation?fixtureId=18218149&seq=1087&statKeys=1002,1007,2007,1`;
+    const urlV2 = `/scores/stat-validation?fixtureId=${fixtureId}&seq=${seq}&statKeys=1002,1007,2007,1`;
     const resV2 = await users.apiClient.get(urlV2, { userName: name } as any);
     const valV2 = resV2.data;
 
@@ -209,7 +216,7 @@ async function main() {
     console.log(`\n[${name}] Initiating V3 validations`);
 
     const fetchV3Payload = async (keys: string) => {
-      const url = `/scores/stat-validation-v3?fixtureId=18218149&seq=1087&statKeys=${keys}`;
+      const url = `/scores/stat-validation-v3?fixtureId=${fixtureId}&seq=${seq}&statKeys=${keys}`;
       const res = await users.apiClient.get(url, { userName: name } as any);
       const val = res.data;
 
