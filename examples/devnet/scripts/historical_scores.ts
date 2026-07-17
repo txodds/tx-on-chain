@@ -44,7 +44,7 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  console.log("API Token:", users.authState.apiToken);
+  // console.log("API Token:", users.authState.apiToken);
 
   try {
     // Fetch the scores snapshot for a specific fixture
@@ -69,9 +69,15 @@ async function main() {
       }
     }
 
-    await fetchHistoricalScores(18187298);
+    // Norway v England -- July 11, 2026
+    // await fetchHistoricalScores(18202783); //18213979);
+    // France v Spain -- July 14, 2026
+    // await fetchHistoricalScores(18237038);
+    // England v Argentina -- July 15, 2026
+    await fetchHistoricalScores(18241006);
+    
 
-} catch (error) {
+  } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Request Failed:", error.response?.data || error.message);
     } else {

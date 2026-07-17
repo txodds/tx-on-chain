@@ -46,7 +46,7 @@ async function main() {
     undefined,
     undefined   // Alternatively, use a working API Token here
   );
-  console.log("API Token:", users.authState.apiToken);
+  // console.log("API Token:", users.authState.apiToken);
 
   var sampleFixture: any = null
 

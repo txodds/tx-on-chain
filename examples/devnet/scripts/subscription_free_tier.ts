@@ -45,7 +45,7 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  console.log("API Token:", users.authState.apiToken);
+  // console.log("API Token:", users.authState.apiToken);
 
   try {
     const awesomeUrl = `/fixtures/snapshot?competitionId=72&startEpochDay=20624`;

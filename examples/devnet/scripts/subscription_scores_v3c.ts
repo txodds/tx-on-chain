@@ -20,6 +20,7 @@ type OracleTypes = IdlTypes<Txoracle>;
 // Note: Anchor automatically converts Rust PascalCase to camelCase in the IDL.
 export type NDimensionalStrategy = OracleTypes["nDimensionalStrategy"];
 export type StatValidationInput = OracleTypes["statValidationInput"];
+export type StatValidationInputV3 = OracleTypes["statValidationInputV3"];
 export type StatPredicate = OracleTypes["statPredicate"];
 export type BinaryExpression = OracleTypes["binaryExpression"];
 export type Comparison = OracleTypes["comparison"];
@@ -63,7 +64,7 @@ async function main() {
     4,
     []
   );
-  console.log("API Token:", users.authState.apiToken);
+  // console.log("API Token:", users.authState.apiToken);
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);
@@ -74,13 +75,11 @@ async function main() {
 
   try {
     // Map API proof array to exact shape Anchor expects
-    const mapProof = (proofArray: ApiProofNode[] | undefined): ProofNode[] => {
-      if (!proofArray) return [];
-      return proofArray.map(n => ({
-        hash: Array.from(n.hash),
-        isRightSibling: n.isRightSibling
+    const mapProof = (proof: any[]): { hash: number[]; isRightSibling: boolean }[] => 
+      proof.map(p => ({
+        hash: Array.from(p.hash),
+        isRightSibling: p.isRightSibling
       }));
-    };
 
     const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
       units: 1_400_000 
@@ -197,7 +196,7 @@ async function main() {
     const payloadV2_2Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 2) };
     const payloadV2_3Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 3) };
 
-    const runV2 = async (payload: any, strategy: any, label: string) => {
+    const runV2 = async (payload: StatValidationInput, strategy: NDimensionalStrategy, label: string) => {
       const isValid = await userProgram.methods
         .validateStatV2(payload, strategy)
         .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
@@ -220,21 +219,7 @@ async function main() {
       const res = await users.apiClient.get(url, { userName: name } as any);
       const val = res.data;
 
-      const parseHash = (h: any) => {
-        const rawData = h.hash ? h.hash : h; 
-        if (typeof rawData === 'string') {
-          const buf = rawData.length === 64 ? Buffer.from(rawData, 'hex') : Buffer.from(rawData, 'base64');
-          return Array.from(buf);
-        }
-        return Array.from(rawData);
-      };
-
-      const mapProof = (proof: any[]) => proof.map(p => ({
-        hash: parseHash(p),
-        isRightSibling: p.isRightSibling || false
-      }));
-
-      return {
+      const payloadV3: StatValidationInputV3 = {
         ts: new BN(targetTs),
         fixtureSummary: {
           fixtureId: new BN(val.summary.fixtureId),
@@ -243,21 +228,23 @@ async function main() {
             minTimestamp: new BN(val.summary.updateStats.minTimestamp),
             maxTimestamp: new BN(val.summary.updateStats.maxTimestamp),
           },
-          eventsSubTreeRoot: parseHash(val.summary.eventStatsSubTreeRoot),
+          eventsSubTreeRoot: Array.from(val.summary.eventStatsSubTreeRoot),
         },
         fixtureProof: mapProof(val.subTreeProof),
         mainTreeProof: mapProof(val.mainTreeProof),
-        eventStatRoot: parseHash(val.eventStatRoot), 
+        eventStatRoot: Array.from(val.eventStatRoot), 
         leaves: val.statsToProve.map((l: any) => ({
           stat: l.stat,
           statProof: mapProof(l.statProof)
         })),
         leafIndices: val.multiproof.indices,
-        multiproofHashes: mapProof(val.multiproof.hashes)
+        multiproofHashes: Array.from(val.multiproof.hashes)
       };
+
+      return payloadV3;
     };
 
-    const runV3 = async (payload: any, strategy: any, label: string) => {
+    const runV3 = async (payload: StatValidationInputV3, strategy: NDimensionalStrategy, label: string) => {
       const isValid = await userProgram.methods
         .validateStatV3(payload, strategy)
         .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
