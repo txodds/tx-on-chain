@@ -21,57 +21,124 @@ export type User = {
 export type UserAuthState = {
   apiToken: string;
   jwt: string;
-  isRefreshing: boolean;
-  refreshSubscribers: ((token: string) => void)[];
+  refreshPromise: Promise<string> | null;
+  authGeneration: number;
 };
+
+export type ActivationOptions = {
+  name: string;
+  user: anchor.web3.Keypair;
+  txSig: string;
+  selectedLeagues: number[];
+  maxTransientRetries?: number;
+  retryBaseDelayMs?: number;
+};
+
+/** Public error shape for auth failures; it never carries request headers or response bodies. */
+export class SafeHttpError extends Error {
+  readonly status?: number;
+  readonly code?: string;
+
+  constructor(operation: string, status?: number, code?: string) {
+    super(`${operation} failed${status === undefined ? (code ? ` (${code})` : "") : ` with HTTP ${status}`}`);
+    this.name = "SafeHttpError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
+const JWT_TIMEOUT_MS = 10_000;
+const API_TIMEOUT_MS = 15_000;
 
 // Global fallback state populated by the first user for backwards compatibility
 export const authState = {
   apiToken: '', // Long-lived B2B token
   jwt: ''        // Short-lived session token
 };
+let globalAuthGeneration = 0;
 
-// Global locks for requests that do not specify a userName
-let globalIsRefreshing = false;
-let globalRefreshSubscribers: ((token: string) => void)[] = [];
+// Global lock for requests that do not specify a userName.
+let globalRefreshPromise: Promise<string> | null = null;
 
 // Map to handle concurrent multi-user states
 export const userAuthMap = new Map<string, UserAuthState>();
 
-function onTokenRefreshed(name: string | undefined, newToken: string) {
-  if (name && userAuthMap.has(name)) {
-    const state = userAuthMap.get(name)!;
-    state.refreshSubscribers.forEach(callback => callback(newToken));
-    state.refreshSubscribers = [];
-  } else {
-    globalRefreshSubscribers.forEach(callback => callback(newToken));
-    globalRefreshSubscribers = [];
-  }
+function isHeaderCredential(value: unknown): value is string {
+  return typeof value === "string" && /^[\x21-\x7e]+$/.test(value);
 }
 
-function addRefreshSubscriber(name: string | undefined, callback: (token: string) => void) {
-  if (name && userAuthMap.has(name)) {
-    userAuthMap.get(name)!.refreshSubscribers.push(callback);
-  } else {
-    globalRefreshSubscribers.push(callback);
+function providedCredential(value: string | undefined, label: string): string | undefined {
+  if (value === undefined || value === "") return undefined;
+  if (!isHeaderCredential(value)) {
+    throw new Error(`${label} must contain visible ASCII characters only.`);
   }
+  return value;
+}
+
+function toSafeHttpError(error: unknown, operation: string): SafeHttpError {
+  if (error instanceof SafeHttpError) return error;
+  if (axios.isAxiosError(error)) {
+    return new SafeHttpError(operation, error.response?.status, error.code);
+  }
+  return new SafeHttpError(operation);
+}
+
+function getOrStartJwtRefresh(name?: string): Promise<string> {
+  const state = name ? userAuthMap.get(name) : undefined;
+  if (name && !state) {
+    return Promise.reject(new Error(`Authentication state for ${name} is not initialized.`));
+  }
+
+  const current = state?.refreshPromise ?? (!state ? globalRefreshPromise : null);
+  if (current) return current;
+
+  const refreshPromise = renewJwt(name);
+  if (state) {
+    state.refreshPromise = refreshPromise;
+  } else {
+    globalRefreshPromise = refreshPromise;
+  }
+
+  refreshPromise.then(
+    () => {
+      if (state?.refreshPromise === refreshPromise) state.refreshPromise = null;
+      if (!state && globalRefreshPromise === refreshPromise) globalRefreshPromise = null;
+    },
+    () => {
+      if (state?.refreshPromise === refreshPromise) state.refreshPromise = null;
+      if (!state && globalRefreshPromise === refreshPromise) globalRefreshPromise = null;
+    },
+  );
+
+  return refreshPromise;
 }
 
 export async function renewJwt(name?: string): Promise<string> {
   const logName = name || "Global";
   console.log(`[Auth] JWT expired or missing for ${logName}. Acquiring new guest session...`);
   
-  // Adjust the payload/headers if your /start endpoint requires the X-Api-Token
-  const response = await axios.post(config.JWT_URL);
-  const newJwt = response.data.token;
+  let newJwt: string;
+  try {
+    const response = await axios.post(config.JWT_URL, undefined, { timeout: JWT_TIMEOUT_MS });
+    newJwt = response.data?.token;
+    if (!isHeaderCredential(newJwt)) throw new Error("invalid token response");
+  } catch (error) {
+    throw toSafeHttpError(error, "Guest JWT issuance");
+  }
 
-  if (name && userAuthMap.has(name)) {
-    userAuthMap.get(name)!.jwt = newJwt;
+  if (name) {
+    const state = userAuthMap.get(name);
+    if (!state) {
+      throw new Error(`Authentication state for ${name} is not initialized.`);
+    }
+    state.jwt = newJwt;
+    state.authGeneration++;
   }
   
   // Populate default global state if this is the first user or a global request
   if (!name || userAuthMap.size === 1) {
     authState.jwt = newJwt;
+    globalAuthGeneration++;
   }
 
   return newJwt;
@@ -79,70 +146,64 @@ export async function renewJwt(name?: string): Promise<string> {
 
 export const apiClient = axios.create({
   baseURL: `${config.API_BASE_URL}`,
+  timeout: API_TIMEOUT_MS,
 });
 
 // Request interceptor: Always inject the latest tokens
-apiClient.interceptors.request.use(config => {
-  const name = (config as any).userName as string | undefined;
+apiClient.interceptors.request.use(requestConfig => {
+  const name = (requestConfig as any).userName as string | undefined;
   const state = name ? userAuthMap.get(name) : undefined;
+  if (name && !state) {
+    throw new Error(`Authentication state for ${name} is not initialized.`);
+  }
 
-  const jwt = state?.jwt || authState.jwt;
-  const apiToken = state?.apiToken || authState.apiToken;
+  const jwt = state ? state.jwt : authState.jwt;
+  const apiToken = state ? state.apiToken : authState.apiToken;
+  (requestConfig as any)._authGeneration = state
+    ? state.authGeneration
+    : globalAuthGeneration;
 
+  if (jwt && !isHeaderCredential(jwt)) {
+    throw new Error("Guest JWT must contain visible ASCII characters only.");
+  }
+  if (apiToken && !isHeaderCredential(apiToken)) {
+    throw new Error("API token must contain visible ASCII characters only.");
+  }
   if (jwt) {
-    config.headers['Authorization'] = `Bearer ${jwt}`;
+    requestConfig.headers['Authorization'] = `Bearer ${jwt}`;
   }
   if (apiToken) {
-    config.headers['X-Api-Token'] = apiToken;
+    requestConfig.headers['X-Api-Token'] = apiToken;
   }
-  return config;
+  return requestConfig;
 });
 
-// Response interceptor: Catch 401s and retry
+// Renew a guest JWT once for 401 only. A 403 and a replayed 401 are terminal.
 apiClient.interceptors.response.use(
-  (response) => response, // Pass through successful responses immediately
+  (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    const name = (originalRequest as any).userName as string | undefined;
-    const state = name ? userAuthMap.get(name) : undefined;
+    const originalRequest = error?.config as
+      | ({ _jwtRetry?: boolean; _authGeneration?: number; userName?: string } & Record<string, any>)
+      | undefined;
+    const name = originalRequest?.userName;
 
-    // Check if the specific user or global is currently refreshing
-    const isCurrentlyRefreshing = state ? state.isRefreshing : globalIsRefreshing;
+    if (error.response?.status === 401 && originalRequest && !originalRequest._jwtRetry) {
+      originalRequest._jwtRetry = true;
 
-    // If we receive a 401 and have not already retried this specific request
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      if (!isCurrentlyRefreshing) {
-        if (state) state.isRefreshing = true;
-        else globalIsRefreshing = true;
-
-        try {
-          // Fetch the new token
-          const newToken = await renewJwt(name);
-          
-          if (state) state.isRefreshing = false;
-          else globalIsRefreshing = false;
-          
-          onTokenRefreshed(name, newToken);
-          
-          // Retry the original request immediately
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          if (state) state.isRefreshing = false;
-          else globalIsRefreshing = false;
-          
-          console.error(`[Auth] Fatal: Could not renew JWT for ${name || "Global"}. Verify API Token.`, refreshError);
-          return Promise.reject(refreshError);
+      try {
+        const state = name ? userAuthMap.get(name) : undefined;
+        if (name && !state) {
+          throw new Error(`Authentication state for ${name} is not initialized.`);
         }
-      } else {
-        // If another request is already fetching the token, wait in line, then retry
-        return new Promise(resolve => {
-          addRefreshSubscriber(name, (newToken) => {
-            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-            resolve(apiClient(originalRequest));
-          });
-        });
+        const currentGeneration = state ? state.authGeneration : globalAuthGeneration;
+        if (originalRequest._authGeneration === currentGeneration) {
+          await getOrStartJwtRefresh(name);
+        }
+        return apiClient.request(originalRequest as any);
+      } catch (refreshError) {
+        const safe = toSafeHttpError(refreshError, "Guest JWT renewal");
+        console.error(`[Auth] JWT renewal failed for ${name || "Global"} (${safe.status ?? safe.code ?? "unknown error"}).`);
+        return Promise.reject(safe);
       }
     }
 
@@ -150,6 +211,97 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
+
+function createActivationSignature(
+  user: anchor.web3.Keypair,
+  txSig: string,
+  selectedLeagues: number[],
+  jwt: string,
+): string {
+  const preimage = `${txSig}:${selectedLeagues.join(",")}:${jwt}`;
+  const signature = nacl.sign.detached(new TextEncoder().encode(preimage), user.secretKey);
+  return Buffer.from(signature).toString("base64");
+}
+
+function isTransientActivationError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  const status = error.response?.status;
+  if (status !== undefined) return status >= 500 && status <= 599;
+  return ["ECONNABORTED", "ETIMEDOUT", "ECONNRESET", "ERR_NETWORK"].includes(error.code || "");
+}
+
+export async function activateSubscription(options: ActivationOptions): Promise<string> {
+  const {
+    name,
+    user,
+    txSig,
+    selectedLeagues,
+    maxTransientRetries = 2,
+    retryBaseDelayMs = 500,
+  } = options;
+
+  if (!Number.isInteger(maxTransientRetries) || maxTransientRetries < 0 || maxTransientRetries > 5) {
+    throw new Error("maxTransientRetries must be an integer from 0 through 5.");
+  }
+  if (!Number.isInteger(retryBaseDelayMs) || retryBaseDelayMs < 0 || retryBaseDelayMs > 10_000) {
+    throw new Error("retryBaseDelayMs must be an integer from 0 through 10000.");
+  }
+
+  const userState = userAuthMap.get(name);
+  if (!userState || !isHeaderCredential(userState.jwt)) {
+    throw new Error(`Activation requires a valid guest JWT for ${name}.`);
+  }
+
+  let renewedJwt = false;
+  let transientRetries = 0;
+  const activationUrl = `${config.API_BASE_URL}/token/activate`;
+
+  while (true) {
+    const jwt = userState.jwt;
+    const walletSignature = createActivationSignature(user, txSig, selectedLeagues, jwt);
+
+    try {
+      const response = await axios.post(
+        activationUrl,
+        { txSig, walletSignature, leagues: selectedLeagues },
+        {
+          headers: { Authorization: `Bearer ${jwt}` },
+          timeout: API_TIMEOUT_MS,
+        },
+      );
+      const apiToken = typeof response.data === "string" ? response.data : response.data?.token;
+      if (!isHeaderCredential(apiToken)) {
+        throw new Error("Subscription activation returned an invalid API token.");
+      }
+      userState.apiToken = apiToken;
+      if (userAuthMap.size === 1) authState.apiToken = apiToken;
+      return apiToken;
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+      if (status === 401 && !renewedJwt) {
+        renewedJwt = true;
+        console.log(`[${name}] Activation JWT rejected; renewing once and re-signing.`);
+        await getOrStartJwtRefresh(name);
+        continue;
+      }
+
+      if (isTransientActivationError(error) && transientRetries < maxTransientRetries) {
+        const waitMs = retryBaseDelayMs * (2 ** transientRetries);
+        transientRetries++;
+        console.log(
+          `[${name}] Activation transient failure; retrying in ${waitMs}ms `
+          + `(${transientRetries}/${maxTransientRetries}).`,
+        );
+        await delay(waitMs);
+        continue;
+      }
+
+      throw toSafeHttpError(error, "Subscription activation");
+    }
+  }
+}
 
 /**
  * Set up a user with tokens and perform a subscription use case.
@@ -167,6 +319,8 @@ export async function setupUser(
   existingJwt?: string,
   existingApiToken?: string 
 ): Promise<User> {
+  const normalizedExistingJwt = providedCredential(existingJwt, "Provided guest JWT");
+  const normalizedExistingApiToken = providedCredential(existingApiToken, "Provided API token");
   let user: anchor.web3.Keypair;
   try {
     const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
@@ -181,12 +335,18 @@ export async function setupUser(
   let userState = userAuthMap.get(name);
   if (!userState) {
     userState = {
-      apiToken: existingApiToken || '',
-      jwt: existingJwt || '',
-      isRefreshing: false,
-      refreshSubscribers: []
+      apiToken: normalizedExistingApiToken || '',
+      jwt: normalizedExistingJwt || '',
+      refreshPromise: null,
+      authGeneration: 0,
     };
     userAuthMap.set(name, userState);
+  } else {
+    if (normalizedExistingJwt && normalizedExistingJwt !== userState.jwt) {
+      userState.jwt = normalizedExistingJwt;
+      userState.authGeneration++;
+    }
+    if (normalizedExistingApiToken) userState.apiToken = normalizedExistingApiToken;
   }
 
   const userTokenAccountAddress = getAssociatedTokenAddressSync(
@@ -218,14 +378,14 @@ export async function setupUser(
   // Ensure we have a JWT for backend requests
   if (!userState.jwt) {
     console.log(`[${name}] No existing JWT. Acquiring new guest session...`);
-    const response = await axios.post(config.JWT_URL);
-    userState.jwt = response.data.token;
+    await getOrStartJwtRefresh(name);
   } else {
     console.log(`[${name}] Using provided JWT.`);
   }
 
   // Populate default global state if this is the first user
   if (userAuthMap.size === 1) {
+    if (authState.jwt !== userState.jwt) globalAuthGeneration++;
     authState.jwt = userState.jwt;
     authState.apiToken = userState.apiToken;
   }
@@ -336,25 +496,7 @@ export async function setupUser(
 
   console.log(`[${name}] Transaction confirmed: ${txSig}`);
   console.log(`[${name}] Acquiring API Token via activation endpoint...`);
-  
-  const messageString = `${txSig}:${selectedLeagues.join(",")}:${userState.jwt}`;
-  const message = new TextEncoder().encode(messageString);
-  const signatureBytes = nacl.sign.detached(message, user.secretKey);
-  const signatureBase64 = Buffer.from(signatureBytes).toString("base64");
-
-  const activationUrl = `${config.API_BASE_URL}/token/activate`;
-  const activationResponse = await axios.post(
-    activationUrl, 
-    { txSig: txSig, walletSignature: signatureBase64, leagues: selectedLeagues }, 
-    { headers: { Authorization: `Bearer ${userState.jwt}` } }
-  );
-  
-  userState.apiToken = activationResponse.data.token || activationResponse.data;
-
-  // Update global fallback if this is the first user
-  if (userAuthMap.size === 1) {
-    authState.apiToken = userState.apiToken;
-  }
+  await activateSubscription({ name, user, txSig, selectedLeagues });
 
   return {
     user: user,
