@@ -8,7 +8,7 @@ description: "Real-time odds and scores updates via Server-Sent Events"
 </Info>
 
 <Info>
-**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) or [World Cup Free Tier activation](/documentation/worldcup) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
+**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
 ## Stream Expectations
@@ -35,6 +35,9 @@ The repository includes runnable devnet stream scripts that handle activation, A
 | [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Odds snapshots and odds SSE streams. |
 | [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, score validation, and scores SSE streams. |
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
+| [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Multi-leg V2 validation with multiple stat keys. |
+| [`subscription_scores_v3c.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v3c.ts) | V3 multiproof validation comparing V2 and V3 approaches. |
+| [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Fetching historical score updates for completed fixtures. |
 
 See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the required devnet environment variables and Node.js runtime notes.
 

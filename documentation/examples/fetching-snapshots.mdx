@@ -8,7 +8,7 @@ description: "Retrieve fixtures, odds, and scores data"
 </Info>
 
 <Info>
-**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) or [World Cup Free Tier activation](/documentation/worldcup) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
+**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
 ## Fetch Fixtures Snapshot
@@ -16,7 +16,7 @@ description: "Retrieve fixtures, odds, and scores data"
 Get all fixtures for a specific competition or all competitions.
 
 <Note>
-`Participant1IsHome` is the feed's home/away designation for mapping `Participant1` and `Participant2`; it is not a venue guarantee. For neutral competitions such as the World Cup, `Participant1IsHome: true` means `Participant1` is listed as the home side for feed purposes, even if the match is not played in that team's country.
+`Participant1IsHome` is the feed's home/away designation for mapping `Participant1` and `Participant2`; it is not a venue guarantee. For neutral competitions, `Participant1IsHome: true` means `Participant1` is listed as the home side for feed purposes, even if the match is not played in that team's country.
 </Note>
 
 <Info>
