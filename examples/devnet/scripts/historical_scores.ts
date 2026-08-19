@@ -74,8 +74,9 @@ async function main() {
     // France v Spain -- July 14, 2026
     // await fetchHistoricalScores(18237038);
     // England v Argentina -- July 15, 2026
-    await fetchHistoricalScores(18241006);
-    
+    // await fetchHistoricalScores(18241006);
+    // Cincinnati Bengals v Detroit Lions -- July 13, 2026
+    await fetchHistoricalScores(18086637);    
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
