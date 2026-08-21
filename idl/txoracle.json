@@ -1040,6 +1040,51 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "request_devnet_faucet",
+      "discriminator": [
+        49,
+        178,
+        104,
+        8,
+        23,
+        120,
+        186,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "faucet_tracker",
+          "writable": true
+        },
+        {
+          "name": "usdt_mint",
+          "writable": true
+        },
+        {
+          "name": "user_usdt_ata",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "associated_token_program"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1067,6 +1112,19 @@
         78,
         245,
         87
+      ]
+    },
+    {
+      "name": "FaucetTracker",
+      "discriminator": [
+        247,
+        221,
+        212,
+        62,
+        42,
+        233,
+        215,
+        190
       ]
     }
   ],
@@ -2400,6 +2458,18 @@
           {
             "name": "credits",
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FaucetTracker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "last_request_time",
+            "type": "i64"
           }
         ]
       }

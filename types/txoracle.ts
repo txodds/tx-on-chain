@@ -1046,6 +1046,51 @@ export type Txoracle = {
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "requestDevnetFaucet",
+      "discriminator": [
+        49,
+        178,
+        104,
+        8,
+        23,
+        120,
+        186,
+        21
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "faucetTracker",
+          "writable": true
+        },
+        {
+          "name": "usdtMint",
+          "writable": true
+        },
+        {
+          "name": "userUsdtAta",
+          "writable": true
+        },
+        {
+          "name": "usdtTreasuryPda"
+        },
+        {
+          "name": "tokenProgram"
+        },
+        {
+          "name": "associatedTokenProgram"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1073,6 +1118,19 @@ export type Txoracle = {
         78,
         245,
         87
+      ]
+    },
+    {
+      "name": "faucetTracker",
+      "discriminator": [
+        247,
+        221,
+        212,
+        62,
+        42,
+        233,
+        215,
+        190
       ]
     }
   ],
@@ -2406,6 +2464,18 @@ export type Txoracle = {
           {
             "name": "credits",
             "type": "u32"
+          }
+        ]
+      }
+    },
+    {
+      "name": "faucetTracker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lastRequestTime",
+            "type": "i64"
           }
         ]
       }
