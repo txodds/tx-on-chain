@@ -17,14 +17,15 @@ description: "Validate scores data using cryptographic Merkle proofs"
 
 ## Overview
 
-This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, and V2 multi-stat validations.
+This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, V2 multi-stat, and V4 state-changing validations.
 
-The public `/api/scores/stat-validation` endpoint supports both validation shapes:
+The score-validation endpoints support the following validation paths:
 
 | Query shape | On-chain method | Notes |
 |-------------|-----------------|-------|
 | `statKey=...` and optional `statKey2=...` | `validateStat` | Legacy single-stat and two-stat validation. |
 | `statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed strategy predicates. |
+| `statKeys=1,2,...` at `/api/scores/stat-validation-v4` | `validateStatV4` | Paid, state-changing score validation with a signed multiproof payload. |
 
 Use the same network for the API request, IDL/types, program ID, and on-chain root PDA.
 
@@ -388,6 +389,21 @@ For complete runnable versions, use:
 | [`subscription_scores_1stat.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_1stat.ts) | One requested stat with `validateStatV2`. |
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Two-stat strategies and geometric validation. |
 | [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Multi-leg strategies using four requested stat keys. |
+
+## V4 Validation
+
+V4 validates an API-provided payload and signature in a state-changing transaction. The response contains a `payload` and `signature`; serialize the payload with the selected network's matching IDL/types, hash the serialized bytes with SHA-256, and add the corresponding Ed25519 verification instruction before the V4 call.
+
+Before sending the transaction, purchase validation credits with `purchaseValidationCredits`. The V4 instructions require the signing user, the user's validation-state PDA, the instructions sysvar, and the matching daily Merkle-roots PDA.
+
+| Data | Proof endpoint | On-chain instruction | Runnable devnet example |
+|------|----------------|----------------------|-------------------------|
+| Scores | `/api/scores/stat-validation-v4?fixtureId=...&seq=...&statKeys=...` | `validateStatV4(payload, strategy)` | [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) |
+| Odds | `/api/odds/validation-v4?messageId=...&ts=...` | `validateOddsV4(payload)` | [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) |
+
+<Warning>
+V4 is not a drop-in replacement for the V2 `.view()` examples: it purchases validation credits and submits a transaction. Start with the runnable devnet scripts, use the devnet endpoint, program ID, and generated types together, and review the transaction before signing.
+</Warning>
 
 ## Common Validation Errors
 
