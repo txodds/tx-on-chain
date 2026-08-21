@@ -13,6 +13,7 @@ import axios from "axios";
 import { PublicKey } from '@solana/web3.js';
 import { ComputeBudgetProgram } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
+import { decodeBytes32, decodeProofNodes, unpackFixtureId } from '../common/proof';
 
 async function main() {
   const provider = anchor.AnchorProvider.env();
@@ -95,14 +96,11 @@ async function main() {
       const validation = vResponse.data;
 
       // Extract the game state and pure identifier
-      const packedId = validation.snapshot.FixtureId;
-      const shiftDivisor = 281474976710656; // 2^48
-      
-      const pureFixtureId = packedId % shiftDivisor;
-      const gameState = Math.floor(packedId / shiftDivisor);
+      const { packedId, fixtureId: pureFixtureId, gameState } =
+        unpackFixtureId(validation.snapshot.FixtureId);
 
-      console.log(`Packed FixtureId: ${packedId}`);
-      console.log(`Actual FixtureId: ${pureFixtureId}`);
+      console.log(`Packed FixtureId: ${packedId.toString()}`);
+      console.log(`Actual FixtureId: ${pureFixtureId.toString()}`);
       console.log(`Game State: ${gameState}`);
 
       // Map the API response to Anchor structs
@@ -116,7 +114,7 @@ async function main() {
         participant1: validation.snapshot.Participant1,
         participant2Id: validation.snapshot.Participant2Id,
         participant2: validation.snapshot.Participant2,
-        fixtureId: new BN(validation.snapshot.FixtureId),
+        fixtureId: packedId,
         participant1IsHome: validation.snapshot.Participant1IsHome
       };
 
@@ -129,7 +127,10 @@ async function main() {
           minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
           maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
         },
-        updateSubTreeRoot: validation.summary.updateSubTreeRoot,
+        updateSubTreeRoot: decodeBytes32(
+          validation.summary.updateSubTreeRoot,
+          "summary.updateSubTreeRoot"
+        ),
       };
 
       console.log("Preparing on-chain fixture validation view call...");
@@ -158,8 +159,8 @@ async function main() {
         .validateFixture(
           snapshot,
           summary,
-          validation.subTreeProof,
-          validation.mainTreeProof
+          decodeProofNodes(validation.subTreeProof, "subTreeProof"),
+          decodeProofNodes(validation.mainTreeProof, "mainTreeProof")
         )
         .accounts({
           tenDailyFixturesRoots: tenDailyFixturesRootsPda,
