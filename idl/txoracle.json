@@ -1,8 +1,8 @@
 {
-  "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
+  "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.6",
+    "version": "1.5.9",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -34,6 +34,42 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "gift_validation_credits",
+      "discriminator": [
+        213,
+        25,
+        82,
+        97,
+        102,
+        26,
+        240,
+        132
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "target_user"
+        },
+        {
+          "name": "user_validation_state",
+          "writable": true
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "hundreds",
+          "type": "u32"
+        }
+      ]
     },
     {
       "name": "initialize_pricing_matrix",
@@ -386,6 +422,59 @@
       ]
     },
     {
+      "name": "purchase_validation_credits",
+      "discriminator": [
+        166,
+        59,
+        67,
+        252,
+        177,
+        13,
+        82,
+        112
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_validation_state",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "associated_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "hundreds",
+          "type": "u32"
+        }
+      ]
+    },
+    {
       "name": "subscribe",
       "discriminator": [
         254,
@@ -651,6 +740,47 @@
       "returns": "bool"
     },
     {
+      "name": "validate_odds_v4",
+      "discriminator": [
+        147,
+        143,
+        200,
+        85,
+        251,
+        48,
+        42,
+        173
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_validation_state",
+          "writable": true
+        },
+        {
+          "name": "instructions_sysvar"
+        },
+        {
+          "name": "daily_odds_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "OddsValidationInputV4"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "validate_stat",
       "discriminator": [
         107,
@@ -814,6 +944,55 @@
       "returns": "bool"
     },
     {
+      "name": "validate_stat_v4",
+      "discriminator": [
+        17,
+        11,
+        195,
+        64,
+        250,
+        26,
+        27,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "user_validation_state",
+          "writable": true
+        },
+        {
+          "name": "instructions_sysvar"
+        },
+        {
+          "name": "daily_scores_merkle_roots"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationInputV4"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "withdraw_usdt",
       "discriminator": [
         117,
@@ -875,6 +1054,19 @@
         77,
         110,
         106
+      ]
+    },
+    {
+      "name": "UserValidationState",
+      "discriminator": [
+        167,
+        213,
+        143,
+        125,
+        207,
+        78,
+        245,
+        87
       ]
     }
   ],
@@ -1273,6 +1465,46 @@
       "code": 6078,
       "name": "InvalidProofPath",
       "msg": "Invalid proof path"
+    },
+    {
+      "code": 6079,
+      "name": "InsufficientCredits",
+      "msg": "Insufficient credits"
+    },
+    {
+      "code": 6080,
+      "name": "MissingSignatureInstruction",
+      "msg": "Missing signature instruction"
+    },
+    {
+      "code": 6081,
+      "name": "InvalidSignatureProgram",
+      "msg": "Invalid signature program"
+    },
+    {
+      "code": 6082,
+      "name": "SerializationFailed",
+      "msg": "Serialization failed"
+    },
+    {
+      "code": 6083,
+      "name": "InvalidOracleSignature",
+      "msg": "Invalid oracle signature"
+    },
+    {
+      "code": 6084,
+      "name": "InvalidSequenceNumber",
+      "msg": "Invalid sequence number"
+    },
+    {
+      "code": 6085,
+      "name": "MessageMismatch",
+      "msg": "Message mismatch"
+    },
+    {
+      "code": 6086,
+      "name": "InvalidPackQuantity",
+      "msg": "Invalid pack quantity"
     }
   ],
   "types": [
@@ -1612,6 +1844,54 @@
           {
             "name": "max_timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OddsValidationInputV4",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "odds_snapshot",
+            "type": {
+              "defined": {
+                "name": "Odds"
+              }
+            }
+          },
+          {
+            "name": "summary",
+            "type": {
+              "defined": {
+                "name": "OddsBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "sub_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
           }
         ]
       }
@@ -2014,6 +2294,81 @@
       }
     },
     {
+      "name": "StatValidationInputV4",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "fixture_summary",
+            "type": {
+              "defined": {
+                "name": "ScoresBatchSummary"
+              }
+            }
+          },
+          {
+            "name": "fixture_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "leaves",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatLeaf"
+                }
+              }
+            }
+          },
+          {
+            "name": "multiproof_hashes",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "leaf_indices",
+            "type": {
+              "vec": "u32"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "TraderPredicate",
       "type": {
         "kind": "struct",
@@ -2029,6 +2384,22 @@
                 "name": "Comparison"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UserValidationState",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "credits",
+            "type": "u32"
           }
         ]
       }
@@ -2054,6 +2425,11 @@
       "name": "MIN_USER_BALANCE",
       "type": "u64",
       "value": "1000000"
+    },
+    {
+      "name": "PROGRAM_ADMIN_PUBKEY",
+      "type": "pubkey",
+      "value": "GbUDHMkPnPiZ8tgqZGjrL4tLxyEBnMCjMLukrx5fz9p6"
     },
     {
       "name": "STAKE_AMOUNT",

@@ -438,16 +438,21 @@ async function main() {
     const payloadPrefix_4Leg = `[${name}] payload:`
     console.log(payloadPrefix_4Leg, inspectedPayload_4Leg)
 
-    // Execute validations concurrently
-    const promises = [
-      runV4(payloadV4_2Leg, strategy1To3Plus, "1:3+ discrete"),
-      runV4(payloadV4_2Leg, strategyDraw, "Binary draw"),
-      runV4(payloadV4_3Leg, strategy3Leg, "Combined 3-leg"),
-      runV4(payloadV4_4Leg, strategy4Leg, "Combined 4-leg"),
-      runV4(payloadV4_2Leg, strategyGeometric, "Geometric 2-leg")
+    const validations = [
+      { payload: payloadV4_2Leg, strategy: strategy1To3Plus, label: "1:3+ discrete" },
+      { payload: payloadV4_2Leg, strategy: strategyDraw, label: "Binary draw" },
+      { payload: payloadV4_3Leg, strategy: strategy3Leg, label: "Combined 3-leg" },
+      { payload: payloadV4_4Leg, strategy: strategy4Leg, label: "Combined 4-leg" },
+      { payload: payloadV4_2Leg, strategy: strategyGeometric, label: "Geometric 2-leg" }
     ]
 
-    await Promise.all(promises)
+    // Execute validations sequentially to respect public RPC rate limits
+    for (const v of validations) {
+      await runV4(v.payload, v.strategy, v.label)
+      
+      // Delay execution to prevent 429 errors on free devnet nodes
+      await new Promise(resolve => setTimeout(resolve, 1500))
+    }
 
     async function listenToScoresStream(streamId: string): Promise<void> {
       // Define connection states
