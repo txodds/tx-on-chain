@@ -95,12 +95,15 @@ Use one network consistently. Devnet subscribe transactions must use the devnet 
 
 ## Current Examples
 
-The current copy-paste examples live in the hosted documentation pages rather than a top-level `examples/` directory:
+The hosted documentation pages provide the guided integration flows. Runnable end-to-end scripts are available in [`examples/devnet/scripts`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet/scripts) and [`examples/mainnet/scripts`](https://github.com/txodds/tx-on-chain/tree/main/examples/mainnet/scripts):
 
 - [Quickstart](https://txline.txodds.com/documentation/quickstart) - purchase, subscribe, activate, and API-token header setup.
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
+- [`purchase_tokens_usdt.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/purchase_tokens_usdt.ts) - Devnet TxLINE token purchase using a backend quote and fake Devnet USDT.
+- [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) - V2 and V4 score-validation comparison, including the state-changing V4 validation flow.
+- [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) - custom-league subscription and paid V4 odds validation on devnet.
 
 The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
 

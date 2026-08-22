@@ -35,12 +35,15 @@ yarn ts-node examples/devnet/scripts/subscription_free_tier.ts
 
 | Script | What it demonstrates |
 |--------|----------------------|
+| [`purchase_tokens_usdt.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/purchase_tokens_usdt.ts) | Purchasing TxLINE tokens on devnet with a backend quote and fake Devnet USDT, with local transaction-safety verification before signing. |
 | [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Free-tier subscription activation, odds snapshot fetches, and odds SSE streams. |
 | [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, recent score scanning, legacy `validateStat` with `statKey`, and scores SSE streams. |
 | [`subscription_scores_1stat.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_1stat.ts) | Latest V2 score validation with one requested `statKeys` entry and `validateStatV2`. |
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | V2 validation with two stats, binary predicates, and geometric distance predicates. |
 | [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Rich multi-leg V2 validation with `statKeys=1,2,3001,3002` and two-, three-, and four-leg strategies. |
 | [`subscription_scores_v3c.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v3c.ts) | V3 multiproof validation demonstrating both V2 and V3 validation approaches for comparison. |
+| [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) | V2 and V4 score-validation comparison, including V4 multiproof payloads, validation-credit purchase, and a state-changing `validateStatV4` transaction. |
+| [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) | Custom-league subscription, odds discovery, and paid V4 odds validation with validation credits and `validateOddsV4`. |
 | [`fixture_validation_view_only.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/fixture_validation_view_only.ts) | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. |
 | [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Fetching complete historical score updates for a specific fixture. |
 
@@ -81,6 +84,19 @@ const payload = {
 
 <Warning>
 The fixed `fixtureId` and `seq` pairs in the example scripts are demo fixtures. In production, derive `fixtureId`, `seq`, phase, and status from an observed score record from snapshot, updates, historical data, or the scores stream.
+</Warning>
+
+## V4 Validation
+
+V4 is a paid, state-changing validation path. The API returns a validation `payload` and signature; the examples serialize the payload with the matching IDL/types, add an Ed25519 verification instruction, purchase validation credits, and submit the V4 transaction.
+
+| Data | API request | On-chain instruction | Runnable devnet example |
+|------|-------------|----------------------|-------------------------|
+| Scores | `/scores/stat-validation-v4?fixtureId=...&seq=...&statKeys=...` | `validateStatV4` | [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) |
+| Odds | `/odds/validation-v4?messageId=...&ts=...` | `validateOddsV4` | [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) |
+
+<Warning>
+Unlike the V2 examples, the V4 examples submit transactions and purchase validation credits. Run them with a devnet wallet and the matching devnet IDL/types; do not substitute a mainnet wallet or endpoint.
 </Warning>
 
 ## Final Outcome and Fixtures
