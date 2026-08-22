@@ -19,6 +19,54 @@ import { Ed25519Program, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
 import { createHash } from 'crypto';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
 
+async function purchaseCredits(
+  userKey: PublicKey,
+  userProgram: Program<Txoracle>, 
+  userValidationStatePda: PublicKey,
+  tokenMint: PublicKey, 
+  packsToBuy: number = 1
+) {
+  // Token treasury PDA
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("token_treasury_v2")],
+    userProgram.programId
+  )
+
+  // User associated token account
+  const userTokenAccount = getAssociatedTokenAddressSync(
+    tokenMint,
+    userKey,
+    false,
+    TOKEN_2022_PROGRAM_ID
+  )
+  
+  // Treasury associated token account
+  const tokenTreasuryVault = getAssociatedTokenAddressSync(
+    tokenMint,
+    tokenTreasuryPda,
+    true,
+    TOKEN_2022_PROGRAM_ID
+  )
+
+  // Execute purchase instruction
+  const txSignature = await userProgram.methods
+    .purchaseValidationCredits(packsToBuy)
+    .accounts({
+      user: userKey,
+      userValidationState: userValidationStatePda,
+      tokenMint: tokenMint,
+      userTokenAccount: userTokenAccount,
+      tokenTreasuryVault: tokenTreasuryVault,
+      tokenTreasuryPda: tokenTreasuryPda,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    })
+    .rpc()
+
+  console.log(`Purchase executed with signature: ${txSignature}`)
+}
+
 type OracleTypes = IdlTypes<Txoracle>
 
 // Export the specific types needed to build payloads
@@ -76,6 +124,17 @@ async function main() {
   
   // Create a new program instance permanently bound to Trader A
   const userProgram = new anchor.Program(program.idl, userProvider)
+  // User public key
+  const userKey = userProgram.provider.publicKey!
+
+  // User validation state PDA
+  const [userValidationStatePda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("user_state"), userKey.toBuffer()],
+    userProgram.programId
+  )
+
+  // IF NEEDED, purchase credits before validating
+  // const userValidationStatePda = await purchaseCredits(userKey, userProgram, tokenMint, 1)
 
   try {
 
@@ -115,8 +174,8 @@ async function main() {
       const msPerInterval = 300000 
       const now = new Date()
 
-      // Scan backwards through the last two hours of intervals
-      for (let i = 0; i < 24; i++) {
+      // Scan backwards through the last twenty hours of intervals
+      for (let i = 0; i < 240; i++) {
         const targetTime = new Date(now.getTime() - (i * msPerInterval))
         const epochDay = Math.floor(targetTime.getTime() / 86400000)
         const hourOfDay = targetTime.getUTCHours()
@@ -341,72 +400,28 @@ async function main() {
     const oraclePublicKey = new PublicKey("QNvM25scLWmdkakdw7TtuAybp9YLfFrMcoz73HhLyxs");
 
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
-      // Resolve the user public key to satisfy strict TypeScript definitions
-      const userKey = userProgram.provider.publicKey!
-
       // Encode payload to raw Borsh bytes
       const serializedPayload = userProgram.coder.types.encode(
         "statValidationInputV4",
         v4Data.payload
       )
 
-      // Hash the payload to compress the Ed25519 message to 32 bytes
+      // Hash payload to compress Ed25519 message to 32 bytes
       const payloadHash = createHash('sha256').update(serializedPayload).digest()
       console.log("TS Borsh Length:   ", serializedPayload.length, "bytes")
       console.log("TS SHA-256 Hash:    ", payloadHash.toString('hex'))
 
-      // Decode the base64 signature string from the API
+      // Decode base64 signature string from API
       const signatureBuffer = typeof v4Data.signature === 'string' 
         ? Buffer.from(v4Data.signature, 'base64') 
         : Buffer.from(v4Data.signature)
 
-      // Construct Ed25519 instruction using the 32-byte hash
+      // Construct Ed25519 instruction using 32-byte hash
       const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
         publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
         message: payloadHash,
         signature: signatureBuffer,
       })
-
-      // User validation state PDA
-      const [userValidationStatePda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("user_state"), userKey.toBuffer()],
-        userProgram.programId
-      )
-
-      const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("token_treasury_v2")],
-        userProgram.programId
-      )
-
-      const userTokenAccount = getAssociatedTokenAddressSync(
-        tokenMint,
-        userKey,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      )
-      
-      const tokenTreasuryVault = getAssociatedTokenAddressSync(
-        tokenMint,
-        tokenTreasuryPda,
-        true,
-        TOKEN_2022_PROGRAM_ID
-      )
-
-      // Purchase validation credits using hundreds = 1
-      await userProgram.methods
-        .purchaseValidationCredits(1)
-        .accounts({
-          user: userKey,
-          userValidationState: userValidationStatePda,
-          tokenMint: tokenMint,
-          userTokenAccount: userTokenAccount,
-          tokenTreasuryVault: tokenTreasuryVault,
-          tokenTreasuryPda: tokenTreasuryPda,
-          tokenProgram: TOKEN_2022_PROGRAM_ID,
-          systemProgram: anchor.web3.SystemProgram.programId,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-        })
-        .rpc()
 
       // Execute state mutating transaction via RPC
       const txSignature = await userProgram.methods
@@ -544,7 +559,7 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, waitDuration))
 
     // Intercept the 403 renew the JWT and retry
-    await getScoresSnapshot(4, Date.now())
+    // await getScoresSnapshot(4, Date.now())
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
