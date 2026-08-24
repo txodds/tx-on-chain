@@ -2,7 +2,7 @@
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.9",
+    "version": "1.5.11",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
