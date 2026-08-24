@@ -24,7 +24,7 @@ async function purchaseCredits(
   userProgram: Program<Txoracle>, 
   userValidationStatePda: PublicKey,
   tokenMint: PublicKey, 
-  packsToBuy: number = 1
+  creditsToBuy: number = 1
 ) {
   // Token treasury PDA
   const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
@@ -50,7 +50,7 @@ async function purchaseCredits(
 
   // Execute purchase instruction
   const txSignature = await userProgram.methods
-    .purchaseValidationCredits(packsToBuy)
+    .purchaseValidationCredits(creditsToBuy)
     .accounts({
       user: userKey,
       userValidationState: userValidationStatePda,
@@ -134,7 +134,7 @@ async function main() {
   )
 
   // IF NEEDED, purchase credits before validating
-  // const userValidationStatePda = await purchaseCredits(userKey, userProgram, tokenMint, 1)
+  // const userValidationStatePda = await purchaseCredits(userKey, userProgram, tokenMint, 5);
 
   try {
 

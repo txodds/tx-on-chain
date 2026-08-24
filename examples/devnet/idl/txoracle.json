@@ -66,7 +66,7 @@
       ],
       "args": [
         {
-          "name": "hundreds",
+          "name": "units",
           "type": "u32"
         }
       ]

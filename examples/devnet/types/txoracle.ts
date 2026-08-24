@@ -72,7 +72,7 @@ export type Txoracle = {
       ],
       "args": [
         {
-          "name": "hundreds",
+          "name": "units",
           "type": "u32"
         }
       ]
@@ -475,7 +475,7 @@ export type Txoracle = {
       ],
       "args": [
         {
-          "name": "hundreds",
+          "name": "units",
           "type": "u32"
         }
       ]

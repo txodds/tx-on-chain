@@ -328,7 +328,7 @@ async function main() {
         TOKEN_2022_PROGRAM_ID
       )
 
-      // Purchase validation credits
+      // Purchase 1 validation credit
       console.log("Purchasing validation credits...")
       await userProgram.methods
         .purchaseValidationCredits(1)
