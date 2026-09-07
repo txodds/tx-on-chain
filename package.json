@@ -20,8 +20,8 @@
   "dependencies": {
     "@coral-xyz/borsh": "^0.31.1",
     "@microsoft/fetch-event-source": "^2.0.1",
+    "@solana/kit": "^8.2.0",
     "@solana/spl-token": "^0.4.12",
-    "@solana/web3.js": "^2.0.0",
     "axios": "^1.12.0",
     "bn.js": "^5.2.5",
     "dotenv": "^16.4.7",

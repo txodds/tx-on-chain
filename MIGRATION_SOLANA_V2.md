@@ -1,13 +1,16 @@
-# Solana v2.3.0 Migration Guide
+# Solana Kit Migration Guide
 
-This document describes the migration from Anchor v0.32.1 to Solana Web3.js v2.3.0 for the tx-on-chain example scripts.
+This document describes the migration from Anchor v0.32.1 to Solana Kit (latest) for the tx-on-chain example scripts.
+
+**NOTE**: This guide is being updated from Solana Web3.js v2 to Solana Kit. The core patterns remain similar, but imports and some APIs have changed.
 
 ## Overview
 
-The project has been migrated to use **Solana Web3.js v2.3.0** directly instead of Anchor, providing:
-- Direct Solana SDK usage without additional abstractions
+The project has been migrated to use **Solana Kit** (latest, v8.3.0+) instead of Anchor, providing:
+- Modern Solana development framework
+- Direct SDK usage without Anchor abstractions
+- Better TypeScript support and type safety
 - Smaller dependency footprint
-- Better control over instruction building and serialization
 
 ## Key Changes
 
@@ -17,7 +20,8 @@ The project has been migrated to use **Solana Web3.js v2.3.0** directly instead 
 - `@coral-xyz/anchor@0.32.1`
 
 **Updated:**
-- `@solana/web3.js@^1.91.9` → `@solana/web3.js@^2.0.0`
+- `@solana/web3.js@^1.91.9` → `@solana/kit@^8.3.0`
+- `@solana/spl-token@^0.4.12` → `@solana/spl-token@^4.0.0`
 
 **Added:**
 - `@coral-xyz/borsh@^0.31.1` - For custom Borsh encoding/decoding
