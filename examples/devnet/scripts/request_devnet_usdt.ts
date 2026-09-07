@@ -2,31 +2,30 @@
 
 // ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/request_devnet_usdt.ts
 
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import TxoracleJson from "../idl/txoracle.json";
-import { Txoracle } from "../types/txoracle";
-import { 
-  getAssociatedTokenAddressSync, 
-  TOKEN_PROGRAM_ID, 
-  ASSOCIATED_TOKEN_PROGRAM_ID 
+import { PublicKey, Connection, Transaction, SystemProgram, sendAndConfirmTransaction, Keypair } from "@solana/web3.js";
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
+import { loadProgram } from "../../common/utils/programLoader";
+import { buildInstruction } from "../../common/utils/instructionBuilders";
+import { setupConnection } from "../../common/utils/setupConnection";
 
 async function requestFaucet() {
-    const provider = anchor.AnchorProvider.env();
-    anchor.setProvider(provider);
-    const program = new Program<Txoracle>(TxoracleJson, provider);
+    const { connection, keypair } = setupConnection();
+    const program = loadProgram("devnet");
 
-    const user = provider.publicKey;
+    const user = keypair.publicKey;
 
-    const usdtMint = new anchor.web3.PublicKey("ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh");
+    const usdtMint = new PublicKey("ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh");
 
-    const [faucetTracker] = anchor.web3.PublicKey.findProgramAddressSync(
+    const [faucetTracker] = PublicKey.findProgramAddressSync(
         [Buffer.from("faucet_tracker"), user.toBuffer()],
         program.programId
     );
 
-    const [usdtTreasuryPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    const [usdtTreasuryPda] = PublicKey.findProgramAddressSync(
         [Buffer.from("usdt_treasury")],
         program.programId
     );
@@ -38,19 +37,26 @@ async function requestFaucet() {
     console.log(`Tracker: ${faucetTracker.toBase58()}`);
 
     try {
-        const signature = await program.methods
-            .requestDevnetFaucet()
-            .accounts({
-                user: user,
-                faucetTracker: faucetTracker,
-                usdtMint: usdtMint,
-                userUsdtAta: userUsdtAta,
-                usdtTreasuryPda: usdtTreasuryPda,
+        const ix = buildInstruction(
+            "requestDevnetFaucet",
+            {},
+            {
+                user,
+                faucetTracker,
+                usdtMint,
+                userUsdtAta,
+                usdtTreasuryPda,
                 tokenProgram: TOKEN_PROGRAM_ID,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            })
-            .rpc();
+                systemProgram: SystemProgram.programId,
+            },
+            program.programId
+        );
+
+        const tx = new Transaction().add(ix);
+        tx.feePayer = user;
+
+        const signature = await sendAndConfirmTransaction(connection, tx, [keypair]);
 
         console.log("Success!");
         console.log(`Tx Signature: ${signature}`);

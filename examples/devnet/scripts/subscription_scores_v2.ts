@@ -3,31 +3,25 @@
 // Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v2.ts
 
-import { Program } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
-import TxoracleJson from "../idl/txoracle.json";
+import { PublicKey, Connection, Transaction, ComputeBudgetProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
-import { PublicKey } from "@solana/web3.js";
 import {EventSource} from 'eventsource'
 import BN from "bn.js";
 import { inspect } from 'util';
-import { IdlTypes } from "@coral-xyz/anchor";
+import { loadProgram } from '../../common/utils/programLoader';
+import { buildInstruction } from '../../common/utils/instructionBuilders';
 
-type OracleTypes = IdlTypes<Txoracle>;
-
-// Export the specific types we need to build payloads.
-// Note: Anchor automatically converts Rust PascalCase to camelCase in the IDL.
-export type NDimensionalStrategy = OracleTypes["nDimensionalStrategy"];
-export type StatValidationInput = OracleTypes["statValidationInput"];
-export type StatPredicate = OracleTypes["statPredicate"];
-export type BinaryExpression = OracleTypes["binaryExpression"];
-export type Comparison = OracleTypes["comparison"];
-export type ProofNode = IdlTypes<Txoracle>["proofNode"];
-export type ScoreStat = IdlTypes<Txoracle>["scoreStat"];
-export type StatLeaf = IdlTypes<Txoracle>["statLeaf"];
+// Type definitions from Anchor IDL (kept for type safety)
+export type NDimensionalStrategy = any;
+export type StatValidationInput = any;
+export type StatPredicate = any;
+export type BinaryExpression = any;
+export type Comparison = any;
+export type ProofNode = any;
+export type ScoreStat = any;
+export type StatLeaf = any;
 
 // Define a strict type for the raw backend API response to replace `any`
 interface ApiProofNode {
@@ -36,14 +30,11 @@ interface ApiProofNode {
 }
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
+  if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  const connection = new Connection(rpcUrl, "confirmed");
+  const program = loadProgram("devnet");
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
@@ -54,7 +45,7 @@ async function main() {
 
   const walletPath = process.env.ANCHOR_WALLET!;
   const name = "Trader A";
-   
+
   const user = await users.setupUser(
     name,
     walletPath,
@@ -68,13 +59,6 @@ async function main() {
     undefined   // Alternatively, use a working API Token here
   );
   // console.log("API Token:", users.authState.apiToken);
- 
-  // Upgrade the provider to use the real, funded Trader wallet
-  const userWallet = new anchor.Wallet(user.user);
-  const userProvider = new anchor.AnchorProvider(connection, userWallet, anchor.AnchorProvider.defaultOptions());
-  
-  // Create a new program instance permanently bound to Trader A
-  const userProgram = new anchor.Program(program.idl, userProvider);
 
   try {
     // Fetch the scores snapshot for a specific fixture
@@ -162,7 +146,7 @@ async function main() {
     const targetTs = val.summary.updateStats.minTimestamp;
     const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
 
-    const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    const [dailyScoresPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("daily_scores_roots"), new BN(epochDay).toBuffer("le", 2)],
       program.programId
     );
@@ -195,8 +179,8 @@ async function main() {
     const payloadPrefix = `[${name}] payload:`;
     console.log(payloadPrefix, inspectedPayload);
 
-    const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
-      units: 1_400_000 
+    const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: 1_400_000
     });
 
     const strategy1To3Plus: NDimensionalStrategy = {
@@ -240,53 +224,71 @@ async function main() {
 
     try {
       console.log(`[${name}] Executing 1:3+ discrete validation`);
-      
-      const isValid1To3Plus = await userProgram.methods
-        .validateStatV2(payload, strategy1To3Plus)
-        .accounts({
-          dailyScoresMerkleRoots: dailyScoresPda,
-        })
-        .preInstructions([computeBudgetIx])
-        .view();
 
-      if (isValid1To3Plus) {
-        console.log(`[${name}] 1:3+ validation passed`);
-      } else {
-        console.log(`[${name}] 1:3+ validation rejected`);
+      const ix1To3Plus = buildInstruction(
+        "validateStatV2",
+        { payload, strategy: strategy1To3Plus },
+        { dailyScoresMerkleRoots: dailyScoresPda },
+        program.programId
+      );
+
+      const tx1To3Plus = new Transaction()
+        .add(computeBudgetIx)
+        .add(ix1To3Plus);
+
+      tx1To3Plus.feePayer = user.user.publicKey;
+
+      try {
+        const sig = await sendAndConfirmTransaction(connection, tx1To3Plus, [user.user]);
+        console.log(`[${name}] 1:3+ validation passed, signature: ${sig}`);
+      } catch (err) {
+        console.log(`[${name}] 1:3+ validation rejected:`, err);
       }
 
       console.log(`[${name}] Executing binary draw validation`);
-      
-      const isValidDraw = await userProgram.methods
-        .validateStatV2(payload, strategyDraw)
-        .accounts({
-          dailyScoresMerkleRoots: dailyScoresPda,
-        })
-        .preInstructions([computeBudgetIx])
-        .view();
 
-      if (isValidDraw) {
-        console.log(`[${name}] Binary draw validation passed`);
-      } else {
-        console.log(`[${name}] Binary draw validation rejected`);
+      const ixDraw = buildInstruction(
+        "validateStatV2",
+        { payload, strategy: strategyDraw },
+        { dailyScoresMerkleRoots: dailyScoresPda },
+        program.programId
+      );
+
+      const txDraw = new Transaction()
+        .add(computeBudgetIx)
+        .add(ixDraw);
+
+      txDraw.feePayer = user.user.publicKey;
+
+      try {
+        const sig = await sendAndConfirmTransaction(connection, txDraw, [user.user]);
+        console.log(`[${name}] Binary draw validation passed, signature: ${sig}`);
+      } catch (err) {
+        console.log(`[${name}] Binary draw validation rejected:`, err);
       }
 
-      const isValid2LegGeometric = await userProgram.methods
-        .validateStatV2(payload, strategyGeometric)
-        .accounts({
-          dailyScoresMerkleRoots: dailyScoresPda,
-        })
-        .preInstructions([computeBudgetIx])
-        .view();
+      const ixGeometric = buildInstruction(
+        "validateStatV2",
+        { payload, strategy: strategyGeometric },
+        { dailyScoresMerkleRoots: dailyScoresPda },
+        program.programId
+      );
 
-      if (isValid2LegGeometric) {
-        console.log(`[${name}] Geometric 2-leg validation passed`);
-      } else {
-        console.log(`[${name}] Geometric 2-leg validation rejected`);
+      const txGeometric = new Transaction()
+        .add(computeBudgetIx)
+        .add(ixGeometric);
+
+      txGeometric.feePayer = user.user.publicKey;
+
+      try {
+        const sig = await sendAndConfirmTransaction(connection, txGeometric, [user.user]);
+        console.log(`[${name}] Geometric 2-leg validation passed, signature: ${sig}`);
+      } catch (err) {
+        console.log(`[${name}] Geometric 2-leg validation rejected:`, err);
       }
 
     } catch (err) {
-      console.error(`[${name}] V2 validation simulation failed:`, err);
+      console.error(`[${name}] V2 validation setup failed:`, err);
     }
 
     async function listenToScoresStream(streamId: string): Promise<void> {

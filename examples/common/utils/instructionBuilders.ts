@@ -85,6 +85,32 @@ const INSTRUCTION_DISCRIMINATORS: { [key: string]: InstructionLayout } = {
       { name: "strategy", type: "object" },
     ],
   },
+  requestDevnetFaucet: {
+    discriminator: [49, 178, 104, 8, 23, 120, 186, 21],
+    accounts: [
+      { name: "user", writable: true, signer: true },
+      { name: "faucetTracker", writable: true },
+      { name: "usdtMint", writable: true },
+      { name: "userUsdtAta", writable: true },
+      { name: "usdtTreasuryPda", writable: false },
+      { name: "tokenProgram", writable: false },
+      { name: "associatedTokenProgram", writable: false },
+      { name: "systemProgram", writable: false },
+    ],
+    args: [],
+  },
+  validateFixture: {
+    discriminator: [231, 129, 218, 86, 223, 114, 21, 126],
+    accounts: [
+      { name: "tenDailyFixturesRoots", writable: false },
+    ],
+    args: [
+      { name: "snapshot", type: "object" },
+      { name: "summary", type: "object" },
+      { name: "subTreeProof", type: "object" },
+      { name: "mainTreeProof", type: "object" },
+    ],
+  },
 };
 
 /**
@@ -147,6 +173,10 @@ function encodeInstructionArgs(
       return encodeValidateStatV2Args(args);
     case "validateStatV4":
       return encodeValidateStatV4Args(args);
+    case "requestDevnetFaucet":
+      return Buffer.alloc(0); // No args
+    case "validateFixture":
+      return encodeValidateFixtureArgs(args);
     default:
       throw new Error(`No encoder for instruction: ${instructionName}`);
   }
@@ -230,6 +260,14 @@ function encodeValidationPayload(
   // For now, return empty buffer - this needs custom implementation per payload structure
   console.warn(
     `Validation payload encoding for ${version} requires full IDL schema implementation`
+  );
+  return Buffer.alloc(0);
+}
+
+function encodeValidateFixtureArgs(args: Record<string, any>): Buffer {
+  // Similar to validation payloads, fixture validation requires complex nested encoding
+  console.warn(
+    `Fixture validation encoding requires full IDL schema implementation`
   );
   return Buffer.alloc(0);
 }

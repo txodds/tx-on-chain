@@ -1,9 +1,7 @@
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
 
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import TxoracleJson from "../idl/txoracle.json";
+import { PublicKey, Connection, Transaction, Keypair, sendAndConfirmTransaction } from "@solana/web3.js";
 import {
   TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -14,23 +12,21 @@ import axios from "axios";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { Txoracle } from "../types/txoracle";
+import BN from "bn.js";
 import { API_BASE_URL, JWT_URL } from "../common/config";
 import * as users from '../common/users';
+import { loadProgram } from "../../common/utils/programLoader";
 
 async function main() {
-const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
-  const connection = provider.connection;
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
+  if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
+  const connection = new Connection(rpcUrl, "confirmed");
+  const program = loadProgram("devnet");
 
   const tokenMintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!tokenMintAddress) throw new Error("TOKEN_MINT_ADDRESS not set");
-  const tokenMint = new anchor.web3.PublicKey(tokenMintAddress);
+  const tokenMint = new PublicKey(tokenMintAddress);
 
   const walletPath = process.env.ANCHOR_WALLET;
   if (!walletPath) throw new Error("Environment variable ANCHOR_WALLET is not set");
@@ -47,11 +43,11 @@ const provider = anchor.AnchorProvider.env();
   console.log(`JWT: ${jwt}`);
 
   // Load the persistent keypair
-  let user: anchor.web3.Keypair;
+  let user: Keypair;
   try {
     const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
     const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    user = anchor.web3.Keypair.fromSecretKey(secretKey);
+    user = Keypair.fromSecretKey(secretKey);
     console.log(`[${name}] Wallet loaded: ${user.publicKey.toBase58()}`);
   } catch (err) {
     console.error(`[${name}] Failed to load keypair at ${keypairLocation}`);
@@ -67,7 +63,7 @@ const provider = anchor.AnchorProvider.env();
   const tokenAccountInfo = await connection.getAccountInfo(userSubTokenAccount);
   if (!tokenAccountInfo) {
     console.log(`[${name}] Initializing new token ATA...`);
-    const tx = new anchor.web3.Transaction().add(
+    const tx = new Transaction().add(
       createAssociatedTokenAccountInstruction(
         user.publicKey,
         userSubTokenAccount,
@@ -77,7 +73,7 @@ const provider = anchor.AnchorProvider.env();
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
-    await anchor.web3.sendAndConfirmTransaction(connection, tx, [user]);
+    await sendAndConfirmTransaction(connection, tx, [user]);
     console.log(`[${name}] Token ATA created`);
   }
 
@@ -120,7 +116,7 @@ const provider = anchor.AnchorProvider.env();
     // Deserialize the encoded transaction
     const txBuffer = Buffer.from(txBase64, "base64");
 
-    const transaction = anchor.web3.Transaction.from(txBuffer);
+    const transaction = Transaction.from(txBuffer);
 
     // Execute the zero trust safety check
     console.log(`[${name}] Running local safety verification...`);
@@ -128,7 +124,7 @@ const provider = anchor.AnchorProvider.env();
       transaction,
       user.publicKey,
       program,
-      new anchor.BN(txlineAmount)
+      new BN(txlineAmount)
     );
     console.log(`[${name}] Transaction cryptographically verified and safe to sign`);
 

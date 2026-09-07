@@ -3,26 +3,20 @@
 // Run with:
 // TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/fixture_validation_view_only.ts
 
-import { Program } from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
-import TxoracleJson from "../idl/txoracle.json";
-import * as anchor from "@coral-xyz/anchor";
+import { PublicKey, Connection, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
-import { PublicKey } from '@solana/web3.js';
-import { ComputeBudgetProgram } from '@solana/web3.js';
-import { BN } from '@coral-xyz/anchor';
+import BN from "bn.js";
+import { loadProgram } from "../../common/utils/programLoader";
+import { buildInstruction } from "../../common/utils/instructionBuilders";
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
+  if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  const connection = new Connection(rpcUrl, "confirmed");
+  const program = loadProgram("mainnet");
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
@@ -153,23 +147,27 @@ async function main() {
 
       console.log(`Targeting PDA: ${tenDailyFixturesRootsPda.toBase58()} for window start day: ${windowStartDay}`);
 
-      // Build the transaction for simulation
-      const tx = await program.methods
-        .validateFixture(
+      // Build the instruction for simulation
+      const validateFixtureIx = buildInstruction(
+        "validateFixture",
+        {
           snapshot,
           summary,
-          validation.subTreeProof,
-          validation.mainTreeProof
-        )
-        .accounts({
+          subTreeProof: validation.subTreeProof,
+          mainTreeProof: validation.mainTreeProof,
+        },
+        {
           tenDailyFixturesRoots: tenDailyFixturesRootsPda,
-        })
-        .preInstructions([
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: 1_000_000, 
-          }),
-        ])
-        .transaction();
+        },
+        program.programId
+      );
+
+      // Build the transaction for simulation
+      const tx = new Transaction()
+        .add(ComputeBudgetProgram.setComputeUnitLimit({
+          units: 1_000_000,
+        }))
+        .add(validateFixtureIx);
 
       // Set the fee payer and get a recent blockhash
       tx.feePayer = user.user.publicKey;

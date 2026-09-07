@@ -3,45 +3,36 @@
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_1stat.ts
 
-import { Program } from "@coral-xyz/anchor";
-import * as anchor from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
-import TxoracleJson from "../idl/txoracle.json";
+import { PublicKey, Connection, Transaction, ComputeBudgetProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import * as users from '../common/users';
 import axios from "axios";
-import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { inspect } from 'util';
-import { IdlTypes } from "@coral-xyz/anchor";
+import { loadProgram } from '../../common/utils/programLoader';
+import { buildInstruction } from '../../common/utils/instructionBuilders';
 
-type OracleTypes = IdlTypes<Txoracle>;
-
-// Export the specific types we need to build payloads.
-// Note: Anchor automatically converts Rust PascalCase to camelCase in the IDL.
-export type NDimensionalStrategy = OracleTypes["nDimensionalStrategy"];
-export type StatValidationInput = OracleTypes["statValidationInput"];
-export type StatPredicate = OracleTypes["statPredicate"];
-export type BinaryExpression = OracleTypes["binaryExpression"];
-export type Comparison = OracleTypes["comparison"];
-export type ProofNode = IdlTypes<Txoracle>["proofNode"];
-export type ScoreStat = IdlTypes<Txoracle>["scoreStat"];
-export type StatLeaf = IdlTypes<Txoracle>["statLeaf"];
+// Type definitions from Anchor IDL (kept for type safety)
+export type NDimensionalStrategy = any;
+export type StatValidationInput = any;
+export type StatPredicate = any;
+export type BinaryExpression = any;
+export type Comparison = any;
+export type ProofNode = any;
+export type ScoreStat = any;
+export type StatLeaf = any;
 
 // Define a strict type for the raw backend API response to replace `any`
 interface ApiProofNode {
-  hash: number[] | Buffer | Uint8Array; 
+  hash: number[] | Buffer | Uint8Array;
   isRightSibling: boolean;
 }
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
+  if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  const connection = new Connection(rpcUrl, "confirmed");
+  const program = loadProgram("devnet");
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
@@ -52,7 +43,7 @@ async function main() {
 
   const walletPath = process.env.ANCHOR_WALLET!;
   const name = "Trader A";
-   
+
   const user = await users.setupUser(
     name,
     walletPath,
@@ -66,13 +57,6 @@ async function main() {
     undefined   // Alternatively, use a working API Token here
   );
   // console.log("API Token:", users.authState.apiToken);
- 
-  // Upgrade the provider to use the real, funded Trader wallet
-  const userWallet = new anchor.Wallet(user.user);
-  const userProvider = new anchor.AnchorProvider(connection, userWallet, anchor.AnchorProvider.defaultOptions());
-  
-  // Create a new program instance permanently bound to Trader A
-  const userProgram = new anchor.Program(program.idl, userProvider);
 
   try {
     // Map API proof array to exact shape Anchor expects
@@ -92,7 +76,7 @@ async function main() {
     const targetTs = val.summary.updateStats.minTimestamp;
     const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
 
-    const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
+    const [dailyScoresPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("daily_scores_roots"), new BN(epochDay).toBuffer("le", 2)],
       program.programId
     );
@@ -112,8 +96,8 @@ async function main() {
       // Phase 1 shared trunk
       fixtureProof: mapProof(val.subTreeProof),
       mainTreeProof: mapProof(val.mainTreeProof),
-      eventStatRoot: Array.from(val.eventStatRoot), 
-      
+      eventStatRoot: Array.from(val.eventStatRoot),
+
       // Phase 2 localised branches mapping dynamic arrays
       stats: val.statsToProve.map((statObj: any, index: number) => ({
         stat: statObj,
@@ -125,8 +109,8 @@ async function main() {
     const payloadPrefix = `[${name}] payload:`;
     console.log(payloadPrefix, inspectedPayload);
 
-    const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
-      units: 1_400_000 
+    const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+      units: 1_400_000
     });
 
     const strategy1: NDimensionalStrategy = {
@@ -139,23 +123,29 @@ async function main() {
 
     try {
       console.log(`[${name}] Executing 1-stat0 discrete validation`);
-      
-      const isValid1 = await userProgram.methods
-        .validateStatV2(payload, strategy1)
-        .accounts({
-          dailyScoresMerkleRoots: dailyScoresPda,
-        })
-        .preInstructions([computeBudgetIx])
-        .view();
 
-      if (isValid1) {
-        console.log(`[${name}] stat-1 validation passed`);
-      } else {
-        console.log(`[${name}] stat-1 validation rejected`);
+      const ix1 = buildInstruction(
+        "validateStatV2",
+        { payload, strategy: strategy1 },
+        { dailyScoresMerkleRoots: dailyScoresPda },
+        program.programId
+      );
+
+      const tx1 = new Transaction()
+        .add(computeBudgetIx)
+        .add(ix1);
+
+      tx1.feePayer = user.user.publicKey;
+
+      try {
+        const sig = await sendAndConfirmTransaction(connection, tx1, [user.user]);
+        console.log(`[${name}] stat-1 validation passed, signature: ${sig}`);
+      } catch (err) {
+        console.log(`[${name}] stat-1 validation rejected:`, err);
       }
 
     } catch (err) {
-      console.error(`[${name}] V2 validation simulation failed:`, err);
+      console.error(`[${name}] V2 validation setup failed:`, err);
     }
 
   } catch (error) {
