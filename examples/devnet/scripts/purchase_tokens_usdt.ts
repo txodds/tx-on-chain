@@ -1,7 +1,7 @@
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
 
-import { PublicKey, Connection, Transaction, Keypair, sendAndConfirmTransaction } from "@solana/web3.js";
+import { PublicKey, Connection, Keypair, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import {
   TOKEN_2022_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -63,17 +63,26 @@ async function main() {
   const tokenAccountInfo = await connection.getAccountInfo(userSubTokenAccount);
   if (!tokenAccountInfo) {
     console.log(`[${name}] Initializing new token ATA...`);
-    const tx = new Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        user.publicKey,
-        userSubTokenAccount,
-        user.publicKey,
-        tokenMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
-    await sendAndConfirmTransaction(connection, tx, [user]);
+    const { blockhash } = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+      payerKey: user.publicKey,
+      recentBlockhash: blockhash,
+      instructions: [
+        createAssociatedTokenAccountInstruction(
+          user.publicKey,
+          userSubTokenAccount,
+          user.publicKey,
+          tokenMint,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        )
+      ],
+    }).compileToV0Message();
+
+    const tx = new VersionedTransaction(messageV0);
+    tx.sign([user]);
+    const txSignature = await connection.sendTransaction(tx);
+    await connection.confirmTransaction(txSignature, "confirmed");
     console.log(`[${name}] Token ATA created`);
   }
 
@@ -116,7 +125,7 @@ async function main() {
     // Deserialize the encoded transaction
     const txBuffer = Buffer.from(txBase64, "base64");
 
-    const transaction = Transaction.from(txBuffer);
+    const transaction = VersionedTransaction.deserialize(txBuffer);
 
     // Execute the zero trust safety check
     console.log(`[${name}] Running local safety verification...`);
@@ -130,14 +139,11 @@ async function main() {
 
     // Sign the transaction with the local bot wallet
     console.log(`[${name}] Signing the transaction...`);
-    transaction.partialSign(user);
+    transaction.sign([user]);
 
     // Submit the fully signed transaction to the network
     console.log(`[${name}] Broadcasting transaction...`);
-    const txSignature = await connection.sendRawTransaction(transaction.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: "confirmed"
-    });
+    const txSignature = await connection.sendTransaction(transaction);
 
     // Confirm the transaction on the blockchain
     await connection.confirmTransaction(txSignature, "confirmed");

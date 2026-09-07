@@ -13,11 +13,11 @@ import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
 import {
   PublicKey,
-  Transaction,
   Keypair,
   Connection,
-  sendAndConfirmTransaction,
-  SystemProgram
+  SystemProgram,
+  VersionedTransaction,
+  TransactionMessage
 } from "@solana/web3.js";
 import BN from "bn.js";
 import { buildInstruction } from "../../common/utils/instructionBuilders";
@@ -274,18 +274,26 @@ export async function setupUser(
   
   if (!accountInfo) {
     console.log(`[${name}] Creating User Token-2022 Account`);
-    const transaction = new Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        user.publicKey,
-        userTokenAccountAddress,
-        user.publicKey,
-        tokenMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
+    const { blockhash } = await connection.getLatestBlockhash();
+    const messageV0 = new TransactionMessage({
+      payerKey: user.publicKey,
+      recentBlockhash: blockhash,
+      instructions: [
+        createAssociatedTokenAccountInstruction(
+          user.publicKey,
+          userTokenAccountAddress,
+          user.publicKey,
+          tokenMint,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID
+        )
+      ],
+    }).compileToV0Message();
 
-    await sendAndConfirmTransaction(connection, transaction, [user], { commitment: "confirmed" });
+    const tx = new VersionedTransaction(messageV0);
+    tx.sign([user]);
+    const txSignature = await connection.sendTransaction(tx);
+    await connection.confirmTransaction(txSignature, "confirmed");
     console.log(`[${name}] Account created`);
     await delay(3000);
   }
@@ -338,14 +346,17 @@ export async function setupUser(
     program.programId
   );
 
-  const tx = new Transaction().add(subscribeInstruction);
-
   const latestBlockhash = await connection.getLatestBlockhash('confirmed');
-  tx.recentBlockhash = latestBlockhash.blockhash;
-  tx.feePayer = user.publicKey;
-  tx.sign(user);
+  const messageV0 = new TransactionMessage({
+    payerKey: user.publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions: [subscribeInstruction],
+  }).compileToV0Message();
 
-  const txSig = await connection.sendRawTransaction(tx.serialize());
+  const tx = new VersionedTransaction(messageV0);
+  tx.sign([user]);
+
+  const txSig = await connection.sendTransaction(tx);
   await connection.confirmTransaction({
     signature: txSig,
     blockhash: latestBlockhash.blockhash,
@@ -382,21 +393,26 @@ export async function setupUser(
 
 // Verify a decoded transaction to ensure it is safe to sign
 export function verifyTransactionSafety(
-  transaction: Transaction,
+  transaction: VersionedTransaction,
   expectedBuyer: PublicKey,
   program: any,
   expectedAmount: BN
 ): void {
-  
+  const message = transaction.message;
+
   // Verify the expected fee payer
-  if (!transaction.feePayer || !transaction.feePayer.equals(expectedBuyer)) {
+  const feePayer = message.staticAccountKeys[0];
+  if (!feePayer || !feePayer.equals(expectedBuyer)) {
     throw new Error("Safety check failed: Fee payer is not the expected buyer wallet");
   }
 
   // Ensure the backend admin has already signed the transaction
-  const hasAdminSignature = transaction.signatures.some(
-    sig => sig.signature !== null && !sig.publicKey.equals(expectedBuyer)
-  );
+  const signatures = transaction.signatures;
+  const hasAdminSignature = signatures.some((sig: Uint8Array | null, idx: number) => {
+    if (!sig || sig.length === 0) return false;
+    const sigPubkey = message.staticAccountKeys[idx];
+    return sigPubkey && !sigPubkey.equals(expectedBuyer);
+  });
   if (!hasAdminSignature) {
     throw new Error("Safety check failed: Missing backend admin signature");
   }
@@ -404,31 +420,35 @@ export function verifyTransactionSafety(
   // Whitelist permitted programs that the transaction can invoke
   const allowedPrograms = [
     program.programId.toBase58(),
-    "ComputeBudget111111111111111111111111111111", 
-    "11111111111111111111111111111111",              
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",  
-    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",  
-    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"  
+    "ComputeBudget111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
   ];
 
   let oracleInstructionCount = 0;
 
   // Inspect every instruction in the payload
-  transaction.instructions.forEach(instruction => {
-    const programId = instruction.programId.toBase58();
-    
+  message.compiledInstructions.forEach((instruction: any) => {
+    const programIdIdx = instruction.programIdIndex;
+    const programId = message.staticAccountKeys[programIdIdx].toBase58();
+
     // Halt execution if an unknown or malicious program is detected
     if (!allowedPrograms.includes(programId)) {
       throw new Error(`Safety check failed: Unauthorized program invocation detected ${programId}`);
     }
 
     // Verify that the buyer is not inadvertently set as a signer on rogue accounts
-    instruction.keys.forEach(keyMeta => {
-      if (keyMeta.isSigner && keyMeta.pubkey.equals(expectedBuyer)) {
-        // Enforce that the buyer only signs for authorized logic
-        const isAuthorizedSigner = programId === program.programId.toBase58() || programId === "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-        if (!isAuthorizedSigner) {
-           throw new Error(`Safety check failed: Buyer wallet requested as signer for unauthorized program ${programId}`);
+    instruction.accountKeyIndexes.forEach((keyIdx: number) => {
+      if (keyIdx < message.header.numRequiredSignatures) {
+        const keyPubkey = message.staticAccountKeys[keyIdx];
+        if (keyPubkey.equals(expectedBuyer)) {
+          // Enforce that the buyer only signs for authorized logic
+          const isAuthorizedSigner = programId === program.programId.toBase58() || programId === "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+          if (!isAuthorizedSigner) {
+             throw new Error(`Safety check failed: Buyer wallet requested as signer for unauthorized program ${programId}`);
+          }
         }
       }
     });
