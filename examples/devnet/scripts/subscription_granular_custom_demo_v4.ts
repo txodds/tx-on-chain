@@ -5,7 +5,7 @@
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_granular_custom_demo_v4.ts
 
-import { AddressLookupTableProgram, ComputeBudgetProgram, Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionMessage, VersionedTransaction, Connection, SystemProgram } from "@solana/web3.js";
+import { AddressLookupTableProgram, ComputeBudgetProgram, Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionMessage, VersionedTransaction, Connection, SystemProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
@@ -15,6 +15,7 @@ import { createHash } from "crypto";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { loadProgram } from '../../common/utils/programLoader';
 import { buildInstruction } from '../../common/utils/instructionBuilders';
+import { encodeOddsValidationInputV4 } from '../../common/utils/oddsEncoder';
 
 // Type definitions from Anchor IDL (kept for type safety)
 export type OddsValidationInputV4 = any
@@ -250,10 +251,7 @@ async function main() {
       };
 
       // Encode payload to raw Borsh bytes
-      const serializedPayload = userProgram.coder.types.encode(
-        "oddsValidationInputV4",
-        mappedPayload
-      )
+      const serializedPayload = encodeOddsValidationInputV4(mappedPayload)
 
       // Hash payload to compress Ed25519 message to 32 bytes
       const payloadHash = createHash('sha256').update(serializedPayload).digest()
@@ -335,7 +333,7 @@ async function main() {
       const purchaseTx = new Transaction().add(purchaseIx)
       purchaseTx.feePayer = user.user.publicKey
 
-      await connection.sendAndConfirmTransaction(purchaseTx, [user.user])
+      await sendAndConfirmTransaction(connection, purchaseTx, [user.user])
 
       // Prepare compute budget instruction
       const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
@@ -381,7 +379,7 @@ async function main() {
       console.log("Creating address lookup table...")
 
       // Submit lookup transaction
-      const altSig = await connection.sendAndConfirmTransaction(altTx, [signer])
+      const altSig = await sendAndConfirmTransaction(connection, altTx, [signer])
       console.log(`Address lookup table created: ${altSig}`)
 
       console.log("Waiting for address lookup table activation...")

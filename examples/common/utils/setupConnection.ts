@@ -1,4 +1,4 @@
-import { Connection, Keypair } from "@solana/kit";
+import { Connection, Keypair } from "@solana/web3.js";
 import * as fs from "fs";
 
 export interface ConnectionSetup {
