@@ -6,6 +6,7 @@ import {
 import BN from "bn.js";
 import { loadIDL } from "./programLoader";
 import * as path from "path";
+import { convertCamelToSnake, convertSnakeToCamel } from "./caseConversion";
 
 interface InstructionLayout {
   discriminator: number[];
@@ -64,13 +65,6 @@ function getInstructionLayout(instructionName: string): InstructionLayout {
   return layout;
 }
 
-function convertCamelToSnake(str: string): string {
-  return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-}
-
-function convertSnakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-}
 
 export function buildInstruction(
   instructionName: string,
@@ -140,7 +134,7 @@ function encodeInstructionArgs(
 
   for (const argDef of instrLayout.args) {
     const argName = convertSnakeToCamel(argDef.name);
-    const argValue = args[argName] || args[argDef.name];
+    const argValue = argName in args ? args[argName] : args[argDef.name];
 
     if (argValue === undefined) {
       throw new Error(`Missing argument: ${argDef.name}`);

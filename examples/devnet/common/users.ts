@@ -6,11 +6,6 @@ import {
   getAccount,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token"
-import * as config from './config';
-import * as fs from "fs";
-import axios from "axios";
-import { Txoracle } from "../types/txoracle";
-import nacl from "tweetnacl";
 import {
   PublicKey,
   Keypair,
@@ -19,9 +14,14 @@ import {
   VersionedTransaction,
   TransactionMessage
 } from "@solana/web3.js";
+import * as config from './config';
+import * as fs from "fs";
+import axios from "axios";
+import nacl from "tweetnacl";
 import BN from "bn.js";
 import { buildInstruction } from "../../common/utils/instructionBuilders";
 import { decodeInstruction, parseInstructionArgs } from "../../common/utils/borshCodec";
+import { convertSnakeToCamel } from "../../common/utils/caseConversion";
 
 export type User = {
   user: Keypair,
@@ -454,7 +454,7 @@ export function verifyTransactionSafety(
     });
 
     // Decode and verify the specific oracle business logic
-    if (programId === program.programId.toBase58()) {
+    if (programId === program.programId.toBase58()) { 
       oracleInstructionCount++;
 
       const decodedIx = decodeInstruction(instruction.data, programId);
@@ -463,8 +463,8 @@ export function verifyTransactionSafety(
         throw new Error("Safety check failed: Could not decode instruction data");
       }
 
-      // Verify the correct function execution
-      if (decodedIx.name !== "purchaseSubscriptionTokenUsdt") {
+      // Verify the correct function execution (convert snake_case from IDL to camelCase for comparison)
+      if ("purchaseSubscriptionTokenUsdt" !== convertSnakeToCamel(decodedIx.name) ) {
         throw new Error(`Safety check failed: Server attempted to execute unauthorized function: ${decodedIx.name}`);
       }
 

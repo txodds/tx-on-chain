@@ -2,6 +2,7 @@ import BN from "bn.js";
 import { loadIDL } from "./programLoader";
 import * as path from "path";
 import { PublicKey } from "@solana/web3.js";
+import { convertSnakeToCamel } from "./caseConversion";
 
 let cachedIDL: any = null;
 let cachedTypes: Map<string, any> | null = null;
@@ -25,9 +26,6 @@ function getTypesMap(): Map<string, any> {
   return cachedTypes;
 }
 
-function convertSnakeToCamel(str: string): string {
-  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-}
 
 function encodePrimitive(value: any, type: string): Buffer {
   switch (type) {
@@ -114,7 +112,7 @@ function encodeStruct(value: any, typeDef: any, typesMap: Map<string, any>): Buf
   const buffers: Buffer[] = [];
   for (const field of typeDef.fields) {
     const fieldNameCamel = convertSnakeToCamel(field.name);
-    const fieldValue = value[fieldNameCamel] || value[field.name];
+    const fieldValue = fieldNameCamel in value ? value[fieldNameCamel] : value[field.name];
 
     if (fieldValue === undefined && field.type.option === undefined) {
       throw new Error(`Missing struct field: ${field.name}`);

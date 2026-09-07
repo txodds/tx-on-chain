@@ -150,7 +150,10 @@ async function main() {
       }
     }
   };
-  await scanLast12Hours(user);
+  //await scanLast12Hours(user);
+  sampleFixture = {};
+  sampleFixture.FixtureId = 18146730;
+  sampleFixture.Ts = 1788314400000;
 
   console.log(`Captured sample fixture: ${sampleFixture}`)
   
@@ -165,28 +168,35 @@ async function main() {
     }
   }
 
-  // Calculate the start of the last fully closed 5-minute interval
+  // Scan for recent odds updates, going back up to 12 hours
   const INTERVAL_MS = 5 * 60 * 1000;
+  let updates: any[] = [];
+  const MS_PER_HOUR = 3600000;
   const now = Date.now();
-  const currentIntervalStart = Math.floor(now / INTERVAL_MS) * INTERVAL_MS;
-  const lastIntervalStart = currentIntervalStart - INTERVAL_MS;
 
-  // Derive the exact path parameters required by the API
-  const targetDate = new Date(lastIntervalStart);
-  const epochDay = Math.floor(lastIntervalStart / (24 * 60 * 60 * 1000));
-  const hourOfDay = targetDate.getUTCHours(); // Must be UTC to align with epoch timing
-  const interval = Math.floor(targetDate.getUTCMinutes() / 5);
+  for (let i = 0; i < 120; i++) {
+    const targetTime = new Date(now - (i * INTERVAL_MS));
+    const epochDay = Math.floor(targetTime.getTime() / (24 * MS_PER_HOUR));
+    const hourOfDay = targetTime.getUTCHours();
+    const interval = Math.floor(targetTime.getUTCMinutes() / 5);
 
-  console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
+    try {
+      console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
+      const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
+      updates = updatesResponse.data;
 
-  // Fetch the odds updates using the time-based path parameters
-  // (Assuming apiClient handles the /api base path automatically)
-  const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
-  const updates = updatesResponse.data;
-  console.log(updates.data);
+      if (updates && updates.length > 0) {
+        console.log(`Found ${updates.length} odds updates in interval ${interval}`);
+        break;
+      }
+    } catch (error) {
+      // Continue scanning if this interval doesn't exist
+      continue;
+    }
+  }
 
   if (!updates || updates.length === 0) {
-    throw new Error(`No odds updates found for interval ${interval} on hour ${hourOfDay}. Wait for more data to be published.`);
+    throw new Error(`No odds updates found in the last 12 hours. Wait for more data to be published.`);
   }
 
   // Because the endpoint returns all updates in that interval, we can just grab the very first one
@@ -240,11 +250,11 @@ async function main() {
           },
           oddsSubTreeRoot: Array.from(payload.summary.oddsSubTreeRoot)
         },
-        subTreeProof: payload.subTreeProof.map((node: any) => ({
+        subTreeProof: (payload.subTreeProof || []).map((node: any) => ({
           hash: Array.from(node.hash),
           isRightSibling: node.isRightSibling
         })),
-        mainTreeProof: payload.mainTreeProof.map((node: any) => ({
+        mainTreeProof: (payload.mainTreeProof || []).map((node: any) => ({
           hash: Array.from(node.hash),
           isRightSibling: node.isRightSibling
         }))
@@ -311,11 +321,11 @@ async function main() {
         TOKEN_2022_PROGRAM_ID
       )
 
-      // Purchase 1 validation credit
+      // Purchase validation credits (hundreds parameter = number of 100-credit bundles)
       console.log("Purchasing validation credits...")
       const purchaseIx = buildInstruction(
         "purchaseValidationCredits",
-        { creditsToBuy: 1 },
+        { hundreds: 1 },
         {
           user: userKey,
           userValidationState: userValidationStatePda,

@@ -1,10 +1,43 @@
-import * as borsh from "@coral-xyz/borsh";
 import BN from "bn.js";
+import * as fs from "fs";
+import * as path from "path";
+import { convertSnakeToCamel } from "./caseConversion";
 
 /**
  * Custom Borsh codec for complex types found in the Txoracle program.
  * This provides encoding/decoding for validation payloads and other complex structures.
  */
+
+let cachedIdl: any = null;
+let cachedDiscriminatorMap: { [key: string]: string } | null = null;
+
+/**
+ * Load IDL from file system. Caches the result to avoid repeated reads.
+ * Looks for txoracle.json in multiple locations.
+ */
+function loadIdl(): any {
+  if (cachedIdl) return cachedIdl;
+
+  const possiblePaths = [
+    path.resolve(__dirname, "../../../idl/txoracle.json"),
+    path.resolve(__dirname, "../../idl/txoracle.json"),
+    path.resolve(__dirname, "../../../examples/devnet/idl/txoracle.json"),
+  ];
+
+  for (const filePath of possiblePaths) {
+    try {
+      if (fs.existsSync(filePath)) {
+        cachedIdl = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+        console.info("IDL found in:", filePath);        
+        return cachedIdl;
+      }
+    } catch {
+      // Continue to next path
+    }
+  }
+
+  throw new Error("Could not locate txoracle.json IDL file");
+}
 
 // Schema for validation-related types
 export const VALIDATION_SCHEMAS = {
@@ -139,12 +172,35 @@ export function encodeValidationInput(
 }
 
 /**
+ * Build discriminator map from IDL instruction definitions.
+ * Converts byte array discriminators to hex strings for lookup.
+ */
+function buildDiscriminatorMap(idl: any): { [key: string]: string } {
+  const map: { [key: string]: string } = {};
+
+  if (idl?.instructions && Array.isArray(idl.instructions)) {
+    for (const instruction of idl.instructions) {
+      if (instruction.name && instruction.discriminator) {
+        // Convert byte array to hex string
+        const hexDiscriminator = Buffer.from(instruction.discriminator).toString("hex");
+        map[hexDiscriminator] = instruction.name;
+      }
+    }
+  }
+
+  return map;
+}
+
+/**
  * Decode instruction data to extract decoded instruction details.
  * Replaces Anchor's program.coder.instruction.decode()
+ * Automatically loads and caches IDL to dynamically build discriminator map.
+ * No need to update code when new instructions are added to the program.
  */
 export function decodeInstruction(
   data: Buffer,
-  programId: string
+  programId?: string,
+  idl?: any
 ): {
   name: string;
   data: any;
@@ -153,20 +209,17 @@ export function decodeInstruction(
     return null;
   }
 
-  const discriminator = data.slice(0, 8);
-  const args = data.slice(8);
+  const discriminator = data.subarray(0, 8);
+  const args = data.subarray(8);
 
-  // Map discriminators to instruction handlers
-  // This would typically come from IDL parsing
-  const discriminatorMap: { [key: string]: string } = {
-    "e29f47cf41c8afb5": "subscribe",
-    "54c383dca8a31e77": "purchaseValidationCredits",
-    "6b3084b2d27520": "validateStatV2",
-    "f1e69976e6e225a3": "validateStatV4",
-  };
+  // Build discriminator map once and cache it
+  if (!cachedDiscriminatorMap) {
+    const resolvedIdl = idl || loadIdl();
+    cachedDiscriminatorMap = buildDiscriminatorMap(resolvedIdl);
+  }
 
   const hexDiscriminator = discriminator.toString("hex");
-  const instrName = discriminatorMap[hexDiscriminator];
+  const instrName = cachedDiscriminatorMap[hexDiscriminator];
 
   if (!instrName) {
     return null;
@@ -186,11 +239,14 @@ export function parseInstructionArgs(
   instructionName: string,
   data: Buffer
 ): any {
-  switch (instructionName) {
+  const camelCaseName = convertSnakeToCamel(instructionName);
+  switch (camelCaseName) {
     case "subscribe":
       return parseSubscribeArgs(data);
     case "purchaseValidationCredits":
       return parsePurchaseCreditsArgs(data);
+    case "purchaseSubscriptionTokenUsdt":
+      return parsePurchaseSubscriptionTokenUsdtArgs(data);
     default:
       return null;
   }
@@ -215,6 +271,16 @@ function parsePurchaseCreditsArgs(data: Buffer): any {
 
   return {
     creditsToBuy,
+  };
+}
+
+function parsePurchaseSubscriptionTokenUsdtArgs(data: Buffer): any {
+  if (data.length < 8) return null;
+
+  const txlineAmount = new BN(data.subarray(0, 8), "le");
+
+  return {
+    txlineAmount,
   };
 }
 
