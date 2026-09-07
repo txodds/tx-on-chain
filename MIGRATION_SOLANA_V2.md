@@ -17,7 +17,7 @@ The project has been migrated to use **Solana Web3.js v2.3.0** directly instead 
 - `@coral-xyz/anchor@0.32.1`
 
 **Updated:**
-- `@solana/web3.js@^1.91.9` → `@solana/web3.js@2.3.0`
+- `@solana/web3.js@^1.91.9` → `@solana/web3.js@^2.0.0`
 
 **Added:**
 - `@coral-xyz/borsh@^0.31.1` - For custom Borsh encoding/decoding
