@@ -65,10 +65,13 @@ async function main() {
     var sampleScores: any = null
 
     async function getScoresSnapshot(fixtureId: number, asOf?: number) {
+      
       const url = asOf 
         ? `/scores/snapshot/${fixtureId}?asOf=${asOf}` 
         : `/scores/snapshot/${fixtureId}`;
-
+      
+      console.log("URL:", url);
+      
       try {
         // Note: No headers are manually passed here. The interceptor handles it.
         // If the token is expired, this will pause, refresh, and resume automatically.
@@ -84,7 +87,7 @@ async function main() {
       }
     }
 
-    await getScoresSnapshot(17952170, Date.now());
+    await getScoresSnapshot(18094557, Date.now());
 
     var sampleScores: any = null
 
@@ -109,6 +112,7 @@ async function main() {
           
           if (response.data.length > 0) {
             console.log(`Scores updates found for Epoch ${epochDay} Hour ${hourOfDay} Interval ${interval}:`, response.data)
+            console.log('URL:', updateUrl);
             
             // Capture the first score update to use for validation
             if (!sampleScores) {
@@ -130,8 +134,10 @@ async function main() {
     // Execute the scanner for all fixtures
     await scanRecentScores();
 
+    console.info("scores-STAT-VALIDATION");
+
     // Demo stat validation
-    const url = `/scores/stat-validation?fixtureId=17952170&seq=941&statKey=1002`;
+    const url = `/scores/stat-validation?fixtureId=18094557&seq=941&statKey=1002`;
         
     const response = await users.apiClient.get(url, {
       userName: name
@@ -319,7 +325,7 @@ async function main() {
     await new Promise(resolve => setTimeout(resolve, waitDuration));
 
     // This call should intercept the 403, renew the JWT and retry
-    await getScoresSnapshot(17952170, Date.now());
+    await getScoresSnapshot(18094557, Date.now());
 
 } catch (error) {
     if (axios.isAxiosError(error)) {

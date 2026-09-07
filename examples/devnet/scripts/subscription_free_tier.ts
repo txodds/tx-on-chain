@@ -3,25 +3,21 @@
 // Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_free_tier.ts
 
-import { Program } from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
-import TxoracleJson from "../idl/txoracle.json";
-import * as anchor from "@coral-xyz/anchor";
+import { PublicKey, Connection } from "@solana/web3.js";
 import * as config from '../common/config';
 import * as users from '../common/users';
-import { PublicKey } from "@solana/web3.js";
+import { loadProgram } from '../../common/utils/programLoader';
 import axios from "axios";
 import { EventSource } from 'eventsource'
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
+  if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  const connection = new Connection(rpcUrl, "confirmed");
+
+  // Load program information (replaces Anchor's Program class)
+  const program = loadProgram("devnet");
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
@@ -80,7 +76,7 @@ async function main() {
         throw error;
       }
     }
-    await getOddsSnapshot(17588320, Date.now());
+    await getOddsSnapshot(18146821, 1788187370000);
 
     async function listenToOddsStream(streamId: string): Promise<void> {
       console.log(`[Odds] Subscribing to all permitted odds updates...`);

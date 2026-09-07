@@ -1,0 +1,40 @@
+{
+	"name": "tx-oracle",
+	"image": "ubuntu:24.04",
+	"runArgs": [
+		"--dns=8.8.8.8"
+	],
+	"mounts": [
+		"source=${localEnv:HOME}/.claude,target=/home/ubuntu/.claude,type=bind"
+	],
+	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": {
+			"installZsh": false,
+			"configureZshAsDefaultShell": false,
+			"username": "ubuntu",
+			"userUid": "1000",
+			"userGid": "1000"
+		},
+		"ghcr.io/devcontainers/features/git:1": {},
+		"ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"scala-lang.scala",
+				"scalameta.metals",
+				"anthropic.claude-code"
+			]
+		}
+	},
+	"remoteUser": "ubuntu",
+	"containerEnv": {
+		"DEBIAN_FRONTEND": "noninteractive",
+		"TZ": "Europe/London"
+	},
+	"remoteEnv": {
+		"PATH": "${containerEnv:PATH}:/home/ubuntu/.cargo/bin:${containerWorkspaceFolder}/.devcontainer/solana-tool-wrappers"
+	},
+	"postCreateCommand": "${containerWorkspaceFolder}/.devcontainer/post-create.sh",
+	"postStartCommand": "${containerWorkspaceFolder}/.devcontainer/start-solana-sidecar.sh && ${containerWorkspaceFolder}/.devcontainer/start-postgres.sh"
+}

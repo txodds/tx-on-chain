@@ -1,4 +1,3 @@
-import * as anchor from "@coral-xyz/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   Account,
@@ -12,10 +11,20 @@ import * as fs from "fs";
 import axios from "axios";
 import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import {
+  PublicKey,
+  Transaction,
+  Keypair,
+  Connection,
+  sendAndConfirmTransaction,
+  SystemProgram
+} from "@solana/web3.js";
+import BN from "bn.js";
+import { buildInstruction } from "../../common/utils/instructionBuilders";
+import { decodeInstruction, parseInstructionArgs } from "../../common/utils/borshCodec";
 
 export type User = {
-  user: anchor.web3.Keypair,
+  user: Keypair,
   userTokenAccount: Account | undefined
 }
 
@@ -159,20 +168,20 @@ apiClient.interceptors.response.use(
 export async function setupUser(
   name: string,
   keypairLocation: string,
-  tokenMint: anchor.web3.PublicKey,
-  connection: anchor.web3.Connection,
-  program: anchor.Program<Txoracle>,
+  tokenMint: PublicKey,
+  connection: Connection,
+  program: any,
   serviceLevelId: number,
   weeks: number,
   selectedLeagues: number[],
   existingJwt?: string,
-  existingApiToken?: string 
+  existingApiToken?: string
 ): Promise<User> {
-  let user: anchor.web3.Keypair;
+  let user: Keypair;
   try {
     const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
     const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    user = anchor.web3.Keypair.fromSecretKey(secretKey);
+    user = Keypair.fromSecretKey(secretKey);
   } catch (err) {
     console.error(`[${name}] Could not load user keypair at ${keypairLocation}`);
     throw err;
@@ -194,7 +203,7 @@ export async function setupUser(
     tokenMint, user.publicKey, false, TOKEN_2022_PROGRAM_ID
   );
 
-  const [pricingMatrixPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
+  const [pricingMatrixPda] = PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
   
   // Fetch and display the service tier pricing matrix
   async function discoverPricingMatrix() {
@@ -260,7 +269,7 @@ export async function setupUser(
   
   if (!accountInfo) {
     console.log(`[${name}] Creating User Token-2022 Account`);
-    const transaction = new anchor.web3.Transaction().add(
+    const transaction = new Transaction().add(
       createAssociatedTokenAccountInstruction(
         user.publicKey,
         userTokenAccountAddress,
@@ -270,10 +279,10 @@ export async function setupUser(
         ASSOCIATED_TOKEN_PROGRAM_ID
       )
     );
-    
-    await anchor.web3.sendAndConfirmTransaction(connection, transaction, [user], { commitment: "confirmed" });
+
+    await sendAndConfirmTransaction(connection, transaction, [user], { commitment: "confirmed" });
     console.log(`[${name}] Account created`);
-    await delay(3000); 
+    await delay(3000);
   }
 
   let userTokenAccount;
@@ -297,7 +306,7 @@ export async function setupUser(
     throw new Error(`[${name}] RPC failed to sync the new token account.`);
   }
 
-  const [tokenTreasuryPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
   const tokenTreasuryVault = getAssociatedTokenAddressSync(tokenMint, tokenTreasuryPda, true, TOKEN_2022_PROGRAM_ID);
 
   if (weeks < 4 || weeks % 4 !== 0) {
@@ -306,11 +315,11 @@ export async function setupUser(
 
   console.log(`[${name}] Subscribing on-chain: Level ${serviceLevelId}, Duration ${weeks} weeks`);
 
-  let tx: anchor.web3.Transaction;
-
-  tx = await program.methods
-    .subscribe(serviceLevelId, weeks)
-    .accounts({
+  // Build subscribe instruction using Solana v2
+  const subscribeInstruction = buildInstruction(
+    "subscribe",
+    { serviceLevelId, weeks },
+    {
       user: user.publicKey,
       pricingMatrix: pricingMatrixPda,
       tokenMint: tokenMint,
@@ -319,9 +328,12 @@ export async function setupUser(
       tokenTreasuryPda: tokenTreasuryPda,
       tokenProgram: TOKEN_2022_PROGRAM_ID,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .transaction();
+      systemProgram: SystemProgram.programId,
+    },
+    program.programId
+  );
+
+  const tx = new Transaction().add(subscribeInstruction);
 
   const latestBlockhash = await connection.getLatestBlockhash('confirmed');
   tx.recentBlockhash = latestBlockhash.blockhash;
@@ -367,8 +379,8 @@ export async function setupUser(
 export function verifyTransactionSafety(
   transaction: Transaction,
   expectedBuyer: PublicKey,
-  program: anchor.Program<any>,
-  expectedAmount: anchor.BN
+  program: any,
+  expectedAmount: BN
 ): void {
   
   // Verify the expected fee payer
@@ -420,9 +432,7 @@ export function verifyTransactionSafety(
     if (programId === program.programId.toBase58()) {
       oracleInstructionCount++;
 
-      const decodedIx = (program.coder.instruction as anchor.BorshInstructionCoder).decode(
-        instruction.data
-      );
+      const decodedIx = decodeInstruction(instruction.data, programId);
 
       if (!decodedIx) {
         throw new Error("Safety check failed: Could not decode instruction data");
@@ -433,12 +443,13 @@ export function verifyTransactionSafety(
         throw new Error(`Safety check failed: Server attempted to execute unauthorized function: ${decodedIx.name}`);
       }
 
-      // Extract and verify the exact requested amount
-      const payloadAmount = (decodedIx.data as any).txlineAmount as anchor.BN;
+      // Parse and verify the exact requested amount
+      const args = parseInstructionArgs(decodedIx.name, decodedIx.data);
+      const payloadAmount = args?.txlineAmount as BN | undefined;
 
-      if (!payloadAmount.eq(expectedAmount)) {
+      if (!payloadAmount || !payloadAmount.eq(expectedAmount)) {
         throw new Error(
-          `Safety check failed: Amount mismatch! Bot requested ${expectedAmount.toString()}, but server payload contains ${payloadAmount.toString()}`
+          `Safety check failed: Amount mismatch! Bot requested ${expectedAmount.toString()}, but server payload contains ${payloadAmount?.toString() || "unknown"}`
         );
       }
     }

@@ -114,8 +114,11 @@ async function main() {
     program,
     1,
     4,
-    []
+    [],
+    "",
+    "txoracle_api_157b1b042e8c4da690a88849916af909"
   )
+
   console.log("API Token:", users.authState.apiToken)
 
   // Upgrade the provider to use the real funded Trader wallet
@@ -142,9 +145,8 @@ async function main() {
     // const fixtureId = 18218149;
     // const seq = 1087;
     // England v Argentina: July 15, 2026
-    const fixtureId = 18241006;
-    const seq = 962;
-
+    const fixtureId = 18146821;
+    const seq= 398;
     // Fetch the scores snapshot for a specific fixture
     async function getScoresSnapshot(fixtureId: number, asOf?: number) {
       const url = asOf 
@@ -156,7 +158,7 @@ async function main() {
         // Pause refresh and resume automatically if the token is expired
         const response = await users.apiClient.get(url)
         
-        console.log(`Snapshot for fixture ${fixtureId}:`, response.data)
+        console.log(`Scores Snapshot for fixture ${fixtureId}, ${asOf}:`, response.data)
         return response.data
         
       } catch (error) {
@@ -166,7 +168,7 @@ async function main() {
       }
     }
 
-    await getScoresSnapshot(fixtureId, Date.now())
+    await getScoresSnapshot(fixtureId, 1788187370000)
 
     var sampleScores: any = null
 
@@ -174,8 +176,8 @@ async function main() {
       const msPerInterval = 300000 
       const now = new Date()
 
-      // Scan backwards through the last twenty hours of intervals
-      for (let i = 0; i < 240; i++) {
+      // Scan backwards through the last week of intervals
+      for (let i = 3016; i >= 0; i--) {
         const targetTime = new Date(now.getTime() - (i * msPerInterval))
         const epochDay = Math.floor(targetTime.getTime() / 86400000)
         const hourOfDay = targetTime.getUTCHours()
@@ -186,6 +188,8 @@ async function main() {
           updateUrl += `?fixtureId=${fixtureId}`
         }
         
+        console.error("scanRecentScores: ${updateUrl}:", updateUrl);
+
         try {
           const response = await users.apiClient.get(updateUrl)
           
@@ -208,6 +212,8 @@ async function main() {
         }
       }
     }
+
+    console.error("SCANNING SCORES")
 
     // Execute the scanner for all scores
     await scanRecentScores()

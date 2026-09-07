@@ -1,0 +1,22 @@
+#!/bin/bash
+# Generic docker-exec wrapper: invoked as e.g. "anchor", "solana", "avm",
+# "cargo-build-sbf" (via a symlink named after the real tool). Runs the
+# matching binary inside the solana-sidecar container, in the caller's
+# current directory (valid unchanged there since the sidecar shares the
+# devcontainer's mounts via --volumes-from).
+set -e
+
+TOOL="$(basename "$0")"
+CONTAINER_NAME="solana-sidecar"
+
+if ! docker ps --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
+  echo "solana-sidecar is not running. Start it with: .devcontainer/start-solana-sidecar.sh" >&2
+  exit 1
+fi
+
+DOCKER_EXEC_FLAGS=(-i -u ubuntu -w "$PWD")
+if [ -t 0 ] && [ -t 1 ]; then
+  DOCKER_EXEC_FLAGS+=(-t)
+fi
+
+exec docker exec "${DOCKER_EXEC_FLAGS[@]}" "$CONTAINER_NAME" "$TOOL" "$@"
