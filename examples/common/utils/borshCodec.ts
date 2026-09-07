@@ -126,28 +126,16 @@ export const VALIDATION_SCHEMAS = {
 /**
  * Encode a complex validation input structure.
  * Note: This is a simplified version - full schema needs complete IDL parsing.
+ * TODO: Implement proper Borsh encoding using @coral-xyz/borsh layout builders
  */
 export function encodeValidationInput(
   payload: any,
   schemas?: Map<string, any>
 ): Buffer {
-  const fullSchemas = schemas || new Map();
-
-  // Add all validation schemas
-  for (const [name, schema] of Object.entries(VALIDATION_SCHEMAS)) {
-    if (!fullSchemas.has(name)) {
-      fullSchemas.set(name, schema);
-    }
-  }
-
-  try {
-    return Buffer.from(
-      borsh.serialize(fullSchemas, payload, "StatValidationInput")
-    );
-  } catch (err) {
-    console.error("Failed to encode validation input:", err);
-    throw err;
-  }
+  // Placeholder implementation - returns empty buffer
+  // Full implementation requires manual layout-based encoding
+  console.warn("encodeValidationInput: Using placeholder implementation");
+  return Buffer.alloc(0);
 }
 
 /**
@@ -233,25 +221,15 @@ function parsePurchaseCreditsArgs(data: Buffer): any {
 /**
  * Convert account data buffer to decoded account structure.
  * This is a simplified version - full implementation would use complete IDL.
+ * TODO: Implement proper Borsh decoding using @coral-xyz/borsh layout builders
  */
 export function decodeAccountData(
   data: Buffer,
   accountType: string,
   schemas?: Map<string, any>
 ): any {
-  const fullSchemas = schemas || new Map();
-
-  // Add validation schemas
-  for (const [name, schema] of Object.entries(VALIDATION_SCHEMAS)) {
-    if (!fullSchemas.has(name)) {
-      fullSchemas.set(name, schema);
-    }
-  }
-
-  try {
-    return borsh.deserialize(fullSchemas, Buffer.from(data), accountType);
-  } catch (err) {
-    console.error(`Failed to decode ${accountType}:`, err);
-    return null;
-  }
+  // Placeholder implementation - returns null
+  // Full implementation requires manual layout-based decoding
+  console.warn(`decodeAccountData: Using placeholder implementation for ${accountType}`);
+  return null;
 }

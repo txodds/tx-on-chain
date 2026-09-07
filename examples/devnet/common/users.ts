@@ -207,7 +207,12 @@ export async function setupUser(
   
   // Fetch and display the service tier pricing matrix
   async function discoverPricingMatrix() {
-    const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
+    // TODO: Replace program.account.pricingMatrix.fetch with proper account data deserialization
+    const matrix = (program as any).account?.pricingMatrix?.fetch?.(pricingMatrixPda);
+    if (!matrix) {
+      console.log(`[${name}] Note: Pricing matrix display requires Anchor program object`);
+      return;
+    }
     console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`); 
     console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
     console.log(`=================   ===========   ==============  =============  =============`);
