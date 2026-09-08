@@ -16,6 +16,7 @@ import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_
 import { loadProgram } from '../../common/utils/programLoader';
 import { buildInstruction } from '../../common/utils/instructionBuilders';
 import { encodeOddsValidationInputV4 } from '../../common/utils/oddsEncoder';
+import { formatValidationProof } from '../../common/utils/formatter';
 
 // Type definitions from Anchor IDL (kept for type safety)
 export type OddsValidationInputV4 = any
@@ -217,12 +218,13 @@ async function main() {
       console.log("Getting odds validation data...")
       const vResponse = await users.apiClient.get<ApiOddsValidationResponseV4>("/odds/validation-v4", {
         params: {
-          messageId: targetMessageId, 
-          ts: targetTimestamp,        
+          messageId: targetMessageId,
+          ts: targetTimestamp,
         },
       });
       const v4Data = vResponse.data;
       const payload = v4Data.payload;
+      console.log("Validation proof response:\n" + formatValidationProof(v4Data));
 
       // Map JSON payload directly from the response wrapper
       const mappedPayload: OddsValidationInputV4 = {

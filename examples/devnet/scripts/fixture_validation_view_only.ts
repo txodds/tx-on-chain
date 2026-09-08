@@ -10,6 +10,7 @@ import axios from "axios";
 import BN from "bn.js";
 import { loadProgram } from "../../common/utils/programLoader";
 import { buildInstruction } from "../../common/utils/instructionBuilders";
+import { formatValidationProof } from "../../common/utils/formatter";
 import { log } from 'console';
 
 function getRequiredEnvVar(name: string): string {
@@ -94,37 +95,6 @@ async function scanHours(user: users.User, hours: number): Promise<any> {
   return sampleFixture;
 }
 
-function formatValidationProof(data: any): string {
-  const lines: string[] = [];
-
-  function formatValue(val: any, indent: string, key?: string): void {
-    if (Array.isArray(val)) {
-      if (val.every(v => typeof v === 'number')) {
-        lines.push(`${indent}${key ? key + ': ' : ''}[${val.join(', ')}]`);
-      } else if (val.every(v => typeof v === 'object' && v !== null && ('hash' in v || 'isRightSibling' in v))) {
-        lines.push(`${indent}${key ? key + ': ' : ''}[`);
-        val.forEach((item, i) => {
-          lines.push(`${indent}  { hash: [${item.hash.join(', ')}], isRightSibling: ${item.isRightSibling} }${i < val.length - 1 ? ',' : ''}`);
-        });
-        lines.push(`${indent}]`);
-      } else {
-        lines.push(`${indent}${key ? key + ': ' : ''}${JSON.stringify(val)}`);
-      }
-    } else if (typeof val === 'object' && val !== null) {
-      lines.push(`${indent}${key ? key + ': ' : ''}{`);
-      Object.entries(val).forEach(([k, v], idx, arr) => {
-        formatValue(v, `${indent}  `, k);
-        if (idx < arr.length - 1) lines[lines.length - 1] += ',';
-      });
-      lines.push(`${indent}}`);
-    } else {
-      lines.push(`${indent}${key ? key + ': ' : ''}${JSON.stringify(val)}`);
-    }
-  }
-
-  formatValue(data, '');
-  return lines.join('\n');
-}
 
 async function fetchValidationProof(fixtureId: number, timestamp: number): Promise<any> {
   const validationUrl = `${config.API_BASE_URL}/fixtures/validation?fixtureId=${fixtureId}&timestamp=${timestamp}`;

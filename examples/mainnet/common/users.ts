@@ -21,6 +21,7 @@ import {
 } from "@solana/web3.js";
 import BN from "bn.js";
 import { buildInstruction } from "../../common/utils/instructionBuilders";
+import * as tokenCache from "../../common/utils/tokenCache";
 
 export type User = {
   user: Keypair,
@@ -46,6 +47,12 @@ let globalRefreshSubscribers: ((token: string) => void)[] = [];
 
 // Map to handle concurrent multi-user states
 export const userAuthMap = new Map<string, UserAuthState>();
+
+// Map to track keypair paths for token cache invalidation
+const userKeypairMap = new Map<string, string>();
+
+// Map to track which users are using cached tokens (vs. explicitly provided)
+const usersWithCachedToken = new Set<string>();
 
 function onTokenRefreshed(name: string | undefined, newToken: string) {
   if (name && userAuthMap.has(name)) {
@@ -127,20 +134,28 @@ apiClient.interceptors.response.use(
         else globalIsRefreshing = true;
 
         try {
+          // If a cached token was used and failed, invalidate the cache
+          const hadCachedToken = name && usersWithCachedToken.has(name);
+          const keypairPath = name ? userKeypairMap.get(name) : undefined;
+          if (hadCachedToken && keypairPath) {
+            tokenCache.invalidateTokenCache(keypairPath);
+            usersWithCachedToken.delete(name);
+          }
+
           // Fetch the new token
           const newToken = await renewJwt(name);
-          
+
           if (state) state.isRefreshing = false;
           else globalIsRefreshing = false;
-          
+
           onTokenRefreshed(name, newToken);
-          
+
           // Retry the original request immediately
           return apiClient(originalRequest);
         } catch (refreshError) {
           if (state) state.isRefreshing = false;
           else globalIsRefreshing = false;
-          
+
           console.error(`[Auth] Fatal: Could not renew JWT for ${name || "Global"}. Verify API Token.`, refreshError);
           return Promise.reject(refreshError);
         }
@@ -186,16 +201,28 @@ export async function setupUser(
     throw err;
   }
 
+  // Track keypair path for token cache invalidation
+  userKeypairMap.set(name, keypairLocation);
+
   // Initialize the user auth state
   let userState = userAuthMap.get(name);
   if (!userState) {
+    // Try to load cached API token if not explicitly provided
+    const cachedApiToken = !existingApiToken ? tokenCache.getTokenFromCache(keypairLocation) : null;
+    const usingCachedToken = !existingApiToken && !!cachedApiToken;
+
     userState = {
-      apiToken: existingApiToken || '',
+      apiToken: existingApiToken || cachedApiToken || '',
       jwt: existingJwt || '',
       isRefreshing: false,
       refreshSubscribers: []
     };
     userAuthMap.set(name, userState);
+
+    // Track that this user is using a cached token (only invalidate cache if it was actually used)
+    if (usingCachedToken) {
+      usersWithCachedToken.add(name);
+    }
   }
 
   const userTokenAccountAddress = getAssociatedTokenAddressSync(
@@ -362,6 +389,9 @@ export async function setupUser(
   );
   
   userState.apiToken = activationResponse.data.token || activationResponse.data;
+
+  // Persist API token to cache for future use
+  tokenCache.saveTokenToCache(keypairLocation, userState.apiToken);
 
   // Update global fallback if this is the first user
   if (userAuthMap.size === 1) {
