@@ -152,6 +152,10 @@ function encodeArgument(value: any, typeSpec: any, typesMap: Map<string, any>): 
     return encodePrimitive(value, typeSpec);
   }
 
+  if (typeSpec.option) {
+    return encodeOption(value, typeSpec.option, typesMap);
+  }
+
   if (typeSpec.vec) {
     return encodeVec(value, typeSpec.vec, typesMap);
   }
@@ -164,6 +168,9 @@ function encodeArgument(value: any, typeSpec: any, typesMap: Map<string, any>): 
     const typeDef = typesMap.get(typeSpec.defined.name);
     if (!typeDef) {
       throw new Error(`Type not found in IDL: ${typeSpec.defined.name}`);
+    }
+    if (typeDef.kind === "enum") {
+      return encodeEnum(value, typeDef, typesMap);
     }
     return encodeStruct(value, typeDef, typesMap);
   }
@@ -227,6 +234,56 @@ function encodeVec(value: any[], elementType: any, typesMap: Map<string, any>): 
   return Buffer.concat([lenBuf, ...itemBuffers]);
 }
 
+function encodeOption(value: any, optionType: any, typesMap: Map<string, any>): Buffer {
+  if (value === null || value === undefined) {
+    return Buffer.from([0]);
+  }
+  const encoded = encodeArgument(value, optionType, typesMap);
+  return Buffer.concat([Buffer.from([1]), encoded]);
+}
+
+function encodeEnum(value: any, enumDef: any, typesMap: Map<string, any>): Buffer {
+  if (enumDef.kind !== "enum") {
+    throw new Error(`Expected enum, got ${enumDef.kind}`);
+  }
+
+  const variantName = Object.keys(value)[0];
+  if (!variantName) {
+    throw new Error(`Enum value must have one key, got: ${JSON.stringify(value)}`);
+  }
+
+  const variantIndex = enumDef.variants.findIndex((v: any) =>
+    v.name.toLowerCase() === variantName.toLowerCase()
+  );
+  if (variantIndex === -1) {
+    throw new Error(`Unknown enum variant: ${variantName}`);
+  }
+
+  const variant = enumDef.variants[variantIndex];
+  const discriminator = Buffer.from([variantIndex]);
+
+  if (!variant.fields || variant.fields.length === 0) {
+    return discriminator;
+  }
+
+  const variantValue = value[variantName];
+  const buffers: Buffer[] = [discriminator];
+
+  for (const field of variant.fields) {
+    const fieldNameCamel = convertSnakeToCamel(field.name);
+    let fieldValue = fieldNameCamel in variantValue ? variantValue[fieldNameCamel] : variantValue[field.name];
+
+    if (fieldValue === undefined) {
+      throw new Error(`Missing enum field: ${field.name}`);
+    }
+
+    const encoded = encodeArgument(fieldValue, field.type, typesMap);
+    buffers.push(encoded);
+  }
+
+  return Buffer.concat(buffers);
+}
+
 function encodeArray(value: any, arraySpec: any): Buffer {
   if (Array.isArray(arraySpec) && arraySpec.length === 2) {
     const [elementType, _length] = arraySpec;
@@ -253,10 +310,10 @@ function encodeStruct(value: any, typeDef: any, typesMap: Map<string, any>): Buf
   const buffers: Buffer[] = [];
   for (const field of typeDef.fields) {
     const fieldNameCamel = convertSnakeToCamel(field.name);
-    const fieldValue = value[fieldNameCamel] || value[field.name];
+    let fieldValue = fieldNameCamel in value ? value[fieldNameCamel] : value[field.name];
 
     if (fieldValue === undefined) {
-      throw new Error(`Missing struct field: ${field.name}`);
+      throw new Error(`Missing struct field: ${field.name} (looked for ${fieldNameCamel} and ${field.name}; got keys: ${Object.keys(value).join(", ")})`);
     }
 
     const encoded = encodeArgument(fieldValue, field.type, typesMap);
