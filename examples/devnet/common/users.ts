@@ -55,20 +55,34 @@ const userKeypairMap = new Map<string, string>();
 // Map to track which users are using cached tokens (vs. explicitly provided)
 const usersWithCachedToken = new Set<string>();
 
-function onTokenRefreshed(name: string | undefined, newToken: string) {
-  if (name && userAuthMap.has(name)) {
-    const state = userAuthMap.get(name)!;
-    state.refreshSubscribers.forEach(callback => callback(newToken));
+function getAuthState(name: string | undefined): UserAuthState | undefined {
+  return name && userAuthMap.has(name) ? userAuthMap.get(name)! : undefined;
+}
+
+function getRefreshSubscribers(name: string | undefined): ((token: string) => void)[] {
+  const state = getAuthState(name);
+  return state ? state.refreshSubscribers : globalRefreshSubscribers;
+}
+
+function clearRefreshSubscribers(name: string | undefined) {
+  const state = getAuthState(name);
+  if (state) {
     state.refreshSubscribers = [];
   } else {
-    globalRefreshSubscribers.forEach(callback => callback(newToken));
     globalRefreshSubscribers = [];
   }
 }
 
+function onTokenRefreshed(name: string | undefined, newToken: string) {
+  const subscribers = getRefreshSubscribers(name);
+  subscribers.forEach(callback => callback(newToken));
+  clearRefreshSubscribers(name);
+}
+
 function addRefreshSubscriber(name: string | undefined, callback: (token: string) => void) {
-  if (name && userAuthMap.has(name)) {
-    userAuthMap.get(name)!.refreshSubscribers.push(callback);
+  const state = getAuthState(name);
+  if (state) {
+    state.refreshSubscribers.push(callback);
   } else {
     globalRefreshSubscribers.push(callback);
   }
@@ -77,7 +91,7 @@ function addRefreshSubscriber(name: string | undefined, callback: (token: string
 export async function renewJwt(name?: string): Promise<string> {
   const logName = name || "Global";
   console.log(`[Auth] JWT expired or missing for ${logName}. Acquiring new guest session...`);
-  
+
   // Adjust the payload/headers if your /start endpoint requires the X-Api-Token
   const response = await axios.post(config.JWT_URL);
   const newJwt = response.data.token;
@@ -85,7 +99,7 @@ export async function renewJwt(name?: string): Promise<string> {
   if (name && userAuthMap.has(name)) {
     userAuthMap.get(name)!.jwt = newJwt;
   }
-  
+
   // Populate default global state if this is the first user or a global request
   if (!name || userAuthMap.size === 1) {
     authState.jwt = newJwt;
@@ -98,10 +112,9 @@ export const apiClient = axios.create({
   baseURL: `${config.API_BASE_URL}`,
 });
 
-// Request interceptor: Always inject the latest tokens
-apiClient.interceptors.request.use(config => {
+function injectAuthHeaders(config: any): any {
   const name = (config as any).userName as string | undefined;
-  const state = name ? userAuthMap.get(name) : undefined;
+  const state = getAuthState(name);
 
   const jwt = state?.jwt || authState.jwt;
   const apiToken = state?.apiToken || authState.apiToken;
@@ -113,150 +126,135 @@ apiClient.interceptors.request.use(config => {
     config.headers['X-Api-Token'] = apiToken;
   }
   return config;
-});
+}
+
+// Request interceptor: Always inject the latest tokens
+apiClient.interceptors.request.use(injectAuthHeaders);
+
+function setRefreshingState(name: string | undefined, isRefreshing: boolean) {
+  const state = getAuthState(name);
+  if (state) {
+    state.isRefreshing = isRefreshing;
+  } else {
+    globalIsRefreshing = isRefreshing;
+  }
+}
+
+function isRefreshingInProgress(name: string | undefined): boolean {
+  const state = getAuthState(name);
+  return state ? state.isRefreshing : globalIsRefreshing;
+}
+
+function invalidateCachedTokenIfApplicable(name: string | undefined) {
+  const hadCachedToken = name && usersWithCachedToken.has(name);
+  const keypairPath = name ? userKeypairMap.get(name) : undefined;
+  if (hadCachedToken && keypairPath) {
+    tokenCache.invalidateTokenCache(keypairPath);
+    usersWithCachedToken.delete(name);
+  }
+}
+
+async function handleTokenRefresh(name: string | undefined, originalRequest: any): Promise<any> {
+  setRefreshingState(name, true);
+
+  try {
+    invalidateCachedTokenIfApplicable(name);
+    const newToken = await renewJwt(name);
+    setRefreshingState(name, false);
+    onTokenRefreshed(name, newToken);
+    return apiClient(originalRequest);
+  } catch (refreshError) {
+    setRefreshingState(name, false);
+    console.error(`[Auth] Fatal: Could not renew JWT for ${name || "Global"}. Verify API Token.`, refreshError);
+    return Promise.reject(refreshError);
+  }
+}
+
+function retryWithRefreshedToken(name: string | undefined, originalRequest: any): Promise<any> {
+  return new Promise(resolve => {
+    addRefreshSubscriber(name, (newToken) => {
+      originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+      resolve(apiClient(originalRequest));
+    });
+  });
+}
 
 // Response interceptor: Catch 401s and retry
 apiClient.interceptors.response.use(
-  (response) => response, // Pass through successful responses immediately
+  (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const name = (originalRequest as any).userName as string | undefined;
-    const state = name ? userAuthMap.get(name) : undefined;
 
-    // Check if the specific user or global is currently refreshing
-    const isCurrentlyRefreshing = state ? state.isRefreshing : globalIsRefreshing;
-
-    // If we receive a 401 and have not already retried this specific request
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      if (!isCurrentlyRefreshing) {
-        if (state) state.isRefreshing = true;
-        else globalIsRefreshing = true;
-
-        try {
-          // If a cached token was used and failed, invalidate the cache
-          const hadCachedToken = name && usersWithCachedToken.has(name);
-          const keypairPath = name ? userKeypairMap.get(name) : undefined;
-          if (hadCachedToken && keypairPath) {
-            tokenCache.invalidateTokenCache(keypairPath);
-            usersWithCachedToken.delete(name);
-          }
-
-          // Fetch the new token
-          const newToken = await renewJwt(name);
-
-          if (state) state.isRefreshing = false;
-          else globalIsRefreshing = false;
-
-          onTokenRefreshed(name, newToken);
-
-          // Retry the original request immediately
-          return apiClient(originalRequest);
-        } catch (refreshError) {
-          if (state) state.isRefreshing = false;
-          else globalIsRefreshing = false;
-
-          console.error(`[Auth] Fatal: Could not renew JWT for ${name || "Global"}. Verify API Token.`, refreshError);
-          return Promise.reject(refreshError);
-        }
+      if (!isRefreshingInProgress(name)) {
+        return handleTokenRefresh(name, originalRequest);
       } else {
-        // If another request is already fetching the token, wait in line, then retry
-        return new Promise(resolve => {
-          addRefreshSubscriber(name, (newToken) => {
-            originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-            resolve(apiClient(originalRequest));
-          });
-        });
+        return retryWithRefreshedToken(name, originalRequest);
       }
     }
 
-    // Reject any other errors normally
     return Promise.reject(error);
   }
 );
 
-/**
- * Set up a user with tokens and perform a subscription use case.
- * Optional existingJwt and existingApiToken could be used to bypass acquisition.
- */
-export async function setupUser(
-  name: string,
-  keypairLocation: string,
-  tokenMint: PublicKey,
-  connection: Connection,
-  program: any,
-  serviceLevelId: number,
-  weeks: number,
-  selectedLeagues: number[],
-  existingJwt?: string,
-  existingApiToken?: string
-): Promise<User> {
-  let user: Keypair;
+function loadUserKeypair(name: string, keypairLocation: string): Keypair {
   try {
     const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
     const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    user = Keypair.fromSecretKey(secretKey);
+    return Keypair.fromSecretKey(secretKey);
   } catch (err) {
     console.error(`[${name}] Could not load user keypair at ${keypairLocation}`);
     throw err;
   }
+}
 
-  // Track keypair path for token cache invalidation
-  userKeypairMap.set(name, keypairLocation);
-
-  // Initialize the user auth state
+function initializeUserAuthState(name: string, keypairLocation: string, existingJwt?: string, existingApiToken?: string): UserAuthState {
   let userState = userAuthMap.get(name);
-  if (!userState) {
-    // Try to load cached API token if not explicitly provided
-    const cachedApiToken = !existingApiToken ? tokenCache.getTokenFromCache(keypairLocation) : null;
-    const usingCachedToken = !existingApiToken && !!cachedApiToken;
+  if (userState) return userState;
 
-    userState = {
-      apiToken: existingApiToken || cachedApiToken || '',
-      jwt: existingJwt || '',
-      isRefreshing: false,
-      refreshSubscribers: []
-    };
-    userAuthMap.set(name, userState);
+  const cachedApiToken = !existingApiToken ? tokenCache.getTokenFromCache(keypairLocation) : null;
+  const usingCachedToken = !existingApiToken && !!cachedApiToken;
 
-    // Track that this user is using a cached token (only invalidate cache if it was actually used)
-    if (usingCachedToken) {
-      usersWithCachedToken.add(name);
-    }
+  userState = {
+    apiToken: existingApiToken || cachedApiToken || '',
+    jwt: existingJwt || '',
+    isRefreshing: false,
+    refreshSubscribers: []
+  };
+  userAuthMap.set(name, userState);
+
+  if (usingCachedToken) {
+    usersWithCachedToken.add(name);
   }
 
-  const userTokenAccountAddress = getAssociatedTokenAddressSync(
-    tokenMint, user.publicKey, false, TOKEN_2022_PROGRAM_ID
-  );
+  return userState;
+}
 
-  const [pricingMatrixPda] = PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
-  
-  // Fetch and display the service tier pricing matrix
-  async function discoverPricingMatrix() {
-    try {
-      const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
-      console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`);
-      console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
-      console.log(`=================   ===========   ==============  =============  =============`);
+async function discoverPricingMatrix(name: string, program: any, pricingMatrixPda: PublicKey): Promise<void> {
+  try {
+    const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
+    console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`);
+    console.log(`Service level id.   Tokens/week   Sampling (sec)  League bundle  Market bundle`);
+    console.log(`=================   ===========   ==============  =============  =============`);
 
-      matrix.rows.forEach((row: any) => {
-        console.log(
-          String(row.rowId).padStart(12, " ")
-          + String(row.pricePerWeekToken).padStart(17, " ")
-          + String(row.samplingIntervalSec).padStart(15, " ")
-          + String(row.leagueBundleId).padStart(15, " ")
-          + String(row.marketBundleId).padStart(12, " ")
-        );
-      });
-    } catch (err) {
-      console.log(`[${name}] Pricing matrix not available on this network (expected on devnet without on-chain state)`);
-    }
+    matrix.rows.forEach((row: any) => {
+      console.log(
+        String(row.rowId).padStart(12, " ")
+        + String(row.pricePerWeekToken).padStart(17, " ")
+        + String(row.samplingIntervalSec).padStart(15, " ")
+        + String(row.leagueBundleId).padStart(15, " ")
+        + String(row.marketBundleId).padStart(12, " ")
+      );
+    });
+  } catch (err) {
+    console.log(`[${name}] Pricing matrix not available on this network (expected on devnet without on-chain state)`);
   }
-  
-  await discoverPricingMatrix();
+}
 
-  // Ensure we have a JWT for backend requests
+async function ensureUserHasJwt(name: string, userState: UserAuthState): Promise<void> {
   if (!userState.jwt) {
     console.log(`[${name}] No existing JWT. Acquiring new guest session...`);
     const response = await axios.post(config.JWT_URL);
@@ -264,97 +262,109 @@ export async function setupUser(
   } else {
     console.log(`[${name}] Using provided JWT.`);
   }
+}
 
-  // Populate default global state if this is the first user
+function updateGlobalAuthStateIfFirstUser(userState: UserAuthState): void {
   if (userAuthMap.size === 1) {
     authState.jwt = userState.jwt;
     authState.apiToken = userState.apiToken;
   }
+}
 
-  // If the API Token exists, the user has already paid. Bypass on-chain and activation flows.
-  if (userState.apiToken) {
-    console.log(`[${name}] Existing API Token detected. Bypassing on-chain payment and backend activation.`);
-    
-    let userTokenAccount;
-    try {
-      // Attempt to fetch the account to populate the return object, but do not crash if network is laggy
-      userTokenAccount = await getAccount(
-        connection,
+async function fetchUserTokenAccount(connection: Connection, userTokenAccountAddress: PublicKey): Promise<Account | undefined> {
+  try {
+    return await getAccount(connection, userTokenAccountAddress, 'confirmed', TOKEN_2022_PROGRAM_ID);
+  } catch (e) {
+    return undefined;
+  }
+}
+
+async function skipSubscriptionFlowWithExistingToken(name: string, user: Keypair, userTokenAccountAddress: PublicKey, connection: Connection): Promise<User> {
+  console.log(`[${name}] Existing API Token detected. Bypassing on-chain payment and backend activation.`);
+  const userTokenAccount = await fetchUserTokenAccount(connection, userTokenAccountAddress);
+  if (!userTokenAccount) {
+    console.log(`[${name}] Note: Could not fetch Token-2022 account on-chain. Assuming it exists.`);
+  }
+  return { user, userTokenAccount };
+}
+
+async function createTokenAccount(name: string, user: Keypair, connection: Connection, tokenMint: PublicKey, userTokenAccountAddress: PublicKey): Promise<void> {
+  console.log(`[${name}] Creating User Token-2022 Account`);
+  const { blockhash } = await connection.getLatestBlockhash();
+  const messageV0 = new TransactionMessage({
+    payerKey: user.publicKey,
+    recentBlockhash: blockhash,
+    instructions: [
+      createAssociatedTokenAccountInstruction(
+        user.publicKey,
         userTokenAccountAddress,
-        'confirmed',
-        TOKEN_2022_PROGRAM_ID
-      );
-    } catch (e) {
-      console.log(`[${name}] Note: Could not fetch Token-2022 account on-chain. Assuming it exists.`);
-    }
+        user.publicKey,
+        tokenMint,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID
+      )
+    ],
+  }).compileToV0Message();
 
-    return {
-      user: user,
-      userTokenAccount: userTokenAccount
-    };
-  }
+  const tx = new VersionedTransaction(messageV0);
+  tx.sign([user]);
+  const txSignature = await connection.sendTransaction(tx);
+  await connection.confirmTransaction(txSignature, "confirmed");
+  console.log(`[${name}] Account created`);
+}
 
-  // Standard subscription flow
+async function waitForTokenAccountSync(name: string, connection: Connection, userTokenAccountAddress: PublicKey): Promise<Account> {
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  const accountInfo = await connection.getAccountInfo(userTokenAccountAddress);
-  
-  if (!accountInfo) {
-    console.log(`[${name}] Creating User Token-2022 Account`);
-    const { blockhash } = await connection.getLatestBlockhash();
-    const messageV0 = new TransactionMessage({
-      payerKey: user.publicKey,
-      recentBlockhash: blockhash,
-      instructions: [
-        createAssociatedTokenAccountInstruction(
-          user.publicKey,
-          userTokenAccountAddress,
-          user.publicKey,
-          tokenMint,
-          TOKEN_2022_PROGRAM_ID,
-          ASSOCIATED_TOKEN_PROGRAM_ID
-        )
-      ],
-    }).compileToV0Message();
-
-    const tx = new VersionedTransaction(messageV0);
-    tx.sign([user]);
-    const txSignature = await connection.sendTransaction(tx);
-    await connection.confirmTransaction(txSignature, "confirmed");
-    console.log(`[${name}] Account created`);
-    await delay(3000);
-  }
-
-  let userTokenAccount;
   let attempts = 0;
   while (attempts < 5) {
     try {
-      userTokenAccount = await getAccount(connection, userTokenAccountAddress, 'confirmed', TOKEN_2022_PROGRAM_ID);
-      break; 
+      return await getAccount(connection, userTokenAccountAddress, 'confirmed', TOKEN_2022_PROGRAM_ID);
     } catch (err: any) {
       if (err.name === 'TokenAccountNotFoundError') {
         attempts++;
         console.log(`[${name}] RPC not synced. Retrying (${attempts}/5)...`);
         await delay(2000);
       } else {
-        throw err; 
+        throw err;
       }
     }
   }
+  throw new Error(`[${name}] RPC failed to sync the new token account.`);
+}
 
-  if (!userTokenAccount) {
-    throw new Error(`[${name}] RPC failed to sync the new token account.`);
+async function ensureTokenAccountExists(name: string, user: Keypair, connection: Connection, tokenMint: PublicKey, userTokenAccountAddress: PublicKey): Promise<Account> {
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const accountInfo = await connection.getAccountInfo(userTokenAccountAddress);
+
+  if (!accountInfo) {
+    await createTokenAccount(name, user, connection, tokenMint, userTokenAccountAddress);
+    await delay(3000);
   }
 
-  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
-  const tokenTreasuryVault = getAssociatedTokenAddressSync(tokenMint, tokenTreasuryPda, true, TOKEN_2022_PROGRAM_ID);
+  return waitForTokenAccountSync(name, connection, userTokenAccountAddress);
+}
 
+function validateSubscriptionDuration(weeks: number): void {
   if (weeks < 4 || weeks % 4 !== 0) {
     throw new Error(`Invalid subscription duration: ${weeks} weeks. Must be a multiple of 4.`);
   }
+}
 
+async function submitSubscriptionTransaction(
+  name: string,
+  user: Keypair,
+  connection: Connection,
+  program: any,
+  pricingMatrixPda: PublicKey,
+  tokenMint: PublicKey,
+  userTokenAccount: Account,
+  tokenTreasuryVault: PublicKey,
+  tokenTreasuryPda: PublicKey,
+  serviceLevelId: number,
+  weeks: number
+): Promise<string> {
   console.log(`[${name}] Subscribing on-chain: Level ${serviceLevelId}, Duration ${weeks} weeks`);
 
-  // Build subscribe instruction using Solana v2
   const subscribeInstruction = buildInstruction(
     "subscribe",
     { serviceLevelId, weeks },
@@ -390,8 +400,12 @@ export async function setupUser(
   }, 'confirmed');
 
   console.log(`[${name}] Transaction confirmed: ${txSig}`);
+  return txSig;
+}
+
+async function activateAndPersistToken(name: string, user: Keypair, userState: UserAuthState, txSig: string, selectedLeagues: number[], keypairLocation: string): Promise<void> {
   console.log(`[${name}] Acquiring API Token via activation endpoint...`);
-  
+
   const messageString = `${txSig}:${selectedLeagues.join(",")}:${userState.jwt}`;
   const message = new TextEncoder().encode(messageString);
   const signatureBytes = nacl.sign.detached(message, user.secretKey);
@@ -399,25 +413,148 @@ export async function setupUser(
 
   const activationUrl = `${config.API_BASE_URL}/token/activate`;
   const activationResponse = await axios.post(
-    activationUrl, 
-    { txSig: txSig, walletSignature: signatureBase64, leagues: selectedLeagues }, 
+    activationUrl,
+    { txSig: txSig, walletSignature: signatureBase64, leagues: selectedLeagues },
     { headers: { Authorization: `Bearer ${userState.jwt}` } }
   );
-  
-  userState.apiToken = activationResponse.data.token || activationResponse.data;
 
-  // Persist API token to cache for future use
+  userState.apiToken = activationResponse.data.token || activationResponse.data;
   tokenCache.saveTokenToCache(keypairLocation, userState.apiToken);
 
-  // Update global fallback if this is the first user
   if (userAuthMap.size === 1) {
     authState.apiToken = userState.apiToken;
   }
+}
+
+/**
+ * Set up a user with tokens and perform a subscription use case.
+ * Optional existingJwt and existingApiToken could be used to bypass acquisition.
+ */
+export async function setupUser(
+  name: string,
+  keypairLocation: string,
+  tokenMint: PublicKey,
+  connection: Connection,
+  program: any,
+  serviceLevelId: number,
+  weeks: number,
+  selectedLeagues: number[],
+  existingJwt?: string,
+  existingApiToken?: string
+): Promise<User> {
+  const user = loadUserKeypair(name, keypairLocation);
+  userKeypairMap.set(name, keypairLocation);
+  const userState = initializeUserAuthState(name, keypairLocation, existingJwt, existingApiToken);
+
+  const userTokenAccountAddress = getAssociatedTokenAddressSync(
+    tokenMint, user.publicKey, false, TOKEN_2022_PROGRAM_ID
+  );
+
+  const [pricingMatrixPda] = PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
+  await discoverPricingMatrix(name, program, pricingMatrixPda);
+
+  await ensureUserHasJwt(name, userState);
+  updateGlobalAuthStateIfFirstUser(userState);
+
+  if (userState.apiToken) {
+    return await skipSubscriptionFlowWithExistingToken(name, user, userTokenAccountAddress, connection);
+  }
+
+  const userTokenAccount = await ensureTokenAccountExists(name, user, connection, tokenMint, userTokenAccountAddress);
+
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
+  const tokenTreasuryVault = getAssociatedTokenAddressSync(tokenMint, tokenTreasuryPda, true, TOKEN_2022_PROGRAM_ID);
+
+  validateSubscriptionDuration(weeks);
+  const txSig = await submitSubscriptionTransaction(name, user, connection, program, pricingMatrixPda, tokenMint, userTokenAccount, tokenTreasuryVault, tokenTreasuryPda, serviceLevelId, weeks);
+  await activateAndPersistToken(name, user, userState, txSig, selectedLeagues, keypairLocation);
 
   return {
     user: user,
     userTokenAccount: userTokenAccount
   };
+}
+
+function verifyFeePayer(message: any, expectedBuyer: PublicKey): void {
+  const feePayer = message.staticAccountKeys[0];
+  if (!feePayer || !feePayer.equals(expectedBuyer)) {
+    throw new Error("Safety check failed: Fee payer is not the expected buyer wallet");
+  }
+}
+
+function verifyAdminSignature(transaction: VersionedTransaction, expectedBuyer: PublicKey): void {
+  const message = transaction.message;
+  const signatures = transaction.signatures;
+  const hasAdminSignature = signatures.some((sig: Uint8Array | null, idx: number) => {
+    if (!sig || sig.length === 0) return false;
+    const sigPubkey = message.staticAccountKeys[idx];
+    return sigPubkey && !sigPubkey.equals(expectedBuyer);
+  });
+  if (!hasAdminSignature) {
+    throw new Error("Safety check failed: Missing backend admin signature");
+  }
+}
+
+function getAllowedPrograms(programId: PublicKey): string[] {
+  return [
+    programId.toBase58(),
+    "ComputeBudget111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+  ];
+}
+
+function verifyProgramAuthorization(programId: string, allowedPrograms: string[]): void {
+  if (!allowedPrograms.includes(programId)) {
+    throw new Error(`Safety check failed: Unauthorized program invocation detected ${programId}`);
+  }
+}
+
+function verifyBuyerSignerAuthorization(instruction: any, message: any, expectedBuyer: PublicKey, programId: string): void {
+  instruction.accountKeyIndexes.forEach((keyIdx: number) => {
+    if (keyIdx < message.header.numRequiredSignatures) {
+      const keyPubkey = message.staticAccountKeys[keyIdx];
+      if (keyPubkey.equals(expectedBuyer)) {
+        const isAuthorizedSigner = programId === "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+        if (!isAuthorizedSigner) {
+          throw new Error(`Safety check failed: Buyer wallet requested as signer for unauthorized program ${programId}`);
+        }
+      }
+    }
+  });
+}
+
+function verifyOracleInstruction(instruction: any, programId: string, expectedAmount: BN, authorizedOracleId: string): void {
+  if (programId !== authorizedOracleId) return;
+
+  const decodedIx = decodeInstruction(instruction.data, programId);
+  if (!decodedIx) {
+    throw new Error("Safety check failed: Could not decode instruction data");
+  }
+
+  if ("purchaseSubscriptionTokenUsdt" !== convertSnakeToCamel(decodedIx.name)) {
+    throw new Error(`Safety check failed: Server attempted to execute unauthorized function: ${decodedIx.name}`);
+  }
+
+  const args = parseInstructionArgs(decodedIx.name, decodedIx.data);
+  const payloadAmount = args?.txlineAmount as BN | undefined;
+
+  if (!payloadAmount || !payloadAmount.eq(expectedAmount)) {
+    throw new Error(
+      `Safety check failed: Amount mismatch! Bot requested ${expectedAmount.toString()}, but server payload contains ${payloadAmount?.toString() || "unknown"}`
+    );
+  }
+}
+
+function verifyOracleInstructionCount(count: number): void {
+  if (count === 0) {
+    throw new Error("Safety check failed: No Oracle instruction found in payload");
+  }
+  if (count > 1) {
+    throw new Error("Safety check failed: Multiple Oracle instructions detected in payload");
+  }
 }
 
 // Verify a decoded transaction to ensure it is safe to sign
@@ -429,93 +566,25 @@ export function verifyTransactionSafety(
 ): void {
   const message = transaction.message;
 
-  // Verify the expected fee payer
-  const feePayer = message.staticAccountKeys[0];
-  if (!feePayer || !feePayer.equals(expectedBuyer)) {
-    throw new Error("Safety check failed: Fee payer is not the expected buyer wallet");
-  }
+  verifyFeePayer(message, expectedBuyer);
+  verifyAdminSignature(transaction, expectedBuyer);
 
-  // Ensure the backend admin has already signed the transaction
-  const signatures = transaction.signatures;
-  const hasAdminSignature = signatures.some((sig: Uint8Array | null, idx: number) => {
-    if (!sig || sig.length === 0) return false;
-    const sigPubkey = message.staticAccountKeys[idx];
-    return sigPubkey && !sigPubkey.equals(expectedBuyer);
-  });
-  if (!hasAdminSignature) {
-    throw new Error("Safety check failed: Missing backend admin signature");
-  }
-
-  // Whitelist permitted programs that the transaction can invoke
-  const allowedPrograms = [
-    program.programId.toBase58(),
-    "ComputeBudget111111111111111111111111111111",
-    "11111111111111111111111111111111",
-    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
-    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
-    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-  ];
-
+  const allowedPrograms = getAllowedPrograms(program.programId);
+  const authorizedOracleId = program.programId.toBase58();
   let oracleInstructionCount = 0;
 
-  // Inspect every instruction in the payload
   message.compiledInstructions.forEach((instruction: any) => {
     const programIdIdx = instruction.programIdIndex;
     const programId = message.staticAccountKeys[programIdIdx].toBase58();
 
-    // Halt execution if an unknown or malicious program is detected
-    if (!allowedPrograms.includes(programId)) {
-      throw new Error(`Safety check failed: Unauthorized program invocation detected ${programId}`);
-    }
+    verifyProgramAuthorization(programId, allowedPrograms);
+    verifyBuyerSignerAuthorization(instruction, message, expectedBuyer, programId);
+    verifyOracleInstruction(instruction, programId, expectedAmount, authorizedOracleId);
 
-    // Verify that the buyer is not inadvertently set as a signer on rogue accounts
-    instruction.accountKeyIndexes.forEach((keyIdx: number) => {
-      if (keyIdx < message.header.numRequiredSignatures) {
-        const keyPubkey = message.staticAccountKeys[keyIdx];
-        if (keyPubkey.equals(expectedBuyer)) {
-          // Enforce that the buyer only signs for authorized logic
-          const isAuthorizedSigner = programId === program.programId.toBase58() || programId === "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
-          if (!isAuthorizedSigner) {
-             throw new Error(`Safety check failed: Buyer wallet requested as signer for unauthorized program ${programId}`);
-          }
-        }
-      }
-    });
-
-    // Decode and verify the specific oracle business logic
-    if (programId === program.programId.toBase58()) { 
+    if (programId === authorizedOracleId) {
       oracleInstructionCount++;
-
-      const decodedIx = decodeInstruction(instruction.data, programId);
-
-      if (!decodedIx) {
-        throw new Error("Safety check failed: Could not decode instruction data");
-      }
-
-      // Verify the correct function execution (convert snake_case from IDL to camelCase for comparison)
-      if ("purchaseSubscriptionTokenUsdt" !== convertSnakeToCamel(decodedIx.name) ) {
-        throw new Error(`Safety check failed: Server attempted to execute unauthorized function: ${decodedIx.name}`);
-      }
-
-      // Parse and verify the exact requested amount
-      const args = parseInstructionArgs(decodedIx.name, decodedIx.data);
-      const payloadAmount = args?.txlineAmount as BN | undefined;
-
-      if (!payloadAmount || !payloadAmount.eq(expectedAmount)) {
-        throw new Error(
-          `Safety check failed: Amount mismatch! Bot requested ${expectedAmount.toString()}, but server payload contains ${payloadAmount?.toString() || "unknown"}`
-        );
-      }
     }
   });
 
-  // Prevent empty payloads that charge gas but do nothing
-  if (oracleInstructionCount === 0) {
-    throw new Error("Safety check failed: No Oracle instruction found in payload");
-  }
-
-  // Prevent malicious payload stuffing
-  if (oracleInstructionCount > 1) {
-    throw new Error("Safety check failed: Multiple Oracle instructions detected in payload");
-  }
+  verifyOracleInstructionCount(oracleInstructionCount);
 }

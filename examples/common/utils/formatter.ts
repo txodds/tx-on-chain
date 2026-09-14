@@ -8,7 +8,8 @@ export function formatValidationProof(data: any): string {
       } else if (val.every(v => typeof v === 'object' && v !== null && ('hash' in v || 'isRightSibling' in v))) {
         lines.push(`${indent}${key ? key + ': ' : ''}[`);
         val.forEach((item, i) => {
-          lines.push(`${indent}  { hash: [${item.hash.join(', ')}], isRightSibling: ${item.isRightSibling} }${i < val.length - 1 ? ',' : ''}`);
+          const hashArray = Array.isArray(item.hash) ? item.hash : Array.from(item.hash);
+          lines.push(`${indent}  { hash: [${hashArray.join(', ')}], isRightSibling: ${item.isRightSibling} }${i < val.length - 1 ? ',' : ''}`);
         });
         lines.push(`${indent}]`);
       } else {

@@ -64,7 +64,7 @@ async function main() {
         if (!sampleOdds) {
           sampleOdds = response.data[0];
           // console.log(`Captured sample for validation: MessageId ${sampleOdds.MessageId} @ Ts ${sampleOdds.Ts}`);
-          console.log(`Captured sample for validation: ${sampleOdds}`);
+          console.log(`Captured sample for validation:`, JSON.stringify(sampleOdds, null, 2));
         }
         return response.data;
       } catch (error) {

@@ -156,14 +156,14 @@ async function main() {
   sampleFixture.FixtureId = 18146730;
   sampleFixture.Ts = 1788314400000;
 
-  console.log(`Captured sample fixture: ${sampleFixture}`)
+  console.log(`Captured sample fixture:`, JSON.stringify(sampleFixture, null, 2))
   
   // Perform the fixture snapshot validation check using the extracted Ts
   if (sampleFixture) {
     const validationUrl = `${config.API_BASE_URL}/fixtures/validation?fixtureId=${sampleFixture.FixtureId}&timestamp=${sampleFixture.Ts}`;
     try {
       const vResponse = await users.apiClient.get(validationUrl);
-      console.log("Validation proof response:", vResponse.data);
+      console.log("Validation proof response:\n" + formatValidationProof(vResponse.data));
     } catch (vError) {
       console.error("Validation proof extraction failed:", vError);
     }
