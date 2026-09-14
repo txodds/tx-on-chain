@@ -13,10 +13,10 @@ import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
 import {
   PublicKey,
-  Transaction,
   Keypair,
   Connection,
-  sendAndConfirmTransaction,
+  VersionedTransaction,
+  TransactionMessage,
   SystemProgram
 } from "@solana/web3.js";
 import BN from "bn.js";
@@ -230,25 +230,29 @@ export async function setupUser(
   );
 
   const [pricingMatrixPda] = PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
-  
+
   // Fetch and display the service tier pricing matrix
   async function discoverPricingMatrix() {
-    const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
-    console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`); 
-    console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
-    console.log(`=================   ===========   ==============  =============  =============`);
+    try {
+      const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
+      console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`);
+      console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
+      console.log(`=================   ===========   ==============  =============  =============`);
 
-    matrix.rows.forEach((row: any) => {
-      console.log(
-        String(row.rowId).padStart(12, " ")
-        + String(row.pricePerWeekToken).padStart(17, " ")
-        + String(row.samplingIntervalSec).padStart(15, " ")
-        + String(row.leagueBundleId).padStart(15, " ")
-        + String(row.marketBundleId).padStart(12, " ")
-      );
-    });        
+      matrix.rows.forEach((row: any) => {
+        console.log(
+          String(row.rowId).padStart(12, " ")
+          + String(row.pricePerWeekToken).padStart(17, " ")
+          + String(row.samplingIntervalSec).padStart(15, " ")
+          + String(row.leagueBundleId).padStart(15, " ")
+          + String(row.marketBundleId).padStart(12, " ")
+        );
+      });
+    } catch (err) {
+      console.log(`[${name}] Pricing matrix not available on this network (expected on mainnet with no on-chain state)`);
+    }
   }
-  
+
   await discoverPricingMatrix();
 
   // Ensure we have a JWT for backend requests
@@ -292,23 +296,42 @@ export async function setupUser(
   // Standard subscription flow
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
   const accountInfo = await connection.getAccountInfo(userTokenAccountAddress);
-  
+
   if (!accountInfo) {
     console.log(`[${name}] Creating User Token-2022 Account`);
-    const transaction = new Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        user.publicKey,
-        userTokenAccountAddress,
-        user.publicKey,
-        tokenMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
+    try {
+      const { blockhash } = await connection.getLatestBlockhash();
+      const messageV0 = new TransactionMessage({
+        payerKey: user.publicKey,
+        recentBlockhash: blockhash,
+        instructions: [
+          createAssociatedTokenAccountInstruction(
+            user.publicKey,
+            userTokenAccountAddress,
+            user.publicKey,
+            tokenMint,
+            TOKEN_2022_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          )
+        ],
+      }).compileToV0Message();
 
-    await sendAndConfirmTransaction(connection, transaction, [user], { commitment: "confirmed" });
-    console.log(`[${name}] Account created`);
-    await delay(3000);
+      const tx = new VersionedTransaction(messageV0);
+      tx.sign([user]);
+      const txSignature = await connection.sendTransaction(tx);
+      await connection.confirmTransaction(txSignature, "confirmed");
+      console.log(`[${name}] Account created`);
+      await delay(3000);
+    } catch (err: any) {
+      console.log(`[${name}] Could not create account on-chain: ${err.message}`);
+      console.log(`[${name}] Continuing without on-chain account (read-only mode)`);
+      console.log(`[${name}] Note: Using JWT-only access (no API token for paid features)`);
+
+      return {
+        user: user,
+        userTokenAccount: undefined
+      };
+    }
   }
 
   let userTokenAccount;
@@ -359,14 +382,17 @@ export async function setupUser(
     program.programId
   );
 
-  const tx = new Transaction().add(subscribeInstruction);
-
   const latestBlockhash = await connection.getLatestBlockhash('confirmed');
-  tx.recentBlockhash = latestBlockhash.blockhash;
-  tx.feePayer = user.publicKey;
-  tx.sign(user);
+  const messageV0 = new TransactionMessage({
+    payerKey: user.publicKey,
+    recentBlockhash: latestBlockhash.blockhash,
+    instructions: [subscribeInstruction],
+  }).compileToV0Message();
 
-  const txSig = await connection.sendRawTransaction(tx.serialize());
+  const tx = new VersionedTransaction(messageV0);
+  tx.sign([user]);
+
+  const txSig = await connection.sendTransaction(tx);
   await connection.confirmTransaction({
     signature: txSig,
     blockhash: latestBlockhash.blockhash,

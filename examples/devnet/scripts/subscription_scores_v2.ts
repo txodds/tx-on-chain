@@ -1,8 +1,7 @@
 // Demo subscription and data access for free tier (World Cup)
 
 // Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v2.ts
-
+//
 import { PublicKey, Connection, Transaction, ComputeBudgetProgram, sendAndConfirmTransaction } from "@solana/web3.js";
 import * as config from '../common/config';
 import * as users from '../common/users';

@@ -234,25 +234,24 @@ export async function setupUser(
   
   // Fetch and display the service tier pricing matrix
   async function discoverPricingMatrix() {
-    // TODO: Replace program.account.pricingMatrix.fetch with proper account data deserialization
-    const matrix = (program as any).account?.pricingMatrix?.fetch?.(pricingMatrixPda);
-    if (!matrix) {
-      console.log(`[${name}] Note: Pricing matrix display requires Anchor program object`);
-      return;
-    }
-    console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`); 
-    console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
-    console.log(`=================   ===========   ==============  =============  =============`);
+    try {
+      const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
+      console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`);
+      console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
+      console.log(`=================   ===========   ==============  =============  =============`);
 
-    matrix.rows.forEach((row: any) => {
-      console.log(
-        String(row.rowId).padStart(12, " ")
-        + String(row.pricePerWeekToken).padStart(17, " ")
-        + String(row.samplingIntervalSec).padStart(15, " ")
-        + String(row.leagueBundleId).padStart(15, " ")
-        + String(row.marketBundleId).padStart(12, " ")
-      );
-    });        
+      matrix.rows.forEach((row: any) => {
+        console.log(
+          String(row.rowId).padStart(12, " ")
+          + String(row.pricePerWeekToken).padStart(17, " ")
+          + String(row.samplingIntervalSec).padStart(15, " ")
+          + String(row.leagueBundleId).padStart(15, " ")
+          + String(row.marketBundleId).padStart(12, " ")
+        );
+      });
+    } catch (err) {
+      console.log(`[${name}] Pricing matrix not available on this network (expected on devnet without on-chain state)`);
+    }
   }
   
   await discoverPricingMatrix();

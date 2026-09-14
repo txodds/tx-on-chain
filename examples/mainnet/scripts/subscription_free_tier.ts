@@ -10,26 +10,23 @@ import { loadProgram } from '../../common/utils/programLoader';
 import axios from "axios";
 import { EventSource } from 'eventsource'
 
-async function main() {
+function initializeConnection() {
   const rpcUrl = process.env.ANCHOR_PROVIDER_URL;
   if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
+  return new Connection(rpcUrl, "confirmed");
+}
 
-  const connection = new Connection(rpcUrl, "confirmed");
-
-  // Load program information (replaces Anchor's Program class)
-  const program = loadProgram("mainnet");
-
+function getTokenMint() {
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
-  const tokenMint = new PublicKey(mintAddress);
+  return new PublicKey(mintAddress);
+}
 
-  console.log("Program ID:", program.programId.toBase58());
-  console.log("Token Mint:", tokenMint.toBase58());
-
+async function setupUserAndAuth(connection: Connection, program: any, tokenMint: PublicKey) {
   const walletPath = process.env.ANCHOR_WALLET!;
   const name = "Trader A";
 
-  const user = await users.setupUser(
+  await users.setupUser(
     name,
     walletPath,
     tokenMint,
@@ -38,105 +35,112 @@ async function main() {
     1,
     4,
     [],
-    undefined,  // Alternatively, use a working JWT Token here
-    undefined   // Alternatively, use a working API Token here
-  )
+    undefined,
+    undefined
+  );
   console.log("API Token:", users.authState.apiToken);
+}
+
+async function fetchFixtureSnapshot() {
+  const awesomeUrl = `/fixtures/snapshot?competitionId=8&startEpochDay=20624`;
+  const response = await users.apiClient.get(awesomeUrl);
+  console.log(awesomeUrl, ": Data Response:", response.data);
+  return response.data;
+}
+
+async function getOddsSnapshot(fixtureId: number, asOf?: number) {
+  const baseUrl = `/odds/snapshot/${fixtureId}`;
+  const url = asOf ? `${baseUrl}?asOf=${asOf}` : baseUrl;
 
   try {
-    const awesomeUrl = `/fixtures/snapshot?competitionId=8&startEpochDay=20624`;
-    const response = await users.apiClient.get(awesomeUrl);
-
-    console.log(awesomeUrl, ": Data Response:", response.data);
-
-    // Fetch the odds snapshot for a specific fixture
-    var sampleOdds: any = null
-
-    async function getOddsSnapshot(fixtureId: number, asOf?: number) {
-      const baseUrl = `/odds/snapshot/${fixtureId}`;
-      const url = asOf ? `${baseUrl}?asOf=${asOf}` : baseUrl;
-
-      try {
-        const response = await users.apiClient.get(url);
-
-        console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
-        // Capture the first odds to use for validation
-        if (!sampleOdds) {
-          sampleOdds = response.data[0];
-          // console.log(`Captured sample for validation: MessageId ${sampleOdds.MessageId} @ Ts ${sampleOdds.Ts}`);
-          console.log(`Captured sample for validation: ${sampleOdds}`);
-        }
-        return response.data;
-      } catch (error) {
-        if (axios.isAxiosError(error) && error.response?.status === 403) {
-          console.error("Access denied: verify the league bundle or token status");
-        } else {
-          console.error("Failed to retrieve odds snapshot:", error);
-        }
-        throw error;
-      }
+    const response = await users.apiClient.get(url);
+    console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      console.error("Access denied: verify the league bundle or token status");
+    } else {
+      console.error("Failed to retrieve odds snapshot:", error);
     }
-    // Note that snapshot only includes data for the current 5-min interval so for historical fixtures, the response will be empty
+    throw error;
+  }
+}
+
+function createStreamEventHandlers(streamId: string) {
+  return {
+    onmessage: (event: MessageEvent) => {
+      console.log(`[Odds - ${streamId}] Received payload:`, event.data);
+    },
+    onopen: () => {
+      console.log(`[Odds - ${streamId}] Stream connection opened.`);
+    },
+    onerror: (err: Event) => {
+      console.error(`[Odds - ${streamId}] Stream connection error:`, err);
+    }
+  };
+}
+
+async function fetchWithAuth(input: string | URL, init: RequestInit, streamId: string): Promise<Response> {
+  const attemptFetch = (token: string) =>
+    fetch(input, {
+      ...init,
+      headers: {
+        ...init.headers,
+        'Accept-Encoding': 'deflate',
+        'Authorization': `Bearer ${token}`,
+        'X-Api-Token': users.authState.apiToken,
+      },
+    });
+
+  let response = await attemptFetch(users.authState.jwt);
+  if (response.status === 403 || response.status === 401) {
+    console.log(`[Odds - ${streamId}] SSE connection rejected. Renewing JWT...`);
+    const newJwt = await users.renewJwt();
+    response = await attemptFetch(newJwt);
+  }
+
+  return response;
+}
+
+async function listenToOddsStream(streamId: string): Promise<void> {
+  console.log(`[Odds] Subscribing to all permitted odds updates...`);
+
+  const streamUrl = `${config.API_BASE_URL}/odds/stream`;
+  const handlers = createStreamEventHandlers(streamId);
+
+  const eventSource = new EventSource(streamUrl, {
+    fetch: (input, init) => fetchWithAuth(input, init, streamId),
+  });
+
+  eventSource.onmessage = handlers.onmessage;
+  eventSource.onopen = handlers.onopen;
+  eventSource.onerror = handlers.onerror;
+}
+
+async function waitForOddsProcessing(durationMs: number) {
+  console.log(`Waiting for ${durationMs / 1000} seconds for odds to go through...`);
+  await new Promise(resolve => setTimeout(resolve, durationMs));
+}
+
+async function main() {
+  const connection = initializeConnection();
+  const program = loadProgram("mainnet");
+  const tokenMint = getTokenMint();
+
+  console.log("Program ID:", program.programId.toBase58());
+  console.log("Token Mint:", tokenMint.toBase58());
+
+  try {
+    await setupUserAndAuth(connection, program, tokenMint);
+    await fetchFixtureSnapshot();
     await getOddsSnapshot(18187298, Date.now());
 
-    async function listenToOddsStream(streamId: string): Promise<void> {
-      console.log(`[Odds] Subscribing to all permitted odds updates...`);
-
-      const streamUrl = `${config.API_BASE_URL}/odds/stream`;
-
-      const eventSource = new EventSource(streamUrl, {
-        fetch: async (input, init) => {
-          // Helper to execute the request with a specific token
-          const attemptFetch = (token: string) => 
-            fetch(input, {
-              ...init,
-              headers: {
-                ...init.headers,
-                'Accept-Encoding': 'deflate',
-                'Authorization': `Bearer ${token}`,
-                'X-Api-Token': users.authState.apiToken,
-              },
-            });
-
-            // Attempt connection using the current global token
-            let response = await attemptFetch(users.authState.jwt);
-            // If rejected due to expiration, pause the stream builder, renew, and retry
-            if (response.status === 403 || response.status === 401) {
-              console.log(`[Odds - ${streamId}] SSE connection rejected. Renewing JWT...`);
-              const newJwt = await users.renewJwt();
-              response = await attemptFetch(newJwt);
-            }
-
-            return response;
-
-          },
-      });
-
-      // Process incoming server sent events
-      eventSource.onmessage = (event) => {
-        console.log(`[Odds - ${streamId}] Received payload:`, event.data);
-      };
-      
-      // Log when the connection opens
-      eventSource.onopen = () => {
-        console.log(`[Odds - ${streamId}] Stream connection opened.`);
-      };
-
-      // Log any connection errors
-      eventSource.onerror = (err) => {
-        console.error(`[Odds - ${streamId}] Stream connection error:`, err);
-      };
-    }
-
-    // Execute with unique identifiers
     await Promise.all([
       listenToOddsStream('Instance A'),
       listenToOddsStream('Instance B')
     ]);
 
-    const waitDuration = 3600 * 1000;
-    console.log(`Waiting for ${waitDuration / 1000} seconds for odds to go through...`);
-    await new Promise(resolve => setTimeout(resolve, waitDuration));
+    await waitForOddsProcessing(3600 * 1000);
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -146,7 +150,6 @@ async function main() {
     }
     process.exit(1);
   }
-
 }
 
 main().then(

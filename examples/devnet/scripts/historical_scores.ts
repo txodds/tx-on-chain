@@ -14,7 +14,7 @@ async function main() {
   if (!rpcUrl) throw new Error("ANCHOR_PROVIDER_URL is not set");
 
   const connection = new Connection(rpcUrl, "confirmed");
-  const program = loadProgram("devnet");
+  const program = loadProgram("devnet", connection);
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
