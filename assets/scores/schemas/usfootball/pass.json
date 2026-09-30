@@ -1,0 +1,216 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Occurs when a team attempts a pass play. Clock, Outcome, PasserId, ReceiverId, and Yards can be modified via action amend.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "pass",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/usfootball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "pass"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Outcome": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Pass result, the presence of this field confirms the pass took place. Can be modified via action amend",
+              "title": "Outcome",
+              "enum": [
+                null,
+                "complete",
+                "incomplete",
+                "intercepted",
+                "sack"
+              ]
+            },
+            "PasserId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player that starts the pass. Can be modified via action amend",
+              "title": "PasserId",
+              "examples": [
+                null,
+                10049508,
+                10055261
+              ]
+            },
+            "ReceiverId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player that received the pass. Can be modified via action amend",
+              "title": "ReceiverId",
+              "examples": [
+                null,
+                10049508,
+                10055261
+              ]
+            },
+            "SackedPlayerId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the sacked player, if relevant. Can be modified via action amend",
+              "title": "SackedPlayerId",
+              "examples": [
+                null,
+                10049508,
+                10055261
+              ]
+            },
+            "IsTeam": {
+              "type": [
+                "null",
+                "boolean"
+              ],
+              "description": "Indicates if this is a team action. Can be modified via action amend",
+              "title": "IsTeam",
+              "examples": [
+                false,
+                true
+              ]
+            },
+            "Yards": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Yards moved. Can be modified via action amend",
+              "title": "Yards",
+              "examples": [
+                null,
+                1,
+                9
+              ]
+            },
+            "ReplaceId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "If present, this action is replacing the Action with the given Id. This can happen if, for example, a scoring attempt was added as 2pt, and it was, in fact, a 3pt attempt.",
+              "title": "Replace Id",
+              "examples": [
+                null,
+                36,
+                18,
+                57,
+                68,
+                99
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Down": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Current down info",
+          "title": "Down",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/Down"
+        },
+        "InPlayInfo": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Data about current play state",
+          "title": "InPlayInfo",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/InPlayInfo"
+        },
+        "Participant": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant",
+          "examples": [
+            2,
+            1
+          ]
+        },
+        "PlayerStats": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player statistics",
+          "title": "PlayerStats",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PlayerStatsForParticipants"
+        },
+        "PossibleEvent": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Possible events happening during the game, not associated to a particular team. To be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen.",
+          "title": "PossibleEvent",
+          "$ref": "https://txodds.com/schemas/usfootball/common.json#/$defs/PossibleEvent"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Team stats adjustment. In cases when there are missed team stats updates (fouls, blocks, rebounds, etc) or if there were no updates for a period due to unforeseen circumstances, there could be team stats adjustment sent that will update ONLY the main team stats for a give quarter or overtime. Once that happens, the other stats in the given quarter will not be accurate any more.\nThis action is *confirmed automatically* and will not be followed up with a confirmation message.",
+  "title": "team_stats_adjustment",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "team_stats_adjustment"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant1": {
+              "type": [
+                "object"
+              ],
+              "description": "The team stats for participant 1",
+              "title": "Participant 1",
+              "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/ScoreParticipant"
+            },
+            "Participant2": {
+              "type": [
+                "object"
+              ],
+              "description": "The team stats for participant 2",
+              "title": "Participant 2",
+              "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/ScoreParticipant"
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "Participant1",
+            "Participant2"
+          ]
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Score": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+          "title": "Score",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Score"
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Parti1State",
+    "Parti2State",
+    "Score",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}

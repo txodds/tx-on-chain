@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": [
+    "object"
+  ],
+  "description": "Sent when there is a tipoff to start the game, along with the team that won the tipoff. When a team wins a tipoff, we automatically calculate possession at the start of the next periods, based on this result.\nThis action *can be followed up with updates* - new messages with the same action id can update this action.",
+  "title": "tipoff",
+  "allOf": [
+    {
+      "$ref": "https://txodds.com/schemas/basketball/common.json"
+    },
+    {
+      "type": [
+        "object"
+      ],
+      "properties": {
+        "Action": {
+          "type": [
+            "string"
+          ],
+          "description": "Action Type",
+          "title": "Action",
+          "enum": [
+            "tipoff"
+          ]
+        },
+        "Clock": {
+          "type": [
+            "object"
+          ],
+          "description": "Game clock",
+          "title": "Clock",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/Clock"
+        },
+        "Confirmed": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Action confirmation status. This indicates an action that actually happened, as opposed to _possible_ actions, however the final confirmation is still pending and will be sent with the same action ID, and potentially more information related to the action. An unconfirmed event is closer in time to the event happening, as confirmation could be delayed by events on field. Take this in account when handling the events",
+          "title": "Confirmed",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Data": {
+          "type": [
+            "object"
+          ],
+          "description": "Action specific info",
+          "title": "Data",
+          "properties": {
+            "Participant": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Winner of the tipoff",
+              "title": "Participant",
+              "examples": [
+                null,
+                2,
+                1
+              ]
+            },
+            "PlayerId": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "External Id of the player that won the tipoff.",
+              "title": "Player Id",
+              "examples": [
+                null,
+                3290005,
+                1290003,
+                5020305
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "Parti1State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant1`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Parti2State": {
+          "type": [
+            "object"
+          ],
+          "description": "State for the `Participant2`. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2 State",
+          "$ref": "https://txodds.com/schemas/basketball/common.json#/$defs/PartiState"
+        },
+        "Possession": {
+          "type": [
+            "number"
+          ],
+          "description": "Participant that has the ball. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Possession",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "PossessionAtStart": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Indicates which team will have the possession at the start of a given period. Resolved after a Tipoff happens. The key of the map is the status Id of the period",
+          "title": "Possession at Start",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "number"
+              ],
+              "description": "Participant that has the ball at the start of the corresponding period",
+              "examples": [
+                1,
+                2
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "PossessionArrow": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Participant that has the possession arrow or null if not specified (NCAA only). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "PossessionArrow",
+          "examples": [
+            1,
+            2,
+            null
+          ]
+        }
+      }
+    }
+  ],
+  "unevaluatedProperties": false,
+  "required": [
+    "Action",
+    "Clock",
+    "Confirmed",
+    "ConnectionId",
+    "Data",
+    "FixtureId",
+    "Id",
+    "Seq",
+    "StatusId",
+    "Ts",
+    "Type"
+  ]
+}
+

@@ -1,0 +1,1968 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://txodds.com/schemas/usfootball/common.json",
+  "type": [
+    "object"
+  ],
+  "description": "Format of fields that can appear in all Fixture Actions",
+  "title": "Common Fields Schema",
+  "properties": {
+    "ConnectionId": {
+      "type": [
+        "number"
+      ],
+      "description": "Internal ID of the connection",
+      "title": "ConnectionId",
+      "examples": [
+        12,
+        13,
+        9,
+        1,
+        18
+      ]
+    },
+    "FixtureId": {
+      "type": [
+        "number"
+      ],
+      "description": "The normative Id of the fixture",
+      "title": "FixtureId",
+      "examples": [
+        13702627,
+        13491872,
+        13196850,
+        13911618,
+        14790382
+      ]
+    },
+    "GlobalSeq": {
+      "type": [
+        "number"
+      ],
+      "description": "Global update sequence. When tracking event sequence numbers, use `Seq` instead.",
+      "title": "Seq",
+      "examples": [
+        152,
+        60,
+        74,
+        40,
+        8
+      ]
+    },
+    "Id": {
+      "type": [
+        "number"
+      ],
+      "description": "Action ID. Messages for the same action will have the same action ID. For example, an unconfirmed action followed by a confirmation",
+      "title": "Id",
+      "examples": [
+        244,
+        105,
+        175,
+        170,
+        36
+      ]
+    },
+    "Seq": {
+      "type": [
+        "number"
+      ],
+      "description": "Update sequence number for a fixture",
+      "title": "Seq",
+      "examples": [
+        155,
+        97,
+        130,
+        124,
+        103
+      ]
+    },
+    "ServerId": {
+      "type": [
+        "string"
+      ],
+      "description": "Internal ID of the server that handled the action",
+      "title": "Server Id",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+      "examples": [
+        "e42898ee-2051-4d1e-8817-afc3f7cc156c",
+        "227264fb-4132-4e49-9121-3165c753002e"
+      ]
+    },
+    "TracingInfo": {
+      "type": [
+        "object"
+      ],
+      "description": "Observability information for the action. Relevant if issues are reported.",
+      "title": "Tracing Information"
+    },
+    "Ts": {
+      "type": [
+        "number"
+      ],
+      "description": "Timestamp of the update",
+      "title": "Ts",
+      "examples": [
+        1718872931588,
+        1719405509055,
+        1719320331078,
+        1719320244083,
+        1718823346736
+      ]
+    },
+    "Type": {
+      "type": [
+        "string"
+      ],
+      "description": "Sport Type",
+      "title": "Type",
+      "enum": [
+        "UsFootball"
+      ]
+    },
+    "UserId": {
+      "type": [
+        "string"
+      ],
+      "description": "Internal ID of the user that sent the action",
+      "title": "Server Id",
+      "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+      "examples": [
+        "e42898ee-2051-4d1e-8817-afc3f7cc156c",
+        "227264fb-4132-4e49-9121-3165c753002e"
+      ]
+    },
+    "OvertimeNumber": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Additional field included only for Overtime periods. The value is the current Overtime",
+      "title": "OvertimeNumber",
+      "examples": [
+        null,
+        1
+      ]
+    },
+    "StatusId": {
+      "type": [
+        "number"
+      ],
+      "description": "The ID for the current game period. See [StatusId](#status-id)",
+      "title": "StatusId",
+      "examples": [
+        11,
+        8,
+        4,
+        2,
+        6
+      ]
+    },
+    "VirtualFixture": {
+      "type": [
+        "null",
+        "boolean"
+      ],
+      "description": "If true, the fixture is a virtual fixture, used to replay events of an existing fixture for test purposes.",
+      "title": "VirtualFixture",
+      "examples": [
+        null,
+        false,
+        true
+      ]
+    }
+  },
+  "$defs": {
+    "Clock": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Game clock",
+      "title": "Clock",
+      "properties": {
+        "Running": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Is the clock currently running?",
+          "title": "Running",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Seconds": {
+          "type": [
+            "number"
+          ],
+          "description": "Time in seconds left in the current period. At the start it is the full time for the period (for example, 15 minutes would be 900 seconds). The value decreases with every new action until the end of the period.",
+          "title": "Seconds",
+          "examples": [
+            0,
+            302,
+            400,
+            734,
+            900
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Running",
+        "Seconds"
+      ]
+    },
+    "PlayerData": {
+      "type": [
+        "object"
+      ],
+      "description": "Data about a player in a team",
+      "title": "Player Data",
+      "properties": {
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player country of origin",
+          "title": "Country",
+          "examples": [
+            null,
+            "Dominican Republic",
+            "England",
+            "Spain",
+            "USA"
+          ]
+        },
+        "dateOfBirth": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player date of birth",
+          "title": "Date of Birth",
+          "examples": [
+            null,
+            "1987−02−20",
+            "1999−12−03",
+            "2003−06−11"
+          ]
+        },
+        "entityStatus": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player status",
+          "title": "Player status",
+          "examples": []
+        },
+        "entityVersion": {
+          "type": [
+            "number"
+          ],
+          "description": "Player information version",
+          "title": "Version",
+          "examples": [
+            0,
+            5,
+            8
+          ]
+        },
+        "gender": {
+          "type": [
+            "string"
+          ],
+          "description": "Gender of the player",
+          "title": "Gender",
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "id": {
+          "type": [
+            "string"
+          ],
+          "description": "Player UUID",
+          "title": "Id",
+          "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$",
+          "examples": [
+            "227264fb-4132-4e49-9121-3165c753002e",
+            "443653c4-32ae-401e-b5ef-97db6fa3ed86"
+          ]
+        },
+        "normativeId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player normative Id",
+          "title": "Normative Id",
+          "examples": [
+            1752,
+            4268,
+            4707
+          ]
+        },
+        "preferredName": {
+          "type": [
+            "string"
+          ],
+          "description": "Player name (Last Name, First Name) in normalised Latin chars",
+          "title": "Player Name",
+          "examples": [
+            "Baker, Brandon",
+            "Gallian, John",
+            "Kornet, Luke"
+          ]
+        },
+        "sportId": {
+          "type": [
+            "string"
+          ],
+          "description": "Sport Id",
+          "title": "Sport Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "team": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Player team Id",
+          "title": "Team Id",
+          "examples": [
+            null,
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "updateDateMillis": {
+          "type": [
+            "number"
+          ],
+          "description": "Player update timestamp",
+          "title": "Update timestamp",
+          "examples": [
+            1732878222979,
+            1732878726834
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "entityVersion",
+        "gender",
+        "id",
+        "normativeId",
+        "preferredName",
+        "sportId",
+        "updateDateMillis"
+      ]
+    },
+    "PlayerLineupData": {
+      "type": [
+        "object"
+      ],
+      "description": "Lineup information for a team",
+      "title": "Player Lineup Data",
+      "properties": {
+        "fixturePlayerId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player Id in the fixture, used to reference a player in events",
+          "title": "Fixture Player Id",
+          "examples": [
+            1187,
+            1975,
+            5629
+          ]
+        },
+        "player": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Player information",
+          "title": "Player",
+          "$ref": "#/$defs/PlayerData"
+        },
+        "positionId": {
+          "type": [
+            "number"
+          ],
+          "description": "Position Id in the fixture",
+          "title": "Position Id",
+          "examples": [
+            11,
+            34,
+            37
+          ]
+        },
+        "rosterNumber": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Roster number",
+          "title": "Number",
+          "examples": [
+            null,
+            "0",
+            "00",
+            "09",
+            "9",
+            "18"
+          ]
+        },
+        "starter": {
+          "type": [
+            "boolean"
+          ],
+          "description": "The player is part of the starting team",
+          "title": "Starter",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "starred": {
+          "type": [
+            "boolean"
+          ],
+          "description": "The player is starred in the lineup",
+          "title": "Starred",
+          "examples": [
+            true,
+            false
+          ]
+        },
+        "statusId": {
+          "type": [
+            "number"
+          ],
+          "description": "Player Status",
+          "title": "Status",
+          "examples": [
+            3,
+            7
+          ]
+        },
+        "unitId": {
+          "type": [
+            "number"
+          ],
+          "description": "Unit Id",
+          "title": "Unit",
+          "examples": [
+            2,
+            5
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "positionId",
+        "statusId",
+        "unitId"
+      ]
+    },
+    "LineupData": {
+      "type": [
+        "object"
+      ],
+      "description": "Lineup information for a team",
+      "title": "Lineup Data",
+      "properties": {
+        "entityStatus": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Team status",
+          "title": "Team status",
+          "examples": []
+        },
+        "entityVersion": {
+          "type": [
+            "number"
+          ],
+          "description": "Team information version",
+          "title": "Version",
+          "examples": [
+            0,
+            5,
+            8
+          ]
+        },
+        "gender": {
+          "type": [
+            "string"
+          ],
+          "description": "Information about the gender of the team (which gendered competitions it is playing in)",
+          "title": "Team Gender",
+          "enum": [
+            "female",
+            "male"
+          ]
+        },
+        "id": {
+          "type": [
+            "string"
+          ],
+          "description": "Team UUID",
+          "title": "Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "227264fb-4132-4e49-9121-3165c753002e",
+            "443653c4-32ae-401e-b5ef-97db6fa3ed86"
+          ]
+        },
+        "lineups": {
+          "type": [
+            "array"
+          ],
+          "description": "Player lineup information",
+          "title": "Player lineup",
+          "items": {
+            "$ref": "#/$defs/PlayerLineupData"
+          }
+        },
+        "normativeId": {
+          "type": [
+            "number"
+          ],
+          "description": "Team normative Id",
+          "title": "Normative Id",
+          "examples": [
+            4268,
+            4707
+          ]
+        },
+        "preferredName": {
+          "type": [
+            "string"
+          ],
+          "description": "Team name",
+          "title": "Team Name",
+          "examples": [
+            "Boston Celtics",
+            "Chicago Bulls"
+          ]
+        },
+        "sportId": {
+          "type": [
+            "string"
+          ],
+          "description": "Sport Id",
+          "title": "Sport Id",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+          "examples": [
+            "00000000-0000-0006-0000-000000000003",
+            "00000000-0000-0006-0000-000000000004"
+          ]
+        },
+        "updateDateMillis": {
+          "type": [
+            "number"
+          ],
+          "description": "Team update timestamp",
+          "title": "Update timestamp",
+          "examples": [
+            1732878222979,
+            1732878726834
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "entityVersion",
+        "gender",
+        "id",
+        "lineups",
+        "normativeId",
+        "preferredName",
+        "sportId",
+        "updateDateMillis"
+      ]
+    },
+    "Score": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information, referencing the current score of the game, not the change caused by this action. Score is provided in actions that can modify the score-line",
+      "title": "Score",
+      "properties": {
+        "Participant1": {
+          "type": [
+            "object"
+          ],
+          "description": "Score for participant 1. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 1",
+          "$ref": "#/$defs/ScoreParticipant",
+          "examples": [
+            {},
+            {
+              "Q1": null,
+              "Q2": null,
+              "HT": null,
+              "Q3": null,
+              "Q4": null,
+              "OT": {
+                "1": {
+                  "Score": 7,
+                  "Touchdown": 1,
+                  "Safety": 0,
+                  "1ptSafety": 0,
+                  "1ptConversion": 1,
+                  "2ptConversion": 0,
+                  "FieldGoal": 0,
+                  "Defensive2ptConversion": 0
+                }
+              },
+              "OTTotal": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Total": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              }
+            },
+            {
+              "Q1": {
+                "Score": 12,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              },
+              "Q2": null,
+              "HT": {
+                "Score": 12,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              },
+              "Q3": null,
+              "Q4": null,
+              "OT": {
+                "2": {
+                  "Score": 13,
+                  "Touchdown": 2,
+                  "Safety": 0,
+                  "1ptSafety": 0,
+                  "1ptConversion": 1,
+                  "2ptConversion": 0,
+                  "FieldGoal": 0,
+                  "Defensive2ptConversion": 0
+                }
+              },
+              "OTTotal": {
+                "Score": 13,
+                "Touchdown": 2,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Total": {
+                "Score": 25,
+                "Touchdown": 3,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 2,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              }
+            },
+            {
+              "Q1": {
+                "Score": 12,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              },
+              "Q2": null,
+              "HT": {
+                "Score": 12,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              },
+              "Q3": null,
+              "Q4": null,
+              "OT": {
+                "2": {
+                  "Score": 6,
+                  "Touchdown": 1,
+                  "Safety": 0,
+                  "1ptSafety": 0,
+                  "1ptConversion": 0,
+                  "2ptConversion": 0,
+                  "FieldGoal": 0,
+                  "Defensive2ptConversion": 0
+                }
+              },
+              "OTTotal": {
+                "Score": 6,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 0,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Total": {
+                "Score": 18,
+                "Touchdown": 2,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 1,
+                "Defensive2ptConversion": 1
+              }
+            },
+            {
+              "Q1": null,
+              "Q2": null,
+              "HT": null,
+              "Q3": null,
+              "Q4": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "OT": null,
+              "OTTotal": null,
+              "Total": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              }
+            }
+          ]
+        },
+        "Participant2": {
+          "type": [
+            "object"
+          ],
+          "description": "Score for participant 2. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant 2",
+          "$ref": "#/$defs/ScoreParticipant",
+          "examples": [
+            {},
+            {
+              "Q1": null,
+              "Q2": null,
+              "HT": null,
+              "Q3": null,
+              "Q4": null,
+              "OT": {
+                "1": {
+                  "Score": 4,
+                  "Touchdown": 0,
+                  "Safety": 2,
+                  "1ptSafety": 0,
+                  "1ptConversion": 0,
+                  "2ptConversion": 0,
+                  "FieldGoal": 0,
+                  "Defensive2ptConversion": 0
+                }
+              },
+              "OTTotal": {
+                "Score": 4,
+                "Touchdown": 0,
+                "Safety": 2,
+                "1ptSafety": 0,
+                "1ptConversion": 0,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Total": {
+                "Score": 4,
+                "Touchdown": 0,
+                "Safety": 2,
+                "1ptSafety": 0,
+                "1ptConversion": 0,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              }
+            },
+            {
+              "Q1": null,
+              "Q2": null,
+              "HT": null,
+              "Q3": null,
+              "Q4": null,
+              "OT": null,
+              "OTTotal": null,
+              "Total": null
+            },
+            {
+              "Q1": {
+                "Score": 6,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 0,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Q2": null,
+              "HT": {
+                "Score": 6,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 0,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Q3": null,
+              "Q4": null,
+              "OT": {
+                "2": {
+                  "Score": 9,
+                  "Touchdown": 1,
+                  "Safety": 0,
+                  "1ptSafety": 0,
+                  "1ptConversion": 1,
+                  "2ptConversion": 0,
+                  "FieldGoal": 0,
+                  "Defensive2ptConversion": 1
+                }
+              },
+              "OTTotal": {
+                "Score": 9,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 1
+              },
+              "Total": {
+                "Score": 15,
+                "Touchdown": 2,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 1
+              }
+            },
+            {
+              "Q1": null,
+              "Q2": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "HT": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "Q3": null,
+              "Q4": {
+                "Score": 7,
+                "Touchdown": 1,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 1,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              },
+              "OT": null,
+              "OTTotal": null,
+              "Total": {
+                "Score": 14,
+                "Touchdown": 2,
+                "Safety": 0,
+                "1ptSafety": 0,
+                "1ptConversion": 2,
+                "2ptConversion": 0,
+                "FieldGoal": 0,
+                "Defensive2ptConversion": 0
+              }
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Participant1",
+        "Participant2"
+      ]
+    },
+    "ScoreParticipant": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information for a participant",
+      "title": "Score for Participant in Period",
+      "properties": {
+        "HT": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score up to halftime",
+          "title": "Half Time Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "OT": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Overtime score, the key indicating the overtime number and will have as many keys as there were overtimes in the game",
+          "title": "Overtime Score",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Overtime score for the corresponding overtime",
+              "$ref": "#/$defs/ScoreParticipantPeriod"
+            }
+          }
+        },
+        "OTTotal": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Total overtime score: the sum of scores in all overtimes",
+          "title": "Total Overtime Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Q1": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score in Q1",
+          "title": "Q1 Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Q2": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score in Q2",
+          "title": "Q2 Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Q3": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score in Q3",
+          "title": "Q3 Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Q4": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Score in Q4",
+          "title": "Q4 Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        },
+        "Total": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Total score: sum of all periods and overtimes",
+          "title": "Total Score",
+          "$ref": "#/$defs/ScoreParticipantPeriod"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ScoreParticipantPeriod": {
+      "type": [
+        "object"
+      ],
+      "description": "Score information for a participant in a given period",
+      "title": "Score for Participant in Period",
+      "properties": {
+        "1ptConversion": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 1pt conversions",
+          "title": "One Point Conversions",
+          "examples": [
+            0,
+            6,
+            10
+          ]
+        },
+        "1ptSafety": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 1pt safeties",
+          "title": "One Points Safeties",
+          "examples": [
+            0,
+            6,
+            10
+          ]
+        },
+        "2ptConversion": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of 2pt conversions",
+          "title": "Two Points Conversions",
+          "examples": [
+            0,
+            8,
+            12
+          ]
+        },
+        "Defensive2ptConversion": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of defensive 2pt conversions",
+          "title": "Defensive Two Points Conversions",
+          "examples": [
+            0,
+            3,
+            5
+          ]
+        },
+        "FieldGoal": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of field goals",
+          "title": "Field Goal",
+          "examples": [
+            0,
+            2,
+            8,
+            14
+          ]
+        },
+        "Safety": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of safeties",
+          "title": "Safety",
+          "examples": [
+            0,
+            1,
+            7
+          ]
+        },
+        "Score": {
+          "type": [
+            "number"
+          ],
+          "description": "Score",
+          "title": "Score",
+          "examples": [
+            0,
+            8,
+            19,
+            25
+          ]
+        },
+        "Touchdown": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of touchdowns",
+          "title": "Touchdown",
+          "examples": [
+            0,
+            1,
+            4,
+            14
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "1ptConversion",
+        "1ptSafety",
+        "2ptConversion",
+        "Defensive2ptConversion",
+        "FieldGoal",
+        "Safety",
+        "Score",
+        "Touchdown"
+      ]
+    },
+    "KickoffInfo": {
+      "type": [
+        "object"
+      ],
+      "description": "Kick-off information",
+      "title": "Kickoff Info",
+      "properties": {
+        "Team": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`Participant1` vs `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Team",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "Type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The type of kick off",
+          "title": "Type",
+          "enum": [
+            null,
+            "regular",
+            "onside"
+          ]
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The outcome of the kick off",
+          "title": "Outcome",
+          "enum": [
+            null,
+            "fair_catch",
+            "return",
+            "touchback",
+            "fumble",
+            "out_of_bounds",
+            "recovered"
+          ]
+        },
+        "KickoffPreviousAction": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The cause of the kick off",
+          "title": "Kickoff Previous Action",
+          "enum": [
+            null,
+            "Safety1Pt",
+            "Safety2Pt",
+            "DefensiveConversion",
+            "ConversionSafety"
+          ]
+        },
+        "PenaltyYards": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "Penalty yards for the kick off",
+          "title": "Penalty Yards",
+          "examples": [
+            null,
+            5,
+            10
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Team"
+      ]
+    },
+    "Down": {
+      "type": [
+        "object"
+      ],
+      "description": "Current down info",
+      "title": "Down Info",
+      "properties": {
+        "Number": {
+          "type": [
+            "number"
+          ],
+          "description": "Current down number (0-4)",
+          "title": "Number",
+          "examples": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "YardsToEndzone": {
+          "type": [
+            "number"
+          ],
+          "description": "Yards left to the end zone of the opponent",
+          "title": "Yards To End Zone",
+          "examples": [
+            0,
+            5,
+            20
+          ]
+        },
+        "YardsToGo": {
+          "type": [
+            "number"
+          ],
+          "description": "Yards left to acquire in the current down",
+          "title": "Yards To Go",
+          "examples": [
+            0,
+            5,
+            10
+          ]
+        },
+        "ScrimmageLine": {
+          "type": [
+            "number"
+          ],
+          "description": "The position of the scrimmage line. Values: 0 - 50",
+          "title": "Scrimmage Line",
+          "examples": [
+            0,
+            2,
+            15,
+            45,
+            50
+          ]
+        },
+        "Possession": {
+          "type": [
+            "number"
+          ],
+          "description": "Referenced participant number (`1` for `Participant1`, and `2` for `Participant2`). Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Possession",
+          "examples": [
+            1,
+            2
+          ]
+        },
+        "Side": {
+          "type": [
+            "string"
+          ],
+          "description": "The side of the pitch where the scrimmage line is place ",
+          "title": "Side",
+          "enum": [
+            "offensive",
+            "defensive"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Number",
+        "YardsToGo",
+        "ScrimmageLine",
+        "Possession",
+        "Side"
+      ]
+    },
+    "InPlayInfo": {
+      "type": [
+        "object"
+      ],
+      "description": "Data about current play state",
+      "title": "In Play Info",
+      "properties": {
+        "BallSnapped": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Indicates if the ball has been snapped during the current play",
+          "title": "Ball Snapped",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "PlayersLiningUp": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Indicates if the players lining up is active during the play. Automatic turn off after a Ball Snap",
+          "title": "Players Lining Up",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "TimeoutParti1": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Indicates that there is an active Timeout for Participant 1",
+          "title": "Timeout Participant 1",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "TimeoutParti2": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Indicates that there is an active Timeout for Participant 2",
+          "title": "Timeout Participant 2",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "TVTimeout": {
+          "type": [
+            "boolean"
+          ],
+          "description": "Indicates that there is an active TV Timeout ",
+          "title": "TV Timeout",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The last performed action outcome to the In Play screen ",
+          "title": "Outcome",
+          "enum": [
+            null,
+            "fair_catch",
+            "return",
+            "touchback",
+            "fumble",
+            "out_of_bounds",
+            "recovered",
+            "pass-complete",
+            "pass-incomplete",
+            "pass-intercepted",
+            "pass-sack",
+            "rush-complete",
+            "blocked",
+            "downed",
+            "field-goal-successful",
+            "field-goal-missed"
+          ]
+        },
+        "NewSetOfDowns": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Indicates if a penalty causes the team to get a new set of downs",
+          "title": "New Set of Downs",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        },
+        "PenaltyIncreasedDown": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "description": "Indicates if a penalty increased the down number already",
+          "title": "Penalty Increased Down",
+          "examples": [
+            null,
+            false,
+            true
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "BallSnapped",
+        "PlayersLiningUp",
+        "TimeoutParti1",
+        "TimeoutParti2",
+        "TVTimeout"
+      ]
+    },
+    "PartiState": {
+      "type": [
+        "object"
+      ],
+      "description": "Information about a team during this game",
+      "title": "Participant State",
+      "properties": {
+        "Timeouts": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of timeouts left. Initial value can change during overtime, and between different leagues",
+          "title": "Timeouts",
+          "examples": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "Challenges": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of challenges left. Initial value can change during overtime, and between different leagues",
+          "title": "Challenges",
+          "examples": [
+            0,
+            1,
+            2
+          ]
+        },
+        "PossibleEvent": {
+          "type": [
+            "object"
+          ],
+          "description": "Possible game events for the team, to be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen",
+          "title": "PossibleEvent",
+          "$ref": "#/$defs/PossiblePartyEvent"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Timeouts",
+        "Challenges",
+        "PossibleEvent"
+      ]
+    },
+    "PossiblePartyEvent": {
+      "type": [
+        "object"
+      ],
+      "description": "Possible game events for the team, to be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen",
+      "title": "Possible Party Event",
+      "properties": {
+        "2ptConversionAttempt": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible 2 point conversion for the team",
+          "title": "2pt Conversion Attempt",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "4thDownConversion": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible conversion on the 4th down for the team",
+          "title": "4th Down Conversion",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "FieldGoal": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible field goal for the team",
+          "title": "Field Goal",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Safety": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible safety for the team",
+          "title": "Safety",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Touchdown": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible touchdown for the team",
+          "title": "Touchdown",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "BigPlay": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible big play for the team",
+          "title": "Big Play",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "1stDown": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible 1st down for the team",
+          "title": "1st Down",
+          "examples": [
+            false,
+            true
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "2ptConversionAttempt",
+        "4thDownConversion",
+        "FieldGoal",
+        "Safety",
+        "Touchdown",
+        "BigPlay"
+      ]
+    },
+    "PossibleEvent": {
+      "type": [
+        "object"
+      ],
+      "description": "Possible events happening during the game, not associated to a particular team. To be confirmed by relevant events later on. This is different from an unconfirmed event, as in we are only indicating a possibility of the event, the event itself may never happen.",
+      "title": "Possible Event",
+      "properties": {
+        "Penalty": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible penalty happening",
+          "title": "Penalty",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Turnover": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible turnover happening",
+          "title": "Turnover",
+          "examples": [
+            false,
+            true
+          ]
+        },
+        "Challenge": {
+          "type": [
+            "boolean"
+          ],
+          "description": "A possible challenge happening",
+          "title": "Challenge",
+          "examples": [
+            false,
+            true
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Penalty",
+        "Turnover",
+        "Challenge"
+      ]
+    },
+    "PlayerStatsForParticipants": {
+      "type": [
+        "object"
+      ],
+      "description": "Player statistics for both participants",
+      "title": "Player Statistics",
+      "properties": {
+        "Participant1": {
+          "type": [
+            "object"
+          ],
+          "description": "Player statistics for participant 1, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant1",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for the referenced player",
+              "$ref": "#/$defs/PlayerStats"
+            }
+          }
+        },
+        "Participant2": {
+          "type": [
+            "object"
+          ],
+          "description": "Player statistics for participant 2, by player Id. Home/away mapping is provided by the `Participant1IsHome` flag on the fixture",
+          "title": "Participant2",
+          "patternProperties": {
+            "^[0-9]+$": {
+              "type": [
+                "object"
+              ],
+              "description": "Player statistics for the referenced player",
+              "$ref": "#/$defs/PlayerStats"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "Participant1",
+        "Participant2"
+      ]
+    },
+    "PlayerStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Player statistics, usually indexed by the player Id. Player Id -1 is used for team statistics",
+      "title": "Player Statistics",
+      "properties": {
+        "pass": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Pass statistics",
+          "title": "Pass",
+          "$ref": "#/$defs/PlayerPassStats"
+        },
+        "rush": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Rush statistics",
+          "title": "Rush",
+          "$ref": "#/$defs/StatsNYDT"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PlayerPassStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Player pass statistics",
+      "title": "Player Pass Statistics",
+      "properties": {
+        "passer": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Passer statistics",
+          "title": "Passer",
+          "$ref": "#/$defs/PasserStats"
+        },
+        "receiver": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Receiver statistics",
+          "title": "Receiver",
+          "$ref": "#/$defs/ReceiverStats"
+        }
+      },
+      "additionalProperties": false
+    },
+    "PasserStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Passer statistics",
+      "title": "Player Passer Statistics",
+      "properties": {
+        "complete": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Completed passes",
+          "title": "Completed",
+          "$ref": "#/$defs/StatsNYDT"
+        },
+        "incomplete": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Incomplete passes",
+          "title": "Incomplete",
+          "$ref": "#/$defs/StatsNYD"
+        },
+        "intercepted": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Intercepted passes",
+          "title": "Intercepted",
+          "$ref": "#/$defs/StatsNYD"
+        },
+        "sack": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Sack passes",
+          "title": "Sack",
+          "$ref": "#/$defs/StatsN"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ReceiverStats": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Receiver statistics",
+      "title": "Player Receiver Statistics",
+      "properties": {
+        "complete": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Completed receptions",
+          "title": "Completed",
+          "$ref": "#/$defs/StatsNYDT"
+        },
+        "incomplete": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Incomplete receptions",
+          "title": "Incomplete",
+          "$ref": "#/$defs/StatsNYD"
+        },
+        "intercepted": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Intercepted receptions",
+          "title": "Intercepted",
+          "$ref": "#/$defs/StatsNYD"
+        }
+      },
+      "additionalProperties": false
+    },
+    "StatsNYDT": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Statistics for an action, linked to a specific action type, measuring number of actions, yards, and touchdowns",
+      "title": "Statistics with number, yards, touchdowns",
+      "properties": {
+        "n": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of actions",
+          "title": "Number",
+          "examples": [
+            0,
+            2,
+            6
+          ]
+        },
+        "touchdowns": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of touchdowns",
+          "title": "Touchdowns",
+          "examples": [
+            0,
+            2,
+            5
+          ]
+        },
+        "yards": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of yards",
+          "title": "Yards",
+          "examples": [
+            0,
+            8,
+            30
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "n",
+        "touchdowns",
+        "yards"
+      ]
+    },
+    "StatsNYD": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Statistics for an action, linked to a specific action type, measuring number of actions and yards",
+      "title": "Statistics with number and yards",
+      "properties": {
+        "n": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of actions",
+          "title": "Number",
+          "examples": [
+            0,
+            2,
+            6
+          ]
+        },
+        "yards": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of yards",
+          "title": "Yards",
+          "examples": [
+            0,
+            8,
+            30
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "n",
+        "yards"
+      ]
+    },
+    "StatsN": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Statistics for an action, linked to a specific action type, measuring number of actions",
+      "title": "Statistics with number",
+      "properties": {
+        "n": {
+          "type": [
+            "number"
+          ],
+          "description": "Number of actions",
+          "title": "Number",
+          "examples": [
+            0,
+            2,
+            6
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "n"
+      ]
+    }
+  }
+}
