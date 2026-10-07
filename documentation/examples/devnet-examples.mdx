@@ -6,7 +6,7 @@ description: "End-to-end devnet scripts for activation, streaming, and on-chain 
 The repository includes runnable devnet scripts under [`examples/devnet`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet). They exercise the current activation, streaming, fixture validation, and score validation flows against `https://txline-dev.txodds.com`.
 
 <Info>
-The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest mainnet program types.
+The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest program types.
 </Info>
 
 ## Requirements
@@ -41,6 +41,9 @@ yarn ts-node examples/devnet/scripts/subscription_free_tier.ts
 | [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | V2 validation with two stats, binary predicates, and geometric distance predicates. |
 | [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Rich multi-leg V2 validation with `statKeys=1,2,3001,3002` and two-, three-, and four-leg strategies. |
 | [`subscription_scores_v3c.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v3c.ts) | V3 multiproof validation demonstrating both V2 and V3 validation approaches for comparison. |
+| [`book_fixture.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/book_fixture.ts) | Listing bookable fixtures, fetching a backend-signed quote, and booking a fixture with `book_fixture`. |
+| [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) | V4 stat validation: booking, then `validateFixtureForTree`, co-signed `validateStatV4`, and `closeWorkerTicket`. |
+| [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) | V4 odds validation: booking, then `validateFixtureForTree`, co-signed `validateOddsV4`, and `closeWorkerTicket`. |
 | [`fixture_validation_view_only.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/fixture_validation_view_only.ts) | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. |
 | [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Fetching complete historical score updates for a specific fixture. |
 
@@ -53,12 +56,14 @@ The shared helpers are in `examples/devnet/common`:
 
 ## Score Validation Paths
 
-There are two score validation styles:
+Validation uses the following paths:
 
 | API request | On-chain method | Use case |
 |-------------|-----------------|----------|
 | `/scores/stat-validation?fixtureId=...&seq=...&statKey=...` | `validateStat` | Single-stat or legacy two-stat examples using `statKey` and optional `statKey2`. |
-| `/scores/stat-validation?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed predicates and multi-leg strategies. |
+| `/scores/stat-validation?fixtureId=...&seq=...&statKeys=1,2,...` | `validateStatV2` | Multi-stat validation with indexed predicates and multi-leg strategies. |
+| `/scores/stat-validation-v4?fixtureId=...&seq=...&statKeys=1,2,...` | `validateFixtureForTree` → `validateStatV4` → `closeWorkerTicket` | Backend-co-signed multiproof validation with an `NDimensionalStrategy`. Requires a `fixture_ticket` from `book_fixture`. |
+| `/odds/validation-v4?messageId=...&ts=...` | `validateFixtureForTree` → `validateOddsV4` → `closeWorkerTicket` | Backend-co-signed validation of one odds update. Requires a `fixture_ticket` from `book_fixture`. |
 
 For V2, the `statKeys` order is part of the proof contract. The response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions.
 
@@ -100,5 +105,6 @@ Use `fixture_validation_view_only.ts` for the runnable fixture proof flow. The s
 
 - [Quickstart](/documentation/quickstart)
 - [Streaming Data](/documentation/examples/streaming-data)
+- [Booking Fixtures](/documentation/examples/booking-fixtures)
 - [On-Chain Validation](/documentation/examples/onchain-validation)
 - [Troubleshooting](/documentation/examples/troubleshooting)

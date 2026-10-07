@@ -1,0 +1,172 @@
+---
+title: "Booking Fixtures"
+description: "Book individual fixtures with TxL to access their scores and odds and validate them on-chain"
+---
+
+<Info>
+**Prerequisites**: Complete the [Quickstart](/documentation/quickstart) guide. The snippets assume `jwt`, `apiToken`, `apiBaseUrl`, `program`, `provider`, `txlTokenMint`, and the `tokenTreasuryPda`, `tokenTreasuryVault`, and `userTokenAccount` derivations from the quickstart's [Subscribe On-Chain](/documentation/quickstart#subscribe-on-chain) section are in scope.
+</Info>
+
+## Overview
+
+A wallet can book a single fixture with `book_fixture`, paying in TxL, instead of subscribing to a league bundle. A booking creates a `fixture_ticket` PDA for the `(wallet, fixtureId)` pair and transfers the quoted price from the wallet's TxL token account into the `token_treasury_v2` vault.
+
+A `fixture_ticket` provides:
+
+- **Scores and odds access.** Endpoints such as `GET /api/scores/snapshot/{fixtureId}` succeed for the booked fixture whether or not your subscription bundle covers it. A request is denied with `403` only when the fixture is neither in your bundle nor booked. Access starts once the backend has indexed the ticket.
+- **On-chain validation.** `validate_odds_v4` and `validate_stat_v4` require the wallet's `fixture_ticket` for the fixture. See [On-Chain Validation](/documentation/examples/onchain-validation).
+
+TxL is paid once, at booking. Validations against a ticket cost nothing extra and have no call limit.
+
+Only fixtures that have both odds and scores available, and whose competition has a configured price, can be booked.
+
+## Flow
+
+1. `GET /api/fixtures-schedule` to list bookable fixtures.
+2. `GET /api/quotes/book-fixture` to get a backend-signed quote for one fixture.
+3. Submit `book_fixture` with the quote payload, preceded by an Ed25519 verify instruction for the quote's signature.
+
+## List Bookable Fixtures
+
+`GET /api/fixtures-schedule` requires the same permission as `GET /api/quotes/book-fixture`; callers without it receive `403 Forbidden`.
+
+| Parameter | Description |
+|-----------|-------------|
+| `afterTs` | Epoch milliseconds. Fixtures whose `StartTime` is not after it are omitted. Defaults to the time of the request. A value earlier than `now - 2 weeks` is refused with `400 Bad Request`. |
+| `beforeTs` | Optional, epoch milliseconds. Fixtures whose `StartTime` is not before it are omitted. A value less than `afterTs` is refused with `400 Bad Request`. |
+| `sportId` | Optional. Only fixtures with this `SportId`. |
+| `countryId` | Optional. Only fixtures with this `CountryId`. |
+| `competitionId` | Optional. Only fixtures with this `CompetitionId`. |
+
+Filters given together all apply.
+
+The response is an array with one entry per fixture:
+
+| Field | Description |
+|-------|-------------|
+| `FixtureId`, `CompetitionId`, `StartTime`, `Participant1Id`, `Participant1`, `Participant2Id`, `Participant2`, `Participant1IsHome` | Same names and types as the `Fixture` schema of `GET /api/fixtures/snapshot`. |
+| `SportId`, `CountryId` | Sport and country of the fixture. |
+| `IsOddsAvailable`, `IsScoresAvailable` | Whether odds and scores data are available. |
+| `ScoresCoverage` | How scores are captured: `"Tv/Stream"` or `"In Venue"`. |
+| `ScoresDelay` | Scores delay in seconds for the fixture's competition, or `0` if it has none. |
+| `GameState` | One of `scheduled`, `walkover`, `finished`, `live`, `postponed`, `cancelled`, `retired`, `suspended`. |
+| `LastUpdateTs` | Last update time of the fixture, epoch milliseconds. |
+
+```typescript
+const headers = {
+  Authorization: `Bearer ${jwt}`,
+  "X-Api-Token": apiToken,
+};
+
+const { data: schedule } = await axios.get(`${apiBaseUrl}/fixtures-schedule`, {
+  headers,
+  params: {
+    afterTs: Date.now(),
+    beforeTs: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    // sportId, countryId, competitionId are optional
+  },
+});
+
+const fixtureId: number = schedule[0].FixtureId;
+```
+
+## Request a Quote
+
+```typescript
+const { data: quote } = await axios.get(`${apiBaseUrl}/quotes/book-fixture`, {
+  headers,
+  params: { fixtureId, pubkey: provider.wallet.publicKey.toBase58() },
+});
+```
+
+The response contains:
+
+| Field | Description |
+|-------|-------------|
+| `payload.user` | Wallet the quote was issued for. |
+| `payload.fixtureId` | Fixture being booked (u32). |
+| `payload.price` | Cost in TxL base units, the mint's smallest denomination. This is the competition's configured price. |
+| `payload.ts` | Quote timestamp. |
+| `payload.validity` | Validity window; `book_fixture` fails with `QuoteExpired` once it has passed. |
+| `signature` | Backend admin Ed25519 signature over the payload. |
+
+A `404 Not Found` means the fixture does not have both odds and scores available, or its competition has no configured price. No payload is returned.
+
+## Book On-Chain
+
+`book_fixture` requires an Ed25519 signature-verification instruction from the network's backend admin key immediately before it. The signature is over the SHA-256 hash of the Borsh-encoded `BookFixturePayload`. The `price` is transferred in TxL base units, so the wallet needs at least that balance.
+
+```typescript
+import { createHash } from "crypto";
+import {
+  Ed25519Program,
+  SYSVAR_INSTRUCTIONS_PUBKEY,
+  SystemProgram,
+} from "@solana/web3.js";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
+
+const [fixtureTicketPda] = PublicKey.findProgramAddressSync(
+  [
+    Buffer.from("fixture_ticket"),
+    provider.wallet.publicKey.toBuffer(),
+    new BN(fixtureId).toArrayLike(Buffer, "le", 4), // fixtureId is u32
+  ],
+  program.programId
+);
+
+const payload = {
+  user: new PublicKey(quote.payload.user),
+  fixtureId: quote.payload.fixtureId,
+  price: quote.payload.price,
+  ts: new BN(quote.payload.ts),
+  validity: new BN(quote.payload.validity),
+};
+
+const payloadHash = createHash("sha256")
+  .update(program.coder.types.encode("bookFixturePayload", payload))
+  .digest();
+
+const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
+  publicKey: backendAdminPubkey.toBytes(), // differs per network
+  message: payloadHash,
+  signature: Buffer.from(quote.signature, "base64"),
+});
+
+const txSig = await program.methods
+  .bookFixture(payload)
+  .accounts({
+    user: provider.wallet.publicKey,
+    fixtureTicket: fixtureTicketPda,
+    tokenMint: txlTokenMint,
+    userTokenAccount,
+    tokenTreasuryVault,
+    tokenTreasuryPda,
+    instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+    tokenProgram: TOKEN_2022_PROGRAM_ID,
+    systemProgram: SystemProgram.programId,
+    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  })
+  .preInstructions([ed25519Ix])
+  .rpc();
+```
+
+`backendAdminPubkey` is the backend admin key of the network you are using; see [Program Addresses](/documentation/programs/addresses). The runnable devnet examples keep it as `BACKEND_ADMIN_PUBKEY` in `examples/devnet/common/config.ts`.
+
+## One Booking per Fixture
+
+A wallet can book a given fixture only once. A second `book_fixture` for the same `(wallet, fixtureId)` fails with `FixtureAlreadyBooked`, and no TxL is transferred. Booking a different fixture is unaffected and creates its own ticket. Check for an existing ticket before booking:
+
+```typescript
+const existing = await provider.connection.getAccountInfo(fixtureTicketPda);
+if (existing) {
+  // already booked; skip straight to data access or validation
+}
+```
+
+## Next Steps
+
+- Fetch scores and odds for the booked fixture with the endpoints in [Fetching Snapshots](/documentation/examples/fetching-snapshots).
+- Validate data on-chain against the ticket with [On-Chain Validation](/documentation/examples/onchain-validation).

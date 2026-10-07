@@ -12,7 +12,8 @@ import * as fs from "fs";
 import axios from "axios";
 import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction } from "@solana/web3.js";
+import { createHash } from "crypto";
 
 export type User = {
   user: anchor.web3.Keypair,
@@ -453,4 +454,128 @@ export function verifyTransactionSafety(
   if (oracleInstructionCount > 1) {
     throw new Error("Safety check failed: Multiple Oracle instructions detected in payload");
   }
+}
+
+export function fixtureTicketPda(programId: PublicKey, wallet: PublicKey, fixtureId: number): PublicKey {
+  const fixtureIdLe = Buffer.alloc(4);
+  fixtureIdLe.writeUInt32LE(fixtureId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("fixture_ticket"), wallet.toBuffer(), fixtureIdLe],
+    programId
+  )[0];
+}
+
+// domain and workerId are caller-chosen slot ids; the odds and scores scripts
+// use different domains so their tickets never collide.
+export function workerTicketPda(programId: PublicKey, wallet: PublicKey, domain: number, workerId: number): PublicKey {
+  const workerIdLe = Buffer.alloc(2);
+  workerIdLe.writeUInt16LE(workerId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("worker_ticket"), wallet.toBuffer(), Buffer.from([domain]), workerIdLe],
+    programId
+  )[0];
+}
+
+export function dailyRootsPda(programId: PublicKey, seed: "daily_batch_roots" | "daily_scores_roots", tsMs: number): PublicKey {
+  const epochDayLe = Buffer.alloc(2);
+  epochDayLe.writeUInt16LE(Math.floor(tsMs / (24 * 60 * 60 * 1000)));
+  return PublicKey.findProgramAddressSync([Buffer.from(seed), epochDayLe], programId)[0];
+}
+
+/** Ed25519 verify instruction carrying the backend's co-signature over sha256(Borsh payload), as the program's instructions-sysvar check expects. */
+export function backendCosignInstruction(borshPayload: Buffer, signatureBase64: string) {
+  return Ed25519Program.createInstructionWithPublicKey({
+    publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
+    message: createHash("sha256").update(borshPayload).digest(),
+    signature: Buffer.from(signatureBase64, "base64"),
+  });
+}
+
+export type BookFixtureQuote = {
+  payload: { user: string; fixtureId: number; price: number; ts: number; validity: number };
+  signature: string;
+};
+
+/** Returns null on 404: the fixture lacks odds+scores, or its competition has no configured price. */
+export async function requestBookFixtureQuote(
+  fixtureId: number,
+  pubkey: PublicKey,
+  userName?: string
+): Promise<BookFixtureQuote | null> {
+  try {
+    const res = await apiClient.get<BookFixtureQuote>("/quotes/book-fixture", {
+      params: { fixtureId, pubkey: pubkey.toBase58() },
+      userName,
+    } as any);
+    return res.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) return null;
+    throw error;
+  }
+}
+
+/** A repeat booking fails with FixtureAlreadyBooked, so check before paying for a quote. */
+export async function hasFixtureTicket(
+  connection: anchor.web3.Connection,
+  programId: PublicKey,
+  wallet: PublicKey,
+  fixtureId: number
+): Promise<boolean> {
+  return (await connection.getAccountInfo(fixtureTicketPda(programId, wallet, fixtureId), "confirmed")) !== null;
+}
+
+export type BookFixtureResult =
+  | { status: "booked"; signature: string; price: number }
+  | { status: "already-booked" }
+  | { status: "no-quote" };
+
+/**
+ * Books `fixtureId` for the program's wallet: quote, then `book_fixture` co-signed by the backend.
+ * `program` must be bound to the wallet that pays.
+ */
+export async function bookFixture(
+  program: anchor.Program<Txoracle>,
+  tokenMint: PublicKey,
+  fixtureId: number,
+  userName?: string
+): Promise<BookFixtureResult> {
+  const userKey = program.provider.publicKey!;
+  const fixtureTicket = fixtureTicketPda(program.programId, userKey, fixtureId);
+
+  if (await hasFixtureTicket(program.provider.connection, program.programId, userKey, fixtureId)) {
+    return { status: "already-booked" };
+  }
+
+  const quote = await requestBookFixtureQuote(fixtureId, userKey, userName);
+  if (!quote) return { status: "no-quote" };
+
+  const payload = {
+    user: new PublicKey(quote.payload.user),
+    fixtureId: quote.payload.fixtureId,
+    price: quote.payload.price,
+    ts: new anchor.BN(quote.payload.ts),
+    validity: new anchor.BN(quote.payload.validity),
+  };
+  const cosignIx = backendCosignInstruction(program.coder.types.encode("bookFixturePayload", payload), quote.signature);
+
+  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
+
+  const signature = await program.methods
+    .bookFixture(payload)
+    .accounts({
+      user: userKey,
+      fixtureTicket,
+      tokenMint,
+      userTokenAccount: getAssociatedTokenAddressSync(tokenMint, userKey, false, TOKEN_2022_PROGRAM_ID),
+      tokenTreasuryVault: getAssociatedTokenAddressSync(tokenMint, tokenTreasuryPda, true, TOKEN_2022_PROGRAM_ID),
+      tokenTreasuryPda,
+      instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      systemProgram: anchor.web3.SystemProgram.programId,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+    })
+    .preInstructions([cosignIx])
+    .rpc();
+
+  return { status: "booked", signature, price: quote.payload.price };
 }

@@ -1,4 +1,6 @@
 // Demo stat validaton V2 and V4 for comparison
+// V4 needs a booked fixture (book_fixture) and runs validate_fixture_for_tree -> validate_stat_v4 -> close_worker_ticket per validation
+// Optionally pin the fixture with FIXTURE_ID and SEQ; otherwise the first recent scores update is used
 
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v4.ts
@@ -15,57 +17,11 @@ import { EventSource } from 'eventsource'
 import BN from "bn.js"
 import { inspect } from 'util'
 import { IdlTypes } from "@coral-xyz/anchor"
-import { Ed25519Program, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
-import { createHash } from 'crypto';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
+import { SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
 
-async function purchaseCredits(
-  userKey: PublicKey,
-  userProgram: Program<Txoracle>, 
-  userValidationStatePda: PublicKey,
-  tokenMint: PublicKey, 
-  creditsToBuy: number = 1
-) {
-  // Token treasury PDA
-  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury_v2")],
-    userProgram.programId
-  )
-
-  // User associated token account
-  const userTokenAccount = getAssociatedTokenAddressSync(
-    tokenMint,
-    userKey,
-    false,
-    TOKEN_2022_PROGRAM_ID
-  )
-  
-  // Treasury associated token account
-  const tokenTreasuryVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    tokenTreasuryPda,
-    true,
-    TOKEN_2022_PROGRAM_ID
-  )
-
-  // Execute purchase instruction
-  const txSignature = await userProgram.methods
-    .purchaseValidationCredits(creditsToBuy)
-    .accounts({
-      user: userKey,
-      userValidationState: userValidationStatePda,
-      tokenMint: tokenMint,
-      userTokenAccount: userTokenAccount,
-      tokenTreasuryVault: tokenTreasuryVault,
-      tokenTreasuryPda: tokenTreasuryPda,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    })
-    .rpc()
-
-  console.log(`Purchase executed with signature: ${txSignature}`)
-}
+// Client-chosen worker ticket slot; scores use a different domain than the odds script
+const SCORES_DOMAIN = 1
+const WORKER_ID = 0
 
 type OracleTypes = IdlTypes<Txoracle>
 
@@ -123,27 +79,11 @@ async function main() {
   const userProvider = new anchor.AnchorProvider(connection, userWallet, anchor.AnchorProvider.defaultOptions())
   
   // Create a new program instance permanently bound to Trader A
-  const userProgram = new anchor.Program(program.idl, userProvider)
+  const userProgram = new anchor.Program<Txoracle>(program.idl as Txoracle, userProvider)
   // User public key
   const userKey = userProgram.provider.publicKey!
 
-  // User validation state PDA
-  const [userValidationStatePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("user_state"), userKey.toBuffer()],
-    userProgram.programId
-  )
-
-  // IF NEEDED, purchase credits before validating
-  // const userValidationStatePda = await purchaseCredits(userKey, userProgram, tokenMint, 5);
-
   try {
-
-    // Spain v Belgium: July 10, 2026
-    // const fixtureId = 18218149;
-    // const seq = 1087;
-    // England v Argentina: July 15, 2026
-    const fixtureId = 18241006;
-    const seq = 962;
 
     // Fetch the scores snapshot for a specific fixture
     async function getScoresSnapshot(fixtureId: number, asOf?: number) {
@@ -165,8 +105,6 @@ async function main() {
         throw error
       }
     }
-
-    await getScoresSnapshot(fixtureId, Date.now())
 
     var sampleScores: any = null
 
@@ -196,6 +134,7 @@ async function main() {
             if (!sampleScores) {
               sampleScores = response.data[0]
               console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
+              return
             }
           }
         } catch (error) {
@@ -209,8 +148,30 @@ async function main() {
       }
     }
 
-    // Execute the scanner for all scores
-    await scanRecentScores()
+    let fixtureId: number
+    let seq: number
+    if (process.env.FIXTURE_ID && process.env.SEQ) {
+      fixtureId = Number(process.env.FIXTURE_ID)
+      seq = Number(process.env.SEQ)
+    } else {
+      await scanRecentScores()
+      if (!sampleScores) throw new Error("No recent scores updates found; set FIXTURE_ID and SEQ")
+      fixtureId = sampleScores.FixtureId
+      seq = sampleScores.Update?.Seq ?? sampleScores.Seq
+    }
+
+    console.log(`\n[${name}] Booking fixture ${fixtureId}`)
+    const booking = await users.bookFixture(userProgram, tokenMint, fixtureId, name)
+    if (booking.status === "no-quote") {
+      throw new Error(`Fixture ${fixtureId} is not bookable (no odds and scores, or its competition has no price)`)
+    }
+    if (booking.status === "booked") {
+      console.log(`[${name}] Booked for ${booking.price} TxL base units: ${booking.signature}`)
+    } else {
+      console.log(`[${name}] Fixture ticket already held`)
+    }
+
+    await getScoresSnapshot(fixtureId, Date.now())
 
     // Map API proof array to exact shape expected by Anchor
     const mapProof = (proofArray: ApiProofNode[] | undefined): ProofNode[] => {
@@ -220,6 +181,8 @@ async function main() {
         isRightSibling: n.isRightSibling
       }))
     }
+
+    const fixtureTicket = users.fixtureTicketPda(program.programId, userKey, fixtureId)
 
     const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
       units: 1_400_000 
@@ -300,11 +263,7 @@ async function main() {
     const valV2 = resV2.data
 
     const targetTs = valV2.summary.updateStats.minTimestamp
-    const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000))
-    const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("daily_scores_roots"), new BN(epochDay).toBuffer("le", 2)],
-      program.programId
-    )
+    const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", targetTs)
 
     const payloadV2: StatValidationInput = {
       ts: new BN(targetTs),
@@ -365,19 +324,24 @@ async function main() {
         isRightSibling: node.isRightSibling
       })
 
-      const mappedPayload = {
+      // Staged on-chain by validate_fixture_for_tree; not part of the co-signed validate_stat_v4 payload
+      const treePayload = {
         ts: new BN(response.payload.ts),
-        fixtureSummary: {
+        summary: {
           fixtureId: new BN(response.payload.summary.fixtureId),
           updateStats: {
             updateCount: response.payload.summary.updateStats.updateCount,
             minTimestamp: new BN(response.payload.summary.updateStats.minTimestamp),
             maxTimestamp: new BN(response.payload.summary.updateStats.maxTimestamp),
           },
-          eventsSubTreeRoot: parseHash(response.payload.summary.eventStatsSubTreeRoot),
+          subTreeRoot: parseHash(response.payload.summary.eventStatsSubTreeRoot),
         },
-        fixtureProof: response.payload.fixtureProof.map(mapProofNode),
         mainTreeProof: response.payload.mainTreeProof.map(mapProofNode),
+      }
+
+      const mappedPayload = {
+        ts: new BN(response.payload.ts),
+        fixtureProof: response.payload.fixtureProof.map(mapProofNode),
         eventStatRoot: parseHash(response.payload.eventStatRoot), 
         leaves: response.payload.leaves.map((leaf: any) => ({
           stat: {
@@ -392,12 +356,11 @@ async function main() {
       }
 
       return {
+        treePayload,
         payload: mappedPayload,
-        signature: Array.from(Buffer.from(response.signature, 'base64'))
+        signature: response.signature as string
       }
     }
-
-    const oraclePublicKey = new PublicKey("QNvM25scLWmdkakdw7TtuAybp9YLfFrMcoz73HhLyxs");
 
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
       // Encode payload to raw Borsh bytes
@@ -406,37 +369,43 @@ async function main() {
         v4Data.payload
       )
 
-      // Hash payload to compress Ed25519 message to 32 bytes
-      const payloadHash = createHash('sha256').update(serializedPayload).digest()
-      console.log("TS Borsh Length:   ", serializedPayload.length, "bytes")
-      console.log("TS SHA-256 Hash:    ", payloadHash.toString('hex'))
+      const ed25519Ix = users.backendCosignInstruction(serializedPayload, v4Data.signature)
 
-      // Decode base64 signature string from API
-      const signatureBuffer = typeof v4Data.signature === 'string' 
-        ? Buffer.from(v4Data.signature, 'base64') 
-        : Buffer.from(v4Data.signature)
+      const ticket = users.workerTicketPda(program.programId, userKey, SCORES_DOMAIN, WORKER_ID)
+      const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", v4Data.treePayload.ts.toNumber())
 
-      // Construct Ed25519 instruction using 32-byte hash
-      const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
-        publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
-        message: payloadHash,
-        signature: signatureBuffer,
-      })
-
-      // Execute state mutating transaction via RPC
-      const txSignature = await userProgram.methods
-        .validateStatV4(v4Data.payload, strategy)
-        .accounts({ 
-          user: userKey,
-          userValidationState: userValidationStatePda,
-          oracleAuthority: oraclePublicKey,
-          instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-          dailyScoresMerkleRoots: dailyScoresPda
+      await userProgram.methods
+        .validateFixtureForTree({ ...v4Data.treePayload, domain: SCORES_DOMAIN, workerId: WORKER_ID })
+        .accounts({
+          payer: userKey,
+          ticket,
+          dailyMerkleRoots: dailyScoresPda,
+          systemProgram: anchor.web3.SystemProgram.programId,
         })
-        .preInstructions([computeBudgetIx, ed25519Ix])
         .rpc()
 
-      console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
+      try {
+        const txSignature = await userProgram.methods
+          .validateStatV4(WORKER_ID, v4Data.payload, strategy)
+          .accounts({
+            user: userKey,
+            ticket,
+            fixtureTicket,
+            instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+          })
+          .preInstructions([computeBudgetIx, ed25519Ix])
+          .rpc()
+
+        console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
+      } finally {
+        // Reclaims the worker ticket's rent and frees the slot for the next validation
+        // A failed close is logged so it doesn't replace the validation error
+        await userProgram.methods
+          .closeWorkerTicket(SCORES_DOMAIN, WORKER_ID)
+          .accounts({ payer: userKey, ticket })
+          .rpc()
+          .catch(closeError => console.error("close_worker_ticket failed:", closeError))
+      }
     }
 
     // Fetch dedicated multiproof payloads mapped to strategy leg counts
