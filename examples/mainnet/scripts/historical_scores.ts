@@ -1,7 +1,7 @@
 // Demo for fetching the full historical scores log for a specific fixture
 
 // Run from the project root using this command:
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/historical_scores.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/historical_scores.ts
 
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
@@ -44,7 +44,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  console.log("API Token:", users.authState.apiToken);
 
   try {
     // Fetch the scores snapshot for a specific fixture
@@ -70,9 +69,15 @@ async function main() {
     }
 
     // Norway v England -- July 11, 2026
-    await fetchHistoricalScores(18213979);
+    // await fetchHistoricalScores(18202783); //18213979);
+    // France v Spain -- July 14, 2026
+    // await fetchHistoricalScores(18237038);
+    // England v Argentina -- July 15, 2026
+    // await fetchHistoricalScores(18241006);
+    // Cincinnati Bengals v Detroit Lions -- July 13, 2026
+    await fetchHistoricalScores(config.SAMPLE_FIXTURES.historicalScores);
 
-} catch (error) {
+  } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Request Failed:", error.response?.data || error.message);
     } else {

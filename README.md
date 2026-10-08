@@ -101,6 +101,7 @@ The current copy-paste examples live in the hosted documentation pages rather th
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
 - [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
+- [Booking Fixtures](https://txline.txodds.com/documentation/examples/booking-fixtures) - book a fixture with TxL for scores and odds access and onchain validation.
 
 The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
 
@@ -848,6 +849,8 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 ```
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
+
+> Note: the walkthrough below uses the `stat-validation` proof format. The current on-chain validation path is V4: book the fixture with `book_fixture` (see [Booking Fixtures](https://txline.txodds.com/documentation/examples/booking-fixtures)), then fetch `GET /api/scores/stat-validation-v4` or `GET /api/odds/validation-v4` payloads and run `validate_fixture_for_tree` -> `validate_stat_v4` / `validate_odds_v4` -> `close_worker_ticket`. See [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation).
 
 Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the prediction can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
 

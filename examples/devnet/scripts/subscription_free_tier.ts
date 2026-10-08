@@ -45,7 +45,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  // console.log("API Token:", users.authState.apiToken);
 
   try {
     const awesomeUrl = `/fixtures/snapshot?competitionId=72&startEpochDay=20624`;
@@ -80,7 +79,7 @@ async function main() {
         throw error;
       }
     }
-    await getOddsSnapshot(17588320, Date.now());
+    await getOddsSnapshot(config.SAMPLE_FIXTURES.freeTierOdds, Date.now());
 
     async function listenToOddsStream(streamId: string): Promise<void> {
       console.log(`[Odds] Subscribing to all permitted odds updates...`);

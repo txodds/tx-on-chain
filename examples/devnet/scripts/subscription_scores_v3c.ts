@@ -7,6 +7,7 @@ import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
+import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
@@ -64,7 +65,6 @@ async function main() {
     4,
     []
   );
-  // console.log("API Token:", users.authState.apiToken);
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);
@@ -152,12 +152,7 @@ async function main() {
       discretePredicates: []
     };
 
-    // Spain v Belgium: July 10, 2026
-    // const fixtureId = 18218149;
-    // const seq = 1087;
-    // England v Argentina: July 15, 2026
-    const fixtureId = 18241006;
-    const seq = 962;
+    const { fixtureId, seq } = config.SAMPLE_FIXTURES.v3cValidation;
 
     // Execute V2 legacy validations
     console.log(`\n[${name}] Initiating V2 validations`);

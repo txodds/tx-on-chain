@@ -2,11 +2,71 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.6",
+    "version": "1.5.14",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
+    {
+      "name": "book_fixture",
+      "discriminator": [
+        48,
+        127,
+        234,
+        70,
+        187,
+        214,
+        206,
+        109
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fixture_ticket",
+          "writable": true
+        },
+        {
+          "name": "token_mint"
+        },
+        {
+          "name": "user_token_account",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "token_treasury_pda"
+        },
+        {
+          "name": "instructions_sysvar"
+        },
+        {
+          "name": "token_program"
+        },
+        {
+          "name": "system_program"
+        },
+        {
+          "name": "associated_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "BookFixturePayload"
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "close_pricing_matrix",
       "discriminator": [
@@ -34,6 +94,40 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "close_worker_ticket",
+      "discriminator": [
+        51,
+        20,
+        55,
+        115,
+        249,
+        56,
+        9,
+        14
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "_domain",
+          "type": "u8"
+        },
+        {
+          "name": "_worker_id",
+          "type": "u16"
+        }
+      ]
     },
     {
       "name": "initialize_pricing_matrix",
@@ -229,8 +323,8 @@
         {
           "name": "ten_daily_fixtures_roots",
           "docs": [
-            "The address is constrained by the seeds, and we verify the",
-            "discriminator and owner inside the instruction."
+            "Constrain the address by the seeds and verify the",
+            "discriminator and owner inside the instruction"
           ],
           "writable": true
         },
@@ -381,6 +475,52 @@
       "args": [
         {
           "name": "txline_amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "refund_usdt",
+      "discriminator": [
+        156,
+        156,
+        255,
+        114,
+        32,
+        213,
+        110,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "backend_admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "recipient"
+        },
+        {
+          "name": "usdt_mint"
+        },
+        {
+          "name": "recipient_usdt_account",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_vault",
+          "writable": true
+        },
+        {
+          "name": "usdt_treasury_pda"
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
           "type": "u64"
         }
       ]
@@ -590,6 +730,46 @@
       "returns": "bool"
     },
     {
+      "name": "validate_fixture_for_tree",
+      "discriminator": [
+        118,
+        85,
+        77,
+        234,
+        117,
+        87,
+        168,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "daily_merkle_roots"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "FixtureForTreeValidationInput"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "validate_odds",
       "discriminator": [
         192,
@@ -644,6 +824,51 @@
               "defined": {
                 "name": "ProofNode"
               }
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
+      "name": "validate_odds_v4",
+      "discriminator": [
+        147,
+        143,
+        200,
+        85,
+        251,
+        48,
+        42,
+        173
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket"
+        },
+        {
+          "name": "fixture_ticket",
+          "writable": true
+        },
+        {
+          "name": "instructions_sysvar"
+        }
+      ],
+      "args": [
+        {
+          "name": "_worker_id",
+          "type": "u16"
+        },
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "OddsValidationInputV4"
             }
           }
         }
@@ -814,6 +1039,59 @@
       "returns": "bool"
     },
     {
+      "name": "validate_stat_v4",
+      "discriminator": [
+        17,
+        11,
+        195,
+        64,
+        250,
+        26,
+        27,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket"
+        },
+        {
+          "name": "fixture_ticket",
+          "writable": true
+        },
+        {
+          "name": "instructions_sysvar"
+        }
+      ],
+      "args": [
+        {
+          "name": "_worker_id",
+          "type": "u16"
+        },
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationInputV4"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
+    },
+    {
       "name": "withdraw_usdt",
       "discriminator": [
         117,
@@ -865,6 +1143,19 @@
   ],
   "accounts": [
     {
+      "name": "FixtureTicket",
+      "discriminator": [
+        251,
+        200,
+        228,
+        250,
+        96,
+        10,
+        109,
+        36
+      ]
+    },
+    {
       "name": "PricingMatrix",
       "discriminator": [
         173,
@@ -875,6 +1166,19 @@
         77,
         110,
         106
+      ]
+    },
+    {
+      "name": "WorkerTicket",
+      "discriminator": [
+        205,
+        149,
+        102,
+        53,
+        98,
+        192,
+        1,
+        162
       ]
     }
   ],
@@ -1273,6 +1577,66 @@
       "code": 6078,
       "name": "InvalidProofPath",
       "msg": "Invalid proof path"
+    },
+    {
+      "code": 6079,
+      "name": "InsufficientCredits",
+      "msg": "Insufficient credits"
+    },
+    {
+      "code": 6080,
+      "name": "MissingSignatureInstruction",
+      "msg": "Missing signature instruction"
+    },
+    {
+      "code": 6081,
+      "name": "InvalidSignatureProgram",
+      "msg": "Invalid signature program"
+    },
+    {
+      "code": 6082,
+      "name": "SerializationFailed",
+      "msg": "Serialization failed"
+    },
+    {
+      "code": 6083,
+      "name": "InvalidOracleSignature",
+      "msg": "Invalid oracle signature"
+    },
+    {
+      "code": 6084,
+      "name": "InvalidSequenceNumber",
+      "msg": "Invalid sequence number"
+    },
+    {
+      "code": 6085,
+      "name": "MessageMismatch",
+      "msg": "Message mismatch"
+    },
+    {
+      "code": 6086,
+      "name": "FixtureAlreadyBooked",
+      "msg": "Fixture already booked for validation"
+    },
+    {
+      "code": 6087,
+      "name": "InvalidTimestamp",
+      "msg": "Invalid timestamp"
+    },
+    {
+      "code": 6088,
+      "name": "QuoteExpired",
+      "msg": "Quote expired"
+    },
+    {
+      "code": 6089,
+      "name": "InvalidDomain",
+      "msg": "Invalid domain"
+    },
+    {
+      "code": 6090,
+      "name": "InvalidDailyRootsPda",
+      "msg": "Invalid daily roots Pda"
     }
   ],
   "types": [
@@ -1301,6 +1665,39 @@
       }
     },
     {
+      "name": "BatchSummary",
+      "docs": [
+        "The summary for a single fixture's tree events within a 5-minute batch.",
+        "This contains the root of the sub-tree of all tree events for that fixture."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fixture_id",
+            "type": "i64"
+          },
+          {
+            "name": "update_stats",
+            "type": {
+              "defined": {
+                "name": "UpdateStats"
+              }
+            }
+          },
+          {
+            "name": "sub_tree_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "BinaryExpression",
       "type": {
         "kind": "enum",
@@ -1310,6 +1707,34 @@
           },
           {
             "name": "Subtract"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BookFixturePayload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixture_id",
+            "type": "u32"
+          },
+          {
+            "name": "price",
+            "type": "u32"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "validity",
+            "type": "i64"
           }
         ]
       }
@@ -1416,6 +1841,64 @@
                 32
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FixtureForTreeValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "domain",
+            "type": "u8"
+          },
+          {
+            "name": "worker_id",
+            "type": "u16"
+          },
+          {
+            "name": "summary",
+            "type": {
+              "defined": {
+                "name": "BatchSummary"
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FixtureTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixture_id",
+            "type": "u32"
+          },
+          {
+            "name": "validations_remaining",
+            "type": "u32"
           }
         ]
       }
@@ -1612,6 +2095,37 @@
           {
             "name": "max_timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "OddsValidationInputV4",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "odds_leaf_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sub_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
           }
         ]
       }
@@ -2014,6 +2528,63 @@
       }
     },
     {
+      "name": "StatValidationInputV4",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "event_stat_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixture_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "leaves",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "StatLeaf"
+                }
+              }
+            }
+          },
+          {
+            "name": "multiproof_hashes",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          },
+          {
+            "name": "leaf_indices",
+            "type": {
+              "vec": "u32"
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "TraderPredicate",
       "type": {
         "kind": "struct",
@@ -2029,6 +2600,47 @@
                 "name": "Comparison"
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "UpdateStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "update_count",
+            "type": "i32"
+          },
+          {
+            "name": "min_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "max_timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WorkerTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cached_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixture_id",
+            "type": "i64"
           }
         ]
       }
@@ -2054,6 +2666,11 @@
       "name": "MIN_USER_BALANCE",
       "type": "u64",
       "value": "1000000"
+    },
+    {
+      "name": "PROGRAM_ADMIN_PUBKEY",
+      "type": "pubkey",
+      "value": "GbUDHMkPnPiZ8tgqZGjrL4tLxyEBnMCjMLukrx5fz9p6"
     },
     {
       "name": "STAKE_AMOUNT",
@@ -2099,6 +2716,11 @@
       "name": "USDT_MINT",
       "type": "pubkey",
       "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+    },
+    {
+      "name": "VALIDATIONS_PER_BOOKING",
+      "type": "u32",
+      "value": "1"
     }
   ]
 }

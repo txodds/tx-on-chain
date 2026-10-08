@@ -21,6 +21,7 @@ Do not activate a devnet transaction on the mainnet API host. A devnet subscript
 | Guest Auth | `https://txline-dev.txodds.com/auth/guest/start` |
 | Activation | `https://txline-dev.txodds.com/api/token/activate` |
 | API Base | `https://txline-dev.txodds.com/api/` |
+| Backend Admin Key | `Ah5xwzHxRYBBV3BWHDCHdfzQJfBehzGQcc7A9QX1DLUB` |
 
 ## Activation
 
@@ -47,7 +48,7 @@ Send the detached wallet signature as base64 in `walletSignature`, and send the 
 | Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | Fixture proof validation |
 
 <Warning>
-Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. Recompute it for every proof.
+Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. For V4 validation (scores and odds), use `payload.ts`. Recompute it for every proof.
 </Warning>
 
 ```typescript
@@ -91,6 +92,41 @@ function deriveTenDailyFixturesPda(fixtureProofTimestampMs: number): PublicKey {
   )[0];
 }
 ```
+
+## Ticket Accounts
+
+| Account | Seed(s) | Used for |
+|---------|---------|----------|
+| Fixture ticket | `fixture_ticket`, wallet public key (32 bytes), `fixtureId` as u32 little-endian | Created by `book_fixture` per `(wallet, fixtureId)`; required by `validateStatV4` and `validateOddsV4` |
+| Worker ticket | `worker_ticket`, wallet public key (32 bytes), `domain` as u8, `workerId` as u16 little-endian | Staged by `validateFixtureForTree`, consumed by `validateStatV4` / `validateOddsV4`, closed by `closeWorkerTicket` |
+| Token treasury v2 | `token_treasury_v2` | Authority of the vault that receives TxL paid in `book_fixture`; the vault is its TOKEN-2022 associated token account for the TxL mint |
+
+The IDL does not embed PDA seeds for these accounts, so the seeds above are not read from it. `fixtureId` is encoded as 4 bytes.
+
+```typescript
+function deriveFixtureTicketPda(wallet: PublicKey, fixtureId: number): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("fixture_ticket"), wallet.toBuffer(), new BN(fixtureId).toArrayLike(Buffer, "le", 4)],
+    programId
+  )[0];
+}
+
+function deriveWorkerTicketPda(wallet: PublicKey, domain: number, workerId: number): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("worker_ticket"),
+      wallet.toBuffer(),
+      Buffer.from([domain]),
+      new BN(workerId).toArrayLike(Buffer, "le", 2),
+    ],
+    programId
+  )[0];
+}
+
+const tokenTreasuryV2 = PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], programId)[0];
+```
+
+`domain` and `workerId` are client-chosen. See [On-Chain Validation](/documentation/examples/onchain-validation#v4-validation) for the sequence that uses them.
 
 ## Score Validation
 

@@ -67,7 +67,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   );
-  // console.log("API Token:", users.authState.apiToken);
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);
