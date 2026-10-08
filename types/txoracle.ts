@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/txoracle.json`.
  */
 export type Txoracle = {
-  "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
+  "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
     "version": "1.5.14",
