@@ -112,8 +112,16 @@ async function main() {
       const msPerInterval = 300000 
       const now = new Date()
 
-      // Scan backwards through the last twenty hours of intervals
-      for (let i = 0; i < 240; i++) {
+      // Only fixtures in the schedule are bookable, and stat validation needs a booked one.
+      // afterTs defaults to now, which would drop fixtures already under way, so go back the full 2 weeks allowed.
+      const schedule = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
+        params: { afterTs: now.getTime() - 14 * 86400000 },
+      })
+      const bookableFixtureIds = new Set(schedule.data.map(f => f.FixtureId))
+
+      // Scan backwards through the last two weeks of intervals
+      const intervalsInTwoWeeks = (14 * 86400000) / msPerInterval
+      for (let i = 0; i < intervalsInTwoWeeks; i++) {
         const targetTime = new Date(now.getTime() - (i * msPerInterval))
         const epochDay = Math.floor(targetTime.getTime() / 86400000)
         const hourOfDay = targetTime.getUTCHours()
@@ -130,9 +138,12 @@ async function main() {
           if (response.data.length > 0) {
             console.log(`Scores updates found for Epoch ${epochDay} Hour ${hourOfDay} Interval ${interval}:`, response.data)
             
-            // Capture the first score update to use for validation
-            if (!sampleScores) {
-              sampleScores = response.data[0]
+            // Capture the first update of a bookable fixture that carries stats: coverage/comment records have an empty
+            // Stats and no processed scores record, so stat validation can't find them
+            const withStats = response.data.find((u: any) =>
+              bookableFixtureIds.has(u.FixtureId) && Object.keys(u.Stats ?? u.Update?.Stats ?? {}).length > 0)
+            if (!sampleScores && withStats) {
+              sampleScores = withStats
               console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
               return
             }

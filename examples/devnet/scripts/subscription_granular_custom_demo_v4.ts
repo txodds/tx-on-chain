@@ -182,32 +182,40 @@ async function main() {
     }
   }
 
-  // Calculate the start of the last fully closed 5-minute interval
+  // Odds validation needs a booked fixture, and only fixtures in the schedule are bookable.
+  // afterTs defaults to now, which would drop fixtures already under way, so go back the full 2 weeks allowed.
   const INTERVAL_MS = 5 * 60 * 1000;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const TWO_WEEKS_MS = 14 * DAY_MS;
   const now = Date.now();
-  const currentIntervalStart = Math.floor(now / INTERVAL_MS) * INTERVAL_MS;
-  const lastIntervalStart = currentIntervalStart - INTERVAL_MS;
+  const scheduleResponse = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
+    params: { afterTs: now - TWO_WEEKS_MS },
+  });
+  const bookableFixtureIds = new Set(scheduleResponse.data.map(f => f.FixtureId));
 
-  // Derive the exact path parameters required by the API
-  const targetDate = new Date(lastIntervalStart);
-  const epochDay = Math.floor(lastIntervalStart / (24 * 60 * 60 * 1000));
-  const hourOfDay = targetDate.getUTCHours(); // Must be UTC to align with epoch timing
-  const interval = Math.floor(targetDate.getUTCMinutes() / 5);
+  // Walk back from the last fully closed 5-minute interval until an update for a bookable fixture turns up
+  let intervalStart = Math.floor(now / INTERVAL_MS) * INTERVAL_MS - INTERVAL_MS;
+  let sampleOdds: any;
+  let epochDay = 0, hourOfDay = 0, interval = 0;
+  for (; !sampleOdds && intervalStart >= now - TWO_WEEKS_MS; intervalStart -= INTERVAL_MS) {
+    const targetDate = new Date(intervalStart);
+    epochDay = Math.floor(intervalStart / DAY_MS);
+    hourOfDay = targetDate.getUTCHours(); // Must be UTC to align with epoch timing
+    interval = Math.floor(targetDate.getUTCMinutes() / 5);
 
-  console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
-
-  // Fetch the odds updates using the time-based path parameters
-  // (Assuming apiClient handles the /api base path automatically)
-  const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
-  const updates = updatesResponse.data;
-  console.log(updates.data);
-
-  if (!updates || updates.length === 0) {
-    throw new Error(`No odds updates found for interval ${interval} on hour ${hourOfDay}. Wait for more data to be published.`);
+    console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
+    const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
+    const updates = updatesResponse.data;
+    if (!Array.isArray(updates)) {
+      throw new Error(`Unexpected GET /odds/updates/${epochDay}/${hourOfDay}/${interval} response (HTTP ${updatesResponse.status}): ${JSON.stringify(updates)}`);
+    }
+    sampleOdds = updates.find(u => bookableFixtureIds.has(u.FixtureId ?? u.fixtureId));
   }
-
-  // Because the endpoint returns all updates in that interval, we can just grab the very first one
-  const sampleOdds = updates[0];
+  if (!sampleOdds) {
+    throw new Error(
+      `No odds update for a bookable fixture within the last 2 weeks (${bookableFixtureIds.size} fixtures in GET /fixtures-schedule).`
+    );
+  }
   const targetMessageId = sampleOdds.MessageId || sampleOdds.messageId;
   const targetTimestamp = Number(sampleOdds.Ts || sampleOdds.ts);
   const targetFixtureId = sampleOdds.FixtureId || sampleOdds.fixtureId;
@@ -229,9 +237,15 @@ async function main() {
         },
       });
       const v4Data = vResponse.data;
-      const payload = v4Data.payload;
+      const payload = v4Data?.payload;
+      if (!payload?.summary || !payload.oddsSnapshot) {
+        throw new Error(
+          `Unexpected /odds/validation-v4 response (HTTP ${vResponse.status}) for messageId ${targetMessageId}, ts ${targetTimestamp}: ${JSON.stringify(v4Data)}`
+        );
+      }
 
-      const parseNodes = (nodes: ApiProofNode[]) =>
+      // A single-update subtree has no siblings, and the server omits the empty proof
+      const parseNodes = (nodes: ApiProofNode[] = []) =>
         nodes.map(node => ({ hash: Array.from(node.hash), isRightSibling: node.isRightSibling }))
 
       const oddsSnapshot: Odds = {

@@ -92,6 +92,7 @@ const provider = anchor.AnchorProvider.env();
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept-Encoding": "gzip",
         Authorization: `Bearer ${jwt}`
       },
       body: JSON.stringify({
