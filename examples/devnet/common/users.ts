@@ -11,6 +11,7 @@ import * as config from './config';
 import * as fs from "fs";
 import axios from "axios";
 import { Txoracle } from "../types/txoracle";
+import TxoracleJson from "../idl/txoracle.json";
 import nacl from "tweetnacl";
 import { Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction } from "@solana/web3.js";
 import { createHash } from "crypto";
@@ -482,10 +483,15 @@ export function dailyRootsPda(programId: PublicKey, seed: "daily_batch_roots" | 
   return PublicKey.findProgramAddressSync([Buffer.from(seed), epochDayLe], programId)[0];
 }
 
+// The co-signing key is a program constant, so the IDL is its source of truth
+function backendAdminPubkey(): PublicKey {
+  return new PublicKey(TxoracleJson.constants.find(c => c.name === "BACKEND_ADMIN_PUBKEY")!.value as string);
+}
+
 /** Ed25519 verify instruction carrying the backend's co-signature over sha256(Borsh payload), as the program's instructions-sysvar check expects. */
 export function backendCosignInstruction(borshPayload: Buffer, signatureBase64: string) {
   return Ed25519Program.createInstructionWithPublicKey({
-    publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
+    publicKey: backendAdminPubkey().toBytes(),
     message: createHash("sha256").update(borshPayload).digest(),
     signature: Buffer.from(signatureBase64, "base64"),
   });

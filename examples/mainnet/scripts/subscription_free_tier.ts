@@ -1,7 +1,7 @@
 // Demo subscription and data access for free tier (World Cup)
 
-// Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/subscription_free_tier.ts
+// Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json"
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/subscription_free_tier.ts
 
 import { Program } from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
@@ -45,7 +45,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  console.log("API Token:", users.authState.apiToken);
 
   try {
     const awesomeUrl = `/fixtures/snapshot?competitionId=72&startEpochDay=20624`;
@@ -80,8 +79,7 @@ async function main() {
         throw error;
       }
     }
-    // Note that snapshot only includes data for the current 5-min interval so for historical fixtures, the response will be empty
-    await getOddsSnapshot(18187298, Date.now());
+    await getOddsSnapshot(config.SAMPLE_FIXTURES.freeTierOdds, Date.now());
 
     async function listenToOddsStream(streamId: string): Promise<void> {
       console.log(`[Odds] Subscribing to all permitted odds updates...`);

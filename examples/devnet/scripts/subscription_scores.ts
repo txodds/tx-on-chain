@@ -1,7 +1,7 @@
 // Demo subscription to the scores functionality for the free tier (World Cup and Int Friendlies)
 
 // Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json"  ts-node examples/devnet/scripts/subscription_scores.ts
+// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores.ts
 
 import { Program } from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
@@ -58,7 +58,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  console.log("API Token:", users.authState.apiToken);
 
   try {
     // Fetch the scores snapshot for a specific fixture

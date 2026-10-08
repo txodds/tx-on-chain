@@ -3,7 +3,7 @@
 // Optionally pin the fixture with FIXTURE_ID and SEQ; otherwise the first recent scores update is used
 
 // Run with
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v4.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/subscription_scores_v4.ts
 
 import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor"

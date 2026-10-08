@@ -1,7 +1,7 @@
 // Demo stat validation using rich multi-leg strategies
 
 // Run with
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/subscription_scores_1stat.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/subscription_scores_1stat.ts
 
 import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
@@ -65,7 +65,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   );
-  console.log("API Token:", users.authState.apiToken);
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);

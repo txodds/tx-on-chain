@@ -1,12 +1,13 @@
 // Demo stat validaton V2 and V3 for comparison for a game_finalised record
 
 // Run with
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/subscription_scores_v3c.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/subscription_scores_v3c.ts
 
 import { Program } from "@coral-xyz/anchor";
 import * as anchor from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
+import * as config from '../common/config';
 import * as users from '../common/users';
 import axios from "axios";
 import { PublicKey } from "@solana/web3.js";
@@ -64,7 +65,6 @@ async function main() {
     4,
     []
   );
-  console.log("API Token:", users.authState.apiToken);
  
   // Upgrade the provider to use the real, funded Trader wallet
   const userWallet = new anchor.Wallet(user.user);
@@ -152,10 +152,12 @@ async function main() {
       discretePredicates: []
     };
 
+    const { fixtureId, seq } = config.SAMPLE_FIXTURES.v3cValidation;
+
     // Execute V2 legacy validations
     console.log(`\n[${name}] Initiating V2 validations`);
 
-    const urlV2 = `/scores/stat-validation?fixtureId=18218149&seq=1087&statKeys=1002,1007,2007,1`;
+    const urlV2 = `/scores/stat-validation?fixtureId=${fixtureId}&seq=${seq}&statKeys=1002,1007,2007,1`;
     const resV2 = await users.apiClient.get(urlV2, { userName: name } as any);
     const valV2 = resV2.data;
 
@@ -187,11 +189,6 @@ async function main() {
     };
 
     const payloadV2_2Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 2) };
-
-    const inspectedPayloadV2_2Leg = inspect(payloadV2_2Leg, { depth: null, colors: true });
-    const payloadV2Prefix_2Leg = `[${name}] payload:`;
-    console.log(payloadV2Prefix_2Leg, inspectedPayloadV2_2Leg);
-
     const payloadV2_3Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 3) };
 
     const runV2 = async (payload: StatValidationInput, strategy: NDimensionalStrategy, label: string) => {
@@ -213,7 +210,7 @@ async function main() {
     console.log(`\n[${name}] Initiating V3 validations`);
 
     const fetchV3Payload = async (keys: string) => {
-      const url = `/scores/stat-validation-v3?fixtureId=18218149&seq=1087&statKeys=${keys}`;
+      const url = `/scores/stat-validation-v3?fixtureId=${fixtureId}&seq=${seq}&statKeys=${keys}`;
       const res = await users.apiClient.get(url, { userName: name } as any);
       const val = res.data;
 
@@ -236,7 +233,7 @@ async function main() {
           statProof: mapProof(l.statProof)
         })),
         leafIndices: val.multiproof.indices,
-        multiproofHashes: mapProof(val.multiproof.hashes)
+        multiproofHashes: Array.from(val.multiproof.hashes)
       };
 
       return payloadV3;
