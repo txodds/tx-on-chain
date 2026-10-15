@@ -379,8 +379,9 @@ export function verifyTransactionSafety(
   }
 
   // Ensure the backend admin has already signed the transaction
+  const adminKey = backendAdminPubkey();
   const hasAdminSignature = transaction.signatures.some(
-    sig => sig.signature !== null && !sig.publicKey.equals(expectedBuyer)
+    sig => sig.signature !== null && sig.publicKey.equals(adminKey)
   );
   if (!hasAdminSignature) {
     throw new Error("Safety check failed: Missing backend admin signature");
