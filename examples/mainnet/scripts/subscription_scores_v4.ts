@@ -1,4 +1,4 @@
-// Demo stat validaton V2 and V4 for comparison
+// Demo stat validation V4
 // V4 needs a booked fixture (book_fixture) and runs validate_fixture_for_tree -> validate_stat_v4 -> close_worker_ticket per validation
 // Optionally pin the fixture with FIXTURE_ID and SEQ; otherwise the first recent scores update is used
 
@@ -28,13 +28,13 @@ type OracleTypes = IdlTypes<Txoracle>
 // Export the specific types needed to build payloads
 // Convert Rust PascalCase to camelCase automatically via Anchor IDL
 export type NDimensionalStrategy = OracleTypes["nDimensionalStrategy"]
-export type StatValidationInput = OracleTypes["statValidationInput"]
 export type StatPredicate = OracleTypes["statPredicate"]
 export type BinaryExpression = OracleTypes["binaryExpression"]
 export type Comparison = OracleTypes["comparison"]
 export type ProofNode = IdlTypes<Txoracle>["proofNode"]
 export type ScoreStat = IdlTypes<Txoracle>["scoreStat"]
-export type StatLeaf = IdlTypes<Txoracle>["statLeaf"]
+export type StatLeafV1 = IdlTypes<Txoracle>["statLeafV1"]
+export type StatLeafV2 = IdlTypes<Txoracle>["statLeafV2"]
 
 // Define a strict type for the raw backend API response
 interface ApiProofNode {
@@ -183,15 +183,6 @@ async function main() {
 
     await getScoresSnapshot(fixtureId, Date.now())
 
-    // Map API proof array to exact shape expected by Anchor
-    const mapProof = (proofArray: ApiProofNode[] | undefined): ProofNode[] => {
-      if (!proofArray) return []
-      return proofArray.map(n => ({
-        hash: Array.from(n.hash),
-        isRightSibling: n.isRightSibling
-      }))
-    }
-
     const fixtureTicket = users.fixtureTicketPda(program.programId, userKey, fixtureId)
 
     const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
@@ -265,55 +256,6 @@ async function main() {
       discretePredicates: []
     }
 
-    // Execute V2 legacy validations
-    console.log(`\n[${name}] Initiating V2 validations`)
-
-    const urlV2 = `/scores/stat-validation?fixtureId=${fixtureId}&seq=${seq}&statKeys=1002,1007,2007,1`;
-    const resV2 = await users.apiClient.get(urlV2, { userName: name } as any)
-    const valV2 = resV2.data
-
-    const targetTs = valV2.summary.updateStats.minTimestamp
-    const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", targetTs)
-
-    const payloadV2: StatValidationInput = {
-      ts: new BN(targetTs),
-      fixtureSummary: {
-        fixtureId: new BN(valV2.summary.fixtureId),
-        updateStats: {
-          updateCount: valV2.summary.updateStats.updateCount,
-          minTimestamp: new BN(valV2.summary.updateStats.minTimestamp),
-          maxTimestamp: new BN(valV2.summary.updateStats.maxTimestamp),
-        },
-        eventsSubTreeRoot: Array.from(valV2.summary.eventStatsSubTreeRoot),
-      },
-      fixtureProof: mapProof(valV2.subTreeProof),
-      mainTreeProof: mapProof(valV2.mainTreeProof),
-      eventStatRoot: Array.from(valV2.eventStatRoot), 
-      stats: valV2.statsToProve.map((statObj: any, index: number) => ({
-        stat: statObj,
-        statProof: mapProof(valV2.statProofs[index])
-      }))
-    }
-
-    const payloadV2_2Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 2) }
-    const payloadV2_3Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 3) }
-
-    const runV2 = async (payload: any, strategy: any, label: string) => {
-      const isValid = await userProgram.methods
-        .validateStatV2(payload, strategy)
-        .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
-        .preInstructions([computeBudgetIx])
-        .view()
-      console.log(`[${name}] V2 ${label}: ${isValid ? 'passed' : 'rejected'}`)
-    }
-
-    await runV2(payloadV2_2Leg, strategy1To3Plus, "1:3+ discrete")
-    await runV2(payloadV2_2Leg, strategyDraw, "Binary draw")
-    await runV2(payloadV2_3Leg, strategy3Leg, "Combined 3-leg")
-    await runV2(payloadV2, strategy4Leg, "Combined 4-leg")
-    await runV2(payloadV2_2Leg, strategyGeometric, "Geometric 2-leg")
-
-    // Execute V4 multiproof validations
     console.log(`\n[${name}] Initiating V4 validations`)
 
     const fetchV4Payload = async (keys: string) => {
@@ -327,6 +269,12 @@ async function main() {
           return Array.from(buf)
         }
         return Array.from(rawData)
+      }
+
+      const parseMask = (rawData: any) => {
+        const bytes = parseHash(rawData)
+        if (bytes.length !== 512) throw new Error(`rawMask must be 512 bytes, got ${bytes.length}`)
+        return bytes
       }
 
       const mapProofNode = (node: any) => ({
@@ -349,21 +297,36 @@ async function main() {
         mainTreeProof: response.payload.mainTreeProof.map(mapProofNode),
       }
 
-      const mappedPayload = {
+      const common = {
         ts: new BN(response.payload.ts),
         fixtureProof: response.payload.fixtureProof.map(mapProofNode),
-        eventStatRoot: parseHash(response.payload.eventStatRoot), 
-        leaves: response.payload.leaves.map((leaf: any) => ({
-          stat: {
-            key: leaf.stat.key,
-            value: leaf.stat.value,
-            period: leaf.stat.period
-          },
-          statProof: leaf.statProof.map(mapProofNode)
-        })),
+        eventStatRoot: parseHash(response.payload.eventStatRoot),
         leafIndices: response.payload.leafIndices,
         multiproofHashes: response.payload.multiproofHashes.map(mapProofNode),
       }
+
+      // The payload is an enum: leaves with a `statProof` are V1, leaves with `isZero` are V2 (which may carry a rawMask)
+      const isV1 = response.payload.leaves.every((leaf: any) => leaf.statProof !== undefined)
+      const mappedPayload = isV1
+        ? {
+            v1: {
+              ...common,
+              leaves: response.payload.leaves.map((leaf: any) => ({
+                stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
+                statProof: leaf.statProof.map(mapProofNode),
+              })),
+            },
+          }
+        : {
+            v2: {
+              ...common,
+              leaves: response.payload.leaves.map((leaf: any) => ({
+                stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
+                isZero: leaf.isZero,
+              })),
+              rawMask: response.payload.rawMask ? parseMask(response.payload.rawMask) : null,
+            },
+          }
 
       return {
         treePayload,
@@ -373,9 +336,15 @@ async function main() {
     }
 
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
+      // A rawMask adds 512 bytes, which no longer fit a legacy transaction (web3.js cannot build v1 transactions)
+      if (v4Data.payload.v2?.rawMask) {
+        console.log(`[${name}] V4 ${label}: skipped, payload carries a 512-byte rawMask and does not fit a legacy transaction`)
+        return
+      }
+
       // Encode payload to raw Borsh bytes
       const serializedPayload = userProgram.coder.types.encode(
-        "statValidationInputV4",
+        "statValidationPayload",
         v4Data.payload
       )
 

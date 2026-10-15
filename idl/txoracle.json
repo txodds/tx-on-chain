@@ -2,7 +2,7 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.14",
+    "version": "1.5.15",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
@@ -965,80 +965,6 @@
       "returns": "bool"
     },
     {
-      "name": "validate_stat_v2",
-      "discriminator": [
-        208,
-        215,
-        194,
-        214,
-        241,
-        71,
-        246,
-        178
-      ],
-      "accounts": [
-        {
-          "name": "daily_scores_merkle_roots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "StatValidationInput"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "NDimensionalStrategy"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validate_stat_v3",
-      "discriminator": [
-        150,
-        37,
-        155,
-        89,
-        141,
-        190,
-        77,
-        203
-      ],
-      "accounts": [
-        {
-          "name": "daily_scores_merkle_roots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "StatValidationInputV3"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "NDimensionalStrategy"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
       "name": "validate_stat_v4",
       "discriminator": [
         17,
@@ -1060,8 +986,7 @@
           "name": "ticket"
         },
         {
-          "name": "fixture_ticket",
-          "writable": true
+          "name": "fixture_ticket"
         },
         {
           "name": "instructions_sysvar"
@@ -1076,7 +1001,7 @@
           "name": "payload",
           "type": {
             "defined": {
-              "name": "StatValidationInputV4"
+              "name": "StatValidationPayload"
             }
           }
         },
@@ -1637,6 +1562,11 @@
       "code": 6090,
       "name": "InvalidDailyRootsPda",
       "msg": "Invalid daily roots Pda"
+    },
+    {
+      "code": 6091,
+      "name": "MissingZeroMask",
+      "msg": "Missing zeromask"
     }
   ],
   "types": [
@@ -2279,7 +2209,7 @@
       }
     },
     {
-      "name": "StatLeaf",
+      "name": "StatLeafV1",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2300,6 +2230,26 @@
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatLeafV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "ScoreStat"
+              }
+            }
+          },
+          {
+            "name": "is_zero",
+            "type": "bool"
           }
         ]
       }
@@ -2394,192 +2344,128 @@
       }
     },
     {
-      "name": "StatValidationInput",
+      "name": "StatValidationPayload",
       "type": {
-        "kind": "struct",
-        "fields": [
+        "kind": "enum",
+        "variants": [
           {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "fixture_summary",
-            "type": {
-              "defined": {
-                "name": "ScoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixture_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
+            "name": "V1",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "event_stat_root",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixture_proof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "StatLeafV1"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproof_hashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaf_indices",
+                "type": {
+                  "vec": "u32"
                 }
               }
-            }
+            ]
           },
           {
-            "name": "main_tree_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
+            "name": "V2",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "event_stat_root",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixture_proof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "StatLeafV2"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproof_hashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaf_indices",
+                "type": {
+                  "vec": "u32"
+                }
+              },
+              {
+                "name": "raw_mask",
+                "type": {
+                  "option": {
+                    "array": [
+                      "u8",
+                      512
+                    ]
+                  }
                 }
               }
-            }
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "stats",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "StatLeaf"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "StatValidationInputV3",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "fixture_summary",
-            "type": {
-              "defined": {
-                "name": "ScoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixture_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "main_tree_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "leaves",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "StatLeaf"
-                }
-              }
-            }
-          },
-          {
-            "name": "multiproof_hashes",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leaf_indices",
-            "type": {
-              "vec": "u32"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "StatValidationInputV4",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "fixture_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leaves",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "StatLeaf"
-                }
-              }
-            }
-          },
-          {
-            "name": "multiproof_hashes",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leaf_indices",
-            "type": {
-              "vec": "u32"
-            }
+            ]
           }
         ]
       }

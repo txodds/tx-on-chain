@@ -47,7 +47,6 @@ The response is an array with one entry per fixture:
 | `FixtureId`, `CompetitionId`, `StartTime`, `Participant1Id`, `Participant1`, `Participant2Id`, `Participant2`, `Participant1IsHome` | Same names and types as the `Fixture` schema of `GET /api/fixtures/snapshot`. |
 | `SportId`, `CountryId` | Sport and country of the fixture. |
 | `IsOddsAvailable`, `IsScoresAvailable` | Whether odds and scores data are available. |
-| `ScoresCoverage` | How scores are captured: `"Tv/Stream"` or `"In Venue"`. |
 | `ScoresDelay` | Scores delay in seconds for the fixture's competition, or `0` if it has none. |
 | `GameState` | One of `scheduled`, `walkover`, `finished`, `live`, `postponed`, `cancelled`, `retired`, `suspended`. |
 | `LastUpdateTs` | Last update time of the fixture, epoch milliseconds. |

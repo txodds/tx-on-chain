@@ -17,20 +17,19 @@ description: "Validate scores data using cryptographic Merkle proofs"
 
 ## Overview
 
-This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat, two-stat, and V2 multi-stat validations.
+This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat and two-stat validations, and V4 multi-stat validation.
 
-The public `/api/scores/stat-validation` endpoint supports both validation shapes:
+The public `/api/scores/stat-validation` endpoint serves single-stat and two-stat validation:
 
 | Query shape | On-chain method | Notes |
 |-------------|-----------------|-------|
-| `statKey=...` and optional `statKey2=...` | `validateStat` | Legacy single-stat and two-stat validation. |
-| `statKeys=1,2,...` | `validateStatV2` | Current multi-stat validation with indexed strategy predicates. |
+| `statKey=...` and optional `statKey2=...` | `validateStat` | Single-stat and two-stat validation. |
 
 V4 validation uses separate endpoints and a three-instruction on-chain sequence; see [V4 Validation](#v4-validation).
 
 | Endpoint | On-chain method | Notes |
 |----------|-----------------|-------|
-| `GET /api/scores/stat-validation-v4` | `validateStatV4` | Multiproof stat validation with an `NDimensionalStrategy`. Requires a booked `fixture_ticket`. |
+| `GET /api/scores/stat-validation-v4` | `validateStatV4` | Multiproof stat validation with a `strategy`. Requires a booked `fixture_ticket`. |
 | `GET /api/odds/validation-v4` | `validateOddsV4` | Validation of one odds update. Requires a booked `fixture_ticket`. |
 
 Use the same network for the API request, IDL/types, program ID, and on-chain root PDA.
@@ -49,7 +48,7 @@ Before calling `validateStat`, confirm:
 - The epoch day is encoded as u16 little-endian.
 - Every proof hash is decoded to exactly 32 bytes.
 - The fixture ID and sequence number refer to the score update you intend to validate.
-- For V2, each strategy index refers to the same position in the requested `statKeys` array.
+- For V4, each strategy index refers to the same position in the requested `statKeys` array.
 
 ## Setup
 
@@ -305,100 +304,9 @@ const isValid2 = await program.methods
 console.log("Two-stat validation result:", isValid2);
 ```
 
-## V2 Multi-Stat Validation
-
-Use `statKeys` when you need the current V2 payload and strategy model. The requested key order is important: the response arrays `statsToProve` and `statProofs` are mapped by position, and strategy fields such as `index`, `indexA`, `indexB`, and `statIndex` refer to those same `0..N` positions. Every stat in `payload.stats` must be covered exactly once by the strategy, or the program returns `IncompleteStatCoverage`.
-
-```typescript
-const responseV2 = await httpClient.get("/api/scores/stat-validation", {
-  params: {
-    fixtureId: 18175981,
-    seq: 991,
-    statKeys: "1,2,3001",
-  },
-});
-const validationV2 = responseV2.data;
-
-const targetTsV2 = validationV2.summary.updateStats.minTimestamp;
-const epochDayV2 = Math.floor(targetTsV2 / (24 * 60 * 60 * 1000));
-
-const [dailyScoresPdaV2] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_scores_roots"),
-    new BN(epochDayV2).toArrayLike(Buffer, "le", 2),
-  ],
-  program.programId
-);
-
-const payload = {
-  ts: new BN(targetTsV2),
-  fixtureSummary: {
-    fixtureId: new BN(validationV2.summary.fixtureId),
-    updateStats: {
-      updateCount: validationV2.summary.updateStats.updateCount,
-      minTimestamp: new BN(validationV2.summary.updateStats.minTimestamp),
-      maxTimestamp: new BN(validationV2.summary.updateStats.maxTimestamp),
-    },
-    eventsSubTreeRoot: toBytes32(validationV2.summary.eventStatsSubTreeRoot),
-  },
-  fixtureProof: toProofNodes(validationV2.subTreeProof),
-  mainTreeProof: toProofNodes(validationV2.mainTreeProof),
-  eventStatRoot: toBytes32(validationV2.eventStatRoot),
-  stats: validationV2.statsToProve.map((stat: unknown, index: number) => ({
-    stat,
-    statProof: toProofNodes(validationV2.statProofs[index]),
-  })),
-};
-
-const strategy = {
-  geometricTargets: [],
-  distancePredicate: null,
-  discretePredicates: [
-    {
-      binary: {
-        indexA: 0, // statKeys[0] -> 1
-        indexB: 1, // statKeys[1] -> 2
-        op: { subtract: {} },
-        predicate: {
-          threshold: 0,
-          comparison: { equalTo: {} },
-        },
-      },
-    },
-    {
-      single: {
-        index: 2, // statKeys[2] -> 3001
-        predicate: {
-          threshold: 0,
-          comparison: { greaterThan: {} },
-        },
-      },
-    },
-  ],
-};
-
-const isValidV2 = await program.methods
-  .validateStatV2(payload, strategy)
-  .accounts({
-    dailyScoresMerkleRoots: dailyScoresPdaV2,
-  })
-  .preInstructions([computeBudgetIx])
-  .view();
-
-console.log("V2 validation result:", isValidV2);
-```
-
-For complete runnable versions, use:
-
-| Script | V2 coverage |
-|--------|-------------|
-| [`subscription_scores_1stat.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_1stat.ts) | One requested stat with `validateStatV2`. |
-| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Two-stat strategies and geometric validation. |
-| [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Multi-leg strategies using four requested stat keys. |
-
 ## V4 Validation
 
-`validateStatV4` and `validateOddsV4` take their proof material from backend-signed payloads and require the wallet to hold a `fixture_ticket` for the fixture, created by `book_fixture`. A `fixture_ticket` places no limit on the number of V4 validations for its fixture and no per-call payment applies. Unlike `validateStat` and `validateStatV2`, the V4 instructions are not `.view()` calls: they are sent in a transaction.
+`validateStatV4` and `validateOddsV4` take their proof material from backend-signed payloads and require the wallet to hold a `fixture_ticket` for the fixture, created by `book_fixture`. A `fixture_ticket` places no limit on the number of V4 validations for its fixture and no per-call payment applies. Unlike `validateStat`, the V4 instructions are not `.view()` calls: they are sent in a transaction.
 
 ### Instruction Sequence
 
@@ -421,7 +329,7 @@ The co-signature protects you as the client. The on-chain validation only runs o
 `validateStatV4` and `validateOddsV4` (and `book_fixture`) must be preceded, in the same transaction, by an Ed25519 signature-verification instruction. The program reads `instructions_sysvar` and checks that the preceding instruction verified:
 
 - the public key of the network's backend admin, and
-- a message equal to the SHA-256 hash of the Borsh-encoded payload passed to the validation instruction (`StatValidationInputV4` or `OddsValidationInputV4`).
+- a message equal to the SHA-256 hash of the Borsh-encoded payload passed to the validation instruction (`StatValidationPayload` or `OddsValidationInputV4`).
 
 The signature itself is the `signature` field of the API response (base64). A missing instruction, a different signing key, or a payload that does not hash to the signed message makes the instruction fail. The backend admin public key differs per network; see [Program Addresses](/documentation/programs/addresses#backend-admin-keys). Check that the key you build the instruction with is the one published there. If you use a different key, the instruction fails.
 
@@ -430,7 +338,7 @@ import { Ed25519Program } from "@solana/web3.js";
 import { createHash } from "crypto";
 
 // `typeName` is the payload's IDL type name as `program.coder.types` knows it, in camelCase:
-// "statValidationInputV4", "oddsValidationInputV4" or "bookFixturePayload".
+// "statValidationPayload", "oddsValidationInputV4" or "bookFixturePayload".
 function buildBackendEd25519Ix(program: Program<Txoracle>, typeName: string, payload: object, signatureBase64: string) {
   const message = createHash("sha256").update(program.coder.types.encode(typeName, payload)).digest();
   return Ed25519Program.createInstructionWithPublicKey({
@@ -445,15 +353,16 @@ function buildBackendEd25519Ix(program: Program<Txoracle>, typeName: string, pay
 
 ### V4 Stat Validation
 
-`GET /api/scores/stat-validation-v4` takes `fixtureId`, `seq`, and a comma-separated `statKeys`. As in V2, use a real `seq` from an observed score record. The response is `{ payload, signature }`:
+`GET /api/scores/stat-validation-v4` takes `fixtureId`, `seq`, and a comma-separated `statKeys`. Use a real `seq` from an observed score record. The response is `{ payload, signature }`:
 
 | Field | Meaning |
 |-------|---------|
 | `payload.ts` | Timestamp used to derive the `daily_scores_roots` epoch day. |
 | `payload.eventStatRoot` | 32-byte root of the event stats tree. |
 | `payload.fixtureProof` | Proof nodes from the event stats root to the fixture sub-tree root. |
-| `payload.leaves` | One entry per proven stat: `stat` (`key`, `value`, `period`) and its own `statProof`. |
-| `payload.multiproofHashes`, `payload.leafIndices` | Multiproof over the leaves. Both may be empty regardless of how many stat keys were requested; `leaves` and each `statProof` are still populated and the payload is valid input. |
+| `payload.leaves` | One entry per proven stat: `stat` (`key`, `value`, `period`) plus either its own `statProof` (V1 tree) or an `isZero` flag (V2 tree, proven through the multiproof and `rawMask`). |
+| `payload.rawMask` | V2 only: 512-byte zero-mask, hex or base64. Absent or `null` when no mask applies. |
+| `payload.multiproofHashes`, `payload.leafIndices` | Multiproof over the leaves. For V1 leaves both may be empty regardless of how many stat keys were requested; `leaves` and each `statProof` are still populated and the payload is valid input. |
 | `payload.summary` | Fixture summary (`fixtureId`, `updateStats`, `eventStatsSubTreeRoot`), used to stage the `worker_ticket`. |
 | `payload.mainTreeProof` | Proof nodes from the fixture summary up to the scores root. |
 | `signature` | Backend Ed25519 signature, base64. |
@@ -518,18 +427,29 @@ await program.methods
   })
   .rpc();
 
-// Step 2: co-signed validation. Same strategy shape as V2 (see above), evaluated over payload.leaves by index.
-const statInput = {
+// Step 2: co-signed validation. The strategy is evaluated over payload.leaves by index.
+// The payload is an enum: leaves with a `statProof` are V1 (`{ v1: ... }`), leaves with `isZero` are V2 (`{ v2: ..., rawMask }`).
+const common = {
   ts: new BN(payload.ts),
   eventStatRoot: toBytes32(payload.eventStatRoot),
   fixtureProof: toProofNodes(payload.fixtureProof),
-  leaves: payload.leaves.map((leaf: any) => ({
-    stat: leaf.stat,
-    statProof: toProofNodes(leaf.statProof),
-  })),
   multiproofHashes: toProofNodes(payload.multiproofHashes),
   leafIndices: payload.leafIndices,
 };
+const statInput = payload.leaves.every((leaf: any) => leaf.statProof !== undefined)
+  ? {
+      v1: {
+        ...common,
+        leaves: payload.leaves.map((leaf: any) => ({ stat: leaf.stat, statProof: toProofNodes(leaf.statProof) })),
+      },
+    }
+  : {
+      v2: {
+        ...common,
+        leaves: payload.leaves.map((leaf: any) => ({ stat: leaf.stat, isZero: leaf.isZero })),
+        rawMask: payload.rawMask ? Array.from(Buffer.from(payload.rawMask, payload.rawMask.length === 1024 ? "hex" : "base64")) : null,
+      },
+    };
 const strategy = {
   geometricTargets: [],
   distancePredicate: null,
@@ -538,7 +458,7 @@ const strategy = {
   ],
 };
 
-const ed25519Ix = buildBackendEd25519Ix(program, "statValidationInputV4", statInput, signature); // see Backend Co-Signing
+const ed25519Ix = buildBackendEd25519Ix(program, "statValidationPayload", statInput, signature); // see Backend Co-Signing
 await program.methods
   .validateStatV4(workerId, statInput, strategy)
   .accounts({
@@ -557,7 +477,7 @@ await program.methods
   .rpc();
 ```
 
-Every leaf must be covered by exactly one strategy predicate, as in V2. Each `leaves[i]` corresponds to the `i`-th key in `statKeys`.
+Every leaf must be covered by exactly one strategy predicate. A V2 payload that carries a `rawMask` is 512 bytes larger and does not fit a legacy transaction alongside the Ed25519 instruction; send it as a v1 transaction (`@solana/web3.js` cannot build these; `@solana/kit` can). Each `leaves[i]` corresponds to the `i`-th key in `statKeys`.
 
 ### V4 Odds Validation
 
@@ -646,8 +566,8 @@ Create the `fixture_ticket` with `book_fixture` before the first V4 call for a f
 | `InvalidMainTreeProof` | Use the same `targetTs` for `validateStat` and `daily_scores_roots` PDA derivation. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
 | Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(targetTs / 86400000)`. |
 | Predicate returns false | First test with an exact predicate against the returned stat value, then replace it with your application predicate. |
-| `IncompleteStatCoverage` | Ensure every entry in `payload.stats` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
-| V2 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
+| `IncompleteStatCoverage` | Ensure every entry in `payload.leaves` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
+| V4 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
 | V4 instruction fails with no `fixture_ticket` | Book the fixture with `book_fixture` from the same wallet before calling `validateStatV4` or `validateOddsV4`. |
 | `ConstraintSeeds` on `validateStatV4` or `validateOddsV4` | The leading `workerId` argument differs from the one used with `validateFixtureForTree`, or the `ticket` account is not the PDA for `(wallet, domain, workerId)`. |
 | `401` or `403` from the proof endpoint | Renew the guest JWT, keep the `X-Api-Token`, and confirm both credentials came from the same network host. |
