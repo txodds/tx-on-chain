@@ -556,6 +556,14 @@ export async function bookFixture(
   const quote = await requestBookFixtureQuote(fixtureId, userKey, userName);
   if (!quote) return { status: "no-quote" };
 
+  // The backend's co-signature makes any quote payable, so only pay one issued for this wallet and fixture
+  if (quote.payload.user !== userKey.toBase58() || quote.payload.fixtureId !== fixtureId) {
+    throw new Error(
+      `Quote mismatch: requested fixture ${fixtureId} for ${userKey.toBase58()}, ` +
+      `got fixture ${quote.payload.fixtureId} for ${quote.payload.user}`
+    );
+  }
+
   const payload = {
     user: new PublicKey(quote.payload.user),
     fixtureId: quote.payload.fixtureId,
