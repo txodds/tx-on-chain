@@ -152,7 +152,7 @@ const txSig = await program.methods
   .rpc();
 ```
 
-`backendAdminPubkey` is the backend admin key of the network you are using; see [Program Addresses](/documentation/programs/addresses). The runnable devnet examples keep it as `BACKEND_ADMIN_PUBKEY` in `examples/devnet/common/config.ts`.
+`backendAdminPubkey` is the backend admin key of the network you are using; see [Program Addresses](/documentation/programs/addresses). It is also the program constant `BACKEND_ADMIN_PUBKEY` in the network's IDL, which is where the runnable examples read it: see `backendCosignInstruction` in `examples/devnet/common/users.ts`.
 
 ## One Booking per Fixture
 
