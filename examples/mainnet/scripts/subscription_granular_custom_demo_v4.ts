@@ -11,6 +11,7 @@ import TxoracleJson from "../idl/txoracle.json";
 import { Txoracle } from "../types/txoracle";
 import * as config from '../common/config';
 import * as users from '../common/users';
+import * as proof from '../common/proof';
 import axios from "axios";
 import { AddressLookupTableProgram, ComputeBudgetProgram, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import {EventSource} from 'eventsource'
@@ -243,10 +244,6 @@ async function main() {
         );
       }
 
-      // A single-update subtree has no siblings, and the server omits the empty proof
-      const parseNodes = (nodes: ApiProofNode[] = []) =>
-        nodes.map(node => ({ hash: Array.from(node.hash), isRightSibling: node.isRightSibling }))
-
       const oddsSnapshot: Odds = {
         fixtureId: new BN(payload.oddsSnapshot.FixtureId),
         messageId: payload.oddsSnapshot.MessageId,
@@ -266,7 +263,7 @@ async function main() {
       const mappedPayload: OddsValidationInputV4 = {
         ts: new BN(payload.ts),
         oddsLeafHash: Array.from(createHash('sha256').update(userProgram.coder.types.encode("odds", oddsSnapshot)).digest()),
-        subTreeProof: parseNodes(payload.subTreeProof),
+        subTreeProof: proof.parseOddsProofNodes(payload.subTreeProof),
       };
 
       // Staged on-chain by validate_fixture_for_tree against the interval's daily batch roots
@@ -283,7 +280,7 @@ async function main() {
           },
           subTreeRoot: Array.from(payload.summary.oddsSubTreeRoot),
         },
-        mainTreeProof: parseNodes(payload.mainTreeProof),
+        mainTreeProof: proof.parseOddsProofNodes(payload.mainTreeProof),
       };
 
       // Encode payload to raw Borsh bytes

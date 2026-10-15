@@ -11,6 +11,7 @@ import { Txoracle } from "../types/txoracle"
 import TxoracleJson from "../idl/txoracle.json";
 import * as config from '../common/config'
 import * as users from '../common/users'
+import * as proof from '../common/proof'
 import axios from "axios"
 import { PublicKey } from "@solana/web3.js"
 import { EventSource } from 'eventsource'
@@ -263,25 +264,6 @@ async function main() {
       const res = await users.apiClient.get(url, { userName: name } as any)
       const response = res.data
 
-      const parseHash = (rawData: any) => {
-        if (typeof rawData === 'string') {
-          const buf = rawData.length === 64 ? Buffer.from(rawData, 'hex') : Buffer.from(rawData, 'base64')
-          return Array.from(buf)
-        }
-        return Array.from(rawData)
-      }
-
-      const parseMask = (rawData: any) => {
-        const bytes = parseHash(rawData)
-        if (bytes.length !== 512) throw new Error(`rawMask must be 512 bytes, got ${bytes.length}`)
-        return bytes
-      }
-
-      const mapProofNode = (node: any) => ({
-        hash: parseHash(node.hash),
-        isRightSibling: node.isRightSibling
-      })
-
       // Staged on-chain by validate_fixture_for_tree; not part of the co-signed validate_stat_v4 payload
       const treePayload = {
         ts: new BN(response.payload.ts),
@@ -292,17 +274,17 @@ async function main() {
             minTimestamp: new BN(response.payload.summary.updateStats.minTimestamp),
             maxTimestamp: new BN(response.payload.summary.updateStats.maxTimestamp),
           },
-          subTreeRoot: parseHash(response.payload.summary.eventStatsSubTreeRoot),
+          subTreeRoot: proof.parseHash(response.payload.summary.eventStatsSubTreeRoot),
         },
-        mainTreeProof: response.payload.mainTreeProof.map(mapProofNode),
+        mainTreeProof: response.payload.mainTreeProof.map(proof.parseProofNode),
       }
 
       const common = {
         ts: new BN(response.payload.ts),
-        fixtureProof: response.payload.fixtureProof.map(mapProofNode),
-        eventStatRoot: parseHash(response.payload.eventStatRoot),
+        fixtureProof: response.payload.fixtureProof.map(proof.parseProofNode),
+        eventStatRoot: proof.parseHash(response.payload.eventStatRoot),
         leafIndices: response.payload.leafIndices,
-        multiproofHashes: response.payload.multiproofHashes.map(mapProofNode),
+        multiproofHashes: response.payload.multiproofHashes.map(proof.parseProofNode),
       }
 
       // The payload is an enum: leaves with a `statProof` are V1, leaves with `isZero` are V2 (which may carry a rawMask)
@@ -313,7 +295,7 @@ async function main() {
               ...common,
               leaves: response.payload.leaves.map((leaf: any) => ({
                 stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
-                statProof: leaf.statProof.map(mapProofNode),
+                statProof: leaf.statProof.map(proof.parseProofNode),
               })),
             },
           }
@@ -324,7 +306,7 @@ async function main() {
                 stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
                 isZero: leaf.isZero,
               })),
-              rawMask: response.payload.rawMask ? parseMask(response.payload.rawMask) : null,
+              rawMask: response.payload.rawMask ? proof.parseMask(response.payload.rawMask) : null,
             },
           }
 
