@@ -22,5 +22,5 @@ export function parseProofNode(node: any) {
 
 // Odds proof nodes; a single-update subtree has no siblings, and the server omits the empty proof
 export function parseOddsProofNodes(nodes: { hash: any, isRightSibling: boolean }[] = []) {
-  return nodes.map(node => ({ hash: Array.from(node.hash) as number[], isRightSibling: node.isRightSibling }))
+  return nodes.map(parseProofNode)
 }
