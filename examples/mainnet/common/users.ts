@@ -13,7 +13,24 @@ import axios from "axios";
 import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
 import nacl from "tweetnacl";
-import { Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction } from "@solana/web3.js";
+import { Connection, Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionInstruction } from "@solana/web3.js";
+import {
+  AccountRole,
+  Instruction,
+  address,
+  appendTransactionMessageInstructions,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+  createTransactionMessage,
+  estimateAndSetResourceLimitsFactory,
+  estimateResourceLimitsFactory,
+  getBase64EncodedWireTransaction,
+  getSignatureFromTransaction,
+  pipe,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
+} from "@solana/kit";
 import { createHash } from "crypto";
 
 export type User = {
@@ -496,6 +513,60 @@ export function backendCosignInstruction(borshPayload: Buffer, signatureBase64: 
     message: createHash("sha256").update(borshPayload).digest(),
     signature: Buffer.from(signatureBase64, "base64"),
   });
+}
+
+function toKitInstruction(ix: TransactionInstruction): Instruction {
+  return {
+    programAddress: address(ix.programId.toBase58()),
+    accounts: ix.keys.map(key => ({
+      address: address(key.pubkey.toBase58()),
+      role: key.isSigner
+        ? (key.isWritable ? AccountRole.WRITABLE_SIGNER : AccountRole.READONLY_SIGNER)
+        : (key.isWritable ? AccountRole.WRITABLE : AccountRole.READONLY),
+    })),
+    data: new Uint8Array(ix.data),
+  };
+}
+
+/**
+ * Sends instructions as one version 1 transaction, which may be up to 4096 bytes where legacy and v0 stop at 1232.
+ * web3.js 1.x cannot build v1, so the message is built with @solana/kit. A v1 transaction carries no ComputeBudget
+ * instructions and budgets zero for any limit left unset, so the compute and loaded-data limits are estimated by
+ * simulation. Returns once the transaction is confirmed.
+ */
+export async function sendV1Transaction(connection: Connection, payer: anchor.web3.Keypair, instructions: TransactionInstruction[]): Promise<string> {
+  const rpc = createSolanaRpc(connection.rpcEndpoint);
+  const feePayer = await createKeyPairSignerFromBytes(payer.secretKey);
+  // Same commitment as the preflight below, so the node that simulates it knows the blockhash
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash({ commitment: "confirmed" }).send();
+
+  const message = pipe(
+    createTransactionMessage({ version: 1 }),
+    m => setTransactionMessageFeePayerSigner(feePayer, m),
+    m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+    m => appendTransactionMessageInstructions(instructions.map(toKitInstruction), m),
+  );
+  // Simulate at "confirmed": kit's RPC defaults to "finalized", which doesn't yet see accounts created by transactions
+  // sent just before (e.g. a staged worker ticket). Callers must confirm those transactions at "confirmed".
+  const estimateAndSetResourceLimits = estimateAndSetResourceLimitsFactory(estimateResourceLimitsFactory({ rpc }));
+  const transaction = await signTransactionMessageWithSigners(
+    await estimateAndSetResourceLimits(message, { commitment: "confirmed" })
+  );
+
+  // sendRawTransaction submits base64, which a transaction over 1232 bytes needs
+  const signature = getSignatureFromTransaction(transaction);
+  await connection.sendRawTransaction(Buffer.from(getBase64EncodedWireTransaction(transaction), "base64"), {
+    preflightCommitment: "confirmed",
+  });
+  const confirmation = await connection.confirmTransaction({
+    signature,
+    blockhash: latestBlockhash.blockhash,
+    lastValidBlockHeight: Number(latestBlockhash.lastValidBlockHeight),
+  }, "confirmed");
+  if (confirmation.value.err) {
+    throw new Error(`Transaction ${signature} failed: ${JSON.stringify(confirmation.value.err)}`);
+  }
+  return signature;
 }
 
 /** Whether the backend's co-signature covers sha256(Borsh payload), i.e. whether backendCosignInstruction would verify. */

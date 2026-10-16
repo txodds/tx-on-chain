@@ -18,7 +18,7 @@ import { EventSource } from 'eventsource'
 import BN from "bn.js"
 import { inspect } from 'util'
 import { IdlTypes } from "@coral-xyz/anchor"
-import { SYSVAR_INSTRUCTIONS_PUBKEY, Transaction } from "@solana/web3.js"
+import { SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
 
 // Client-chosen worker ticket slot; scores use a different domain than the odds script
 const SCORES_DOMAIN = 1
@@ -204,10 +204,6 @@ async function main() {
 
     const fixtureTicket = users.fixtureTicketPda(program.programId, userKey, fixtureId)
 
-    const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
-      units: 1_400_000 
-    })
-
     // Define unified strategies
     const strategy1To3Plus: NDimensionalStrategy = {
       geometricTargets: [],
@@ -336,9 +332,10 @@ async function main() {
     }
 
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
-      // A rawMask adds 512 bytes, which no longer fit a legacy transaction (web3.js cannot build v1 transactions)
+      // A rawMask adds 513 bytes, which takes even the 2-leg payload past the fixed 1000-byte buffer that Anchor 0.32
+      // encodes types and instructions into (ERR_OUT_OF_RANGE), although the result would fit a v1 transaction
       if (v4Data.payload.v2?.rawMask) {
-        console.log(`[${name}] V4 ${label}: skipped, payload carries a 512-byte rawMask and does not fit a legacy transaction`)
+        console.log(`[${name}] V4 ${label}: skipped, payload carries a 512-byte rawMask and is too large for Anchor's encoder`)
         return
       }
 
@@ -385,12 +382,14 @@ async function main() {
           dailyMerkleRoots: dailyScoresPda,
           systemProgram: anchor.web3.SystemProgram.programId,
         })
-        .rpc()
+        // sendV1Transaction simulates at "confirmed", so the staged ticket must be visible there.
+        // Options replace the provider's rather than merge, so preflightCommitment (also used for the blockhash) is set too.
+        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" })
 
       try {
-        const txSignature = await userProvider.sendAndConfirm(
-          new Transaction().add(computeBudgetIx, ed25519Ix, validateIx)
-        )
+        // V1 payloads carry a proof per leaf, so the 3- and 4-leg validations exceed the 1232 bytes of a legacy or
+        // v0 transaction; send the validation as a v1 transaction, which allows 4096
+        const txSignature = await users.sendV1Transaction(connection, user.user, [ed25519Ix, validateIx])
 
         console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
       } finally {
