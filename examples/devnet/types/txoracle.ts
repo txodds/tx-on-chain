@@ -1119,6 +1119,19 @@ export type Txoracle = {
   ],
   "accounts": [
     {
+      "name": "faucetTracker",
+      "discriminator": [
+        247,
+        221,
+        212,
+        62,
+        42,
+        233,
+        215,
+        190
+      ]
+    },
+    {
       "name": "fixtureTicket",
       "discriminator": [
         251,
@@ -1155,19 +1168,6 @@ export type Txoracle = {
         192,
         1,
         162
-      ]
-    },
-    {
-      "name": "faucetTracker",
-      "discriminator": [
-        247,
-        221,
-        212,
-        62,
-        42,
-        233,
-        215,
-        190
       ]
     }
   ],
@@ -2632,22 +2632,22 @@ export type Txoracle = {
     {
       "name": "programAdminPubkey",
       "type": "pubkey",
-      "value": "GbUDHMkPnPiZ8tgqZGjrL4tLxyEBnMCjMLukrx5fz9p6"
+      "value": "AQA2iP5AWEmDrGihXG39SKgBJnC52UTCvSNjp5vQf8R9"
     },
     {
       "name": "stakeAmount",
       "type": "u64",
-      "value": "250000000"
+      "value": "1"
     },
     {
       "name": "subscriptionDuration",
       "type": "i64",
-      "value": "604800"
+      "value": "3600"
     },
     {
       "name": "subscriptionPriceToken",
       "type": "u64",
-      "value": "25000000"
+      "value": "1"
     },
     {
       "name": "tokenDecimals",
@@ -2667,7 +2667,7 @@ export type Txoracle = {
     {
       "name": "txlineMint",
       "type": "pubkey",
-      "value": "Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL"
+      "value": "4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG"
     },
     {
       "name": "usdtDecimalsFactor",
@@ -2677,7 +2677,7 @@ export type Txoracle = {
     {
       "name": "usdtMint",
       "type": "pubkey",
-      "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+      "value": "ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh"
     },
     {
       "name": "validationsPerBooking",
