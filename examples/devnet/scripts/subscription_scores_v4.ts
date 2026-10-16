@@ -18,7 +18,7 @@ import { EventSource } from 'eventsource'
 import BN from "bn.js"
 import { inspect } from 'util'
 import { IdlTypes } from "@coral-xyz/anchor"
-import { SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
+import { SYSVAR_INSTRUCTIONS_PUBKEY, Transaction } from "@solana/web3.js"
 
 // Client-chosen worker ticket slot; scores use a different domain than the odds script
 const SCORES_DOMAIN = 1
@@ -343,14 +343,38 @@ async function main() {
       }
 
       // Encode payload to raw Borsh bytes
-      const serializedPayload = userProgram.coder.types.encode(
+      const serializedPayload: Buffer = userProgram.coder.types.encode(
         "statValidationPayload",
         v4Data.payload
       )
 
-      const ed25519Ix = users.backendCosignInstruction(serializedPayload, v4Data.signature)
+      // A program still on IDL 1.5.14 takes the payload as a struct, without the enum's 1-byte variant tag, and a
+      // writable fixture_ticket; its backend signs that layout. Use it when the signature only covers the untagged bytes.
+      const legacyLayout = !users.isBackendSigned(serializedPayload, v4Data.signature)
+        && users.isBackendSigned(serializedPayload.subarray(1), v4Data.signature)
+
+      const ed25519Ix = users.backendCosignInstruction(
+        legacyLayout ? serializedPayload.subarray(1) : serializedPayload,
+        v4Data.signature
+      )
 
       const ticket = users.workerTicketPda(program.programId, userKey, SCORES_DOMAIN, WORKER_ID)
+      const validateIx = await userProgram.methods
+        .validateStatV4(WORKER_ID, v4Data.payload, strategy)
+        .accounts({
+          user: userKey,
+          ticket,
+          fixtureTicket,
+          instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+        })
+        .instruction()
+
+      if (legacyLayout) {
+        // Drop the variant tag, which follows the 8-byte discriminator and the u16 worker id
+        validateIx.data = Buffer.concat([validateIx.data.subarray(0, 10), validateIx.data.subarray(11)])
+        validateIx.keys.find(k => k.pubkey.equals(fixtureTicket))!.isWritable = true
+      }
+
       const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", v4Data.treePayload.ts.toNumber())
 
       await userProgram.methods
@@ -364,16 +388,9 @@ async function main() {
         .rpc()
 
       try {
-        const txSignature = await userProgram.methods
-          .validateStatV4(WORKER_ID, v4Data.payload, strategy)
-          .accounts({
-            user: userKey,
-            ticket,
-            fixtureTicket,
-            instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-          })
-          .preInstructions([computeBudgetIx, ed25519Ix])
-          .rpc()
+        const txSignature = await userProvider.sendAndConfirm(
+          new Transaction().add(computeBudgetIx, ed25519Ix, validateIx)
+        )
 
         console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
       } finally {

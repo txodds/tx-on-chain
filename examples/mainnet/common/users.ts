@@ -498,6 +498,15 @@ export function backendCosignInstruction(borshPayload: Buffer, signatureBase64: 
   });
 }
 
+/** Whether the backend's co-signature covers sha256(Borsh payload), i.e. whether backendCosignInstruction would verify. */
+export function isBackendSigned(borshPayload: Buffer, signatureBase64: string): boolean {
+  return nacl.sign.detached.verify(
+    createHash("sha256").update(borshPayload).digest(),
+    Buffer.from(signatureBase64, "base64"),
+    backendAdminPubkey().toBytes()
+  );
+}
+
 export type BookFixtureQuote = {
   payload: { user: string; fixtureId: number; price: number; ts: number; validity: number };
   signature: string;
