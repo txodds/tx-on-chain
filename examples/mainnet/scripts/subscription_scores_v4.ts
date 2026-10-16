@@ -108,6 +108,21 @@ async function main() {
 
     var sampleScores: any = null
 
+    // Stat keys requested by the validations below; the widest set is used to check a sample
+    const STAT_KEYS = "1002,1007,2007,1"
+
+    // The server cannot prove every update that carries stats (e.g. connected, comment, fumble), and answers 500.
+    // The endpoint needs no fixture ticket, so check a sample before paying to book its fixture.
+    const canValidate = async (fixtureId: number, seq: number) => {
+      try {
+        await users.apiClient.get(`/scores/stat-validation-v4?fixtureId=${fixtureId}&seq=${seq}&statKeys=${STAT_KEYS}`)
+        return true
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 500) return false
+        throw error
+      }
+    }
+
     const scanRecentScores = async (fixtureId?: number) => {
       const msPerInterval = 300000 
       const now = new Date()
@@ -139,14 +154,16 @@ async function main() {
           if (response.data.length > 0) {
             console.log(`Scores updates found for Epoch ${epochDay} Hour ${hourOfDay} Interval ${interval}:`, response.data)
             
-            // Capture the first update of a bookable fixture that carries stats: coverage/comment records have an empty
-            // Stats and no processed scores record, so stat validation can't find them
-            const withStats = response.data.find((u: any) =>
+            // Capture the first update of a bookable fixture that carries stats and that the server can prove:
+            // coverage records have an empty Stats, and not every update with stats has a processed scores record
+            const withStats = response.data.filter((u: any) =>
               bookableFixtureIds.has(u.FixtureId) && Object.keys(u.Stats ?? u.Update?.Stats ?? {}).length > 0)
-            if (!sampleScores && withStats) {
-              sampleScores = withStats
-              console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
-              return
+            for (const candidate of withStats) {
+              if (await canValidate(candidate.FixtureId, candidate.Update?.Seq ?? candidate.Seq)) {
+                sampleScores = candidate
+                console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
+                return
+              }
             }
           }
         } catch (error) {
@@ -378,7 +395,7 @@ async function main() {
     console.log(payloadPrefix_2Leg, inspectedPayload_2Leg)
 
     const payloadV4_3Leg = await fetchV4Payload("1002,1007,2007")
-    const payloadV4_4Leg = await fetchV4Payload("1002,1007,2007,1")
+    const payloadV4_4Leg = await fetchV4Payload(STAT_KEYS)
 
     const inspectedPayload_4Leg = inspect(payloadV4_4Leg, { depth: null, colors: true })
     const payloadPrefix_4Leg = `[${name}] payload:`
