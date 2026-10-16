@@ -14,6 +14,7 @@ export const subscriptionEndTs = currentTs + durationInSeconds;
 export const SAMPLE_FIXTURES = {
   freeTierOdds: 17588320,
   historicalScores: 18086637,
+  // Not pinned by any script: kept to prove backwards compatibility.
   v2aSnapshot: 18175981,
   v2aValidation: { fixtureId: 18175981, seq: 991 },
   v3cValidation: { fixtureId: 18241006, seq: 962 },

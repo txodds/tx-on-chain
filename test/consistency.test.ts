@@ -60,10 +60,12 @@ describe("docs reference code that exists", () => {
   });
 });
 
+// Fixtures kept to prove backwards compatibility; no script pins them
+const BACKWARD_COMPAT_FIXTURES = ["v2aSnapshot", "v2aValidation", "v3cValidation"];
+
 for (const network of NETWORKS) {
   describe(`${network} SAMPLE_FIXTURES`, () => {
-    // Bug: v2aSnapshot, v2aValidation and v3cValidation outlived the scripts that used them
-    it("every entry is used by a script", () => {
+    it("every entry is used by a script or kept for backwards compatibility", () => {
       const block = read(`examples/${network}/common/config.ts`).match(/SAMPLE_FIXTURES\s*=\s*\{([\s\S]*?)\n\};/)![1];
       const keys = [...block.matchAll(/^\s+(\w+):/gm)].map(m => m[1]);
       expect(keys).to.not.be.empty;
@@ -72,7 +74,8 @@ for (const network of NETWORKS) {
         .filter(f => f.endsWith(".ts"))
         .map(f => fs.readFileSync(path.join(scriptsDir(network), f), "utf8"))
         .join("\n");
-      expect(keys.filter(k => !scripts.includes(`SAMPLE_FIXTURES.${k}`))).to.deep.equal([]);
+      expect(keys.filter(k => !scripts.includes(`SAMPLE_FIXTURES.${k}`) && !BACKWARD_COMPAT_FIXTURES.includes(k)))
+        .to.deep.equal([]);
     });
   });
 }
