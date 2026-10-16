@@ -105,6 +105,21 @@ The current copy-paste examples live in the hosted documentation pages rather th
 
 The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
 
+## Running Tests
+
+The tests in `test/` check the example helpers and keep the docs, IDLs and devnet/mainnet examples consistent. They run offline and need no wallet or API token.
+
+```bash
+yarn install
+yarn test
+```
+
+`yarn test` runs every `test/**/*.test.ts` file with mocha. To run one file:
+
+```bash
+npx ts-mocha -p test/tsconfig.json test/proof.test.ts
+```
+
 ## Trading Flow
 
 The following section gives an overview of how binary options prediction markets work with TxODDS Oracle.
