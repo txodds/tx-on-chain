@@ -332,8 +332,9 @@ async function main() {
     }
 
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
-      // A rawMask adds 513 bytes, which takes even the 2-leg payload past the fixed 1000-byte buffer that Anchor 0.32
-      // encodes types and instructions into (ERR_OUT_OF_RANGE), although the result would fit a v1 transaction
+      // A rawMask adds 512 bytes. Built from devnet proof data plus a mask, these payloads were 1066 bytes or more (2 to
+      // 4 legs), past the fixed 1000-byte buffer that Anchor 0.32 encodes types and instructions into (ERR_OUT_OF_RANGE),
+      // although they would fit a v1 transaction
       if (v4Data.payload.v2?.rawMask) {
         console.log(`[${name}] V4 ${label}: skipped, payload carries a 512-byte rawMask and is too large for Anchor's encoder`)
         return
@@ -387,8 +388,9 @@ async function main() {
         .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" })
 
       try {
-        // V1 payloads carry a proof per leaf, so the 3- and 4-leg validations exceed the 1232 bytes of a legacy or
-        // v0 transaction; send the validation as a v1 transaction, which allows 4096
+        // Legacy and v0 transactions stop at 1232 bytes. The payload's proofs grow with the number of legs and differ
+        // between updates, so larger validations exceed that (of two devnet updates measured, 4 legs did on both and
+        // 3 legs on one); send the validation as a v1 transaction, which allows 4096
         const txSignature = await users.sendV1Transaction(connection, user.user, [ed25519Ix, validateIx])
 
         console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
