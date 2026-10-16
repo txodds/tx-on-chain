@@ -346,15 +346,7 @@ async function main() {
         v4Data.payload
       )
 
-      // A program still on IDL 1.5.14 takes the payload as a struct, without the enum's 1-byte variant tag, and a
-      // writable fixture_ticket; its backend signs that layout. Use it when the signature only covers the untagged bytes.
-      const legacyLayout = !users.isBackendSigned(serializedPayload, v4Data.signature)
-        && users.isBackendSigned(serializedPayload.subarray(1), v4Data.signature)
-
-      const ed25519Ix = users.backendCosignInstruction(
-        legacyLayout ? serializedPayload.subarray(1) : serializedPayload,
-        v4Data.signature
-      )
+      const ed25519Ix = users.backendCosignInstruction(serializedPayload, v4Data.signature)
 
       const ticket = users.workerTicketPda(program.programId, userKey, SCORES_DOMAIN, WORKER_ID)
       const validateIx = await userProgram.methods
@@ -366,12 +358,6 @@ async function main() {
           instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
         })
         .instruction()
-
-      if (legacyLayout) {
-        // Drop the variant tag, which follows the 8-byte discriminator and the u16 worker id
-        validateIx.data = Buffer.concat([validateIx.data.subarray(0, 10), validateIx.data.subarray(11)])
-        validateIx.keys.find(k => k.pubkey.equals(fixtureTicket))!.isWritable = true
-      }
 
       const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", v4Data.treePayload.ts.toNumber())
 

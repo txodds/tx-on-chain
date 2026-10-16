@@ -159,35 +159,4 @@ for (const network of NETWORKS) {
         .to.throw(/admin/i);
     });
   });
-
-  describe(`${network} users.isBackendSigned`, () => {
-    it("rejects a signature that is not the backend admin's", () => {
-      expect(users.isBackendSigned(Buffer.from("payload"), Buffer.alloc(64, 7).toString("base64"))).to.equal(false);
-    });
-  });
 }
-
-// Recorded from the devnet backend while it ran the program from IDL 1.5.14 (fixture 18041436, seq 1988)
-describe("devnet stat-validation-v4 signature layout", () => {
-  const users = require("../examples/devnet/common/users");
-  const proof = require("../examples/devnet/common/proof");
-  const program = offlineProgram("devnet");
-  const { payload: p, signature } = require("./fixtures/devnet-stat-validation-v4.json");
-
-  const encoded: Buffer = program.coder.types.encode("statValidationPayload", {
-    v1: {
-      ts: new anchor.BN(p.ts),
-      fixtureProof: p.fixtureProof.map(proof.parseProofNode),
-      eventStatRoot: proof.parseHash(p.eventStatRoot),
-      leafIndices: p.leafIndices,
-      multiproofHashes: p.multiproofHashes.map(proof.parseProofNode),
-      leaves: p.leaves.map((l: any) => ({ stat: l.stat, statProof: l.statProof.map(proof.parseProofNode) })),
-    },
-  });
-
-  // subscription_scores_v4 falls back to the untagged layout on exactly this combination
-  it("is signed over the payload without the enum variant tag", () => {
-    expect(users.isBackendSigned(encoded, signature)).to.equal(false);
-    expect(users.isBackendSigned(encoded.subarray(1), signature)).to.equal(true);
-  });
-});
