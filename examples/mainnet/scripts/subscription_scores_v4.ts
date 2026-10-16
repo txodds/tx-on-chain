@@ -113,9 +113,10 @@ async function main() {
       const now = new Date()
 
       // Only fixtures in the schedule are bookable, and stat validation needs a booked one.
-      // afterTs defaults to now, which would drop fixtures already under way, so go back the full 2 weeks allowed.
+      // afterTs defaults to now, which would drop fixtures already under way, so go back almost the 2 weeks allowed.
+      // The server measures the 2 weeks from when the request arrives, so exactly 2 weeks is already too early.
       const schedule = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
-        params: { afterTs: now.getTime() - 14 * 86400000 },
+        params: { afterTs: now.getTime() - 14 * 86400000 + 3600000 },
       })
       const bookableFixtureIds = new Set(schedule.data.map(f => f.FixtureId))
 

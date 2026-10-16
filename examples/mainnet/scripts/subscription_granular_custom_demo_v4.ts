@@ -183,13 +183,15 @@ async function main() {
   }
 
   // Odds validation needs a booked fixture, and only fixtures in the schedule are bookable.
-  // afterTs defaults to now, which would drop fixtures already under way, so go back the full 2 weeks allowed.
+  // afterTs defaults to now, which would drop fixtures already under way, so go back almost the 2 weeks allowed.
+  // The server measures the 2 weeks from when the request arrives, so exactly 2 weeks is already too early.
   const INTERVAL_MS = 5 * 60 * 1000;
-  const DAY_MS = 24 * 60 * 60 * 1000;
+  const HOUR_MS = 60 * 60 * 1000;
+  const DAY_MS = 24 * HOUR_MS;
   const TWO_WEEKS_MS = 14 * DAY_MS;
   const now = Date.now();
   const scheduleResponse = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
-    params: { afterTs: now - TWO_WEEKS_MS },
+    params: { afterTs: now - TWO_WEEKS_MS + HOUR_MS },
   });
   const bookableFixtureIds = new Set(scheduleResponse.data.map(f => f.FixtureId));
 
