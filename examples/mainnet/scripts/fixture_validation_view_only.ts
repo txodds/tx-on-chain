@@ -1,7 +1,7 @@
 // Demonstrate fixture validation by simulation with view()
 
 // Run with:
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node  examples/mainnet/scripts/fixture_validation_view_only.ts
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="./_keys/mainnet-testuser-wallet-1.json" ts-node examples/mainnet/scripts/fixture_validation_view_only.ts
 
 import { Program } from "@coral-xyz/anchor";
 import { Txoracle } from "../types/txoracle";
@@ -46,7 +46,6 @@ async function main() {
     undefined,
     undefined   // Alternatively, use a working API Token here
   );
-  // console.log("API Token:", users.authState.apiToken);
 
   var sampleFixture: any = null
 
