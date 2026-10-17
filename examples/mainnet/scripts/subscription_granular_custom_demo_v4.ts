@@ -538,7 +538,7 @@ async function main() {
 
   // await listenToOddsStream("1")
 
-  const waitDuration = 3600 * 1000;
+  const waitDuration = users.streamTtlMs(3600);
   console.log(`Waiting for ${waitDuration / 1000} seconds for odds to go through...`);
   await new Promise(resolve => setTimeout(resolve, waitDuration));
 

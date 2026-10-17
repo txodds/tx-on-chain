@@ -159,4 +159,35 @@ for (const network of NETWORKS) {
         .to.throw(/admin/i);
     });
   });
+
+  describe(`${network} users.streamTtlMs`, () => {
+    const original = process.env.STREAM_TTL_SECS;
+    afterEach(() => {
+      if (original === undefined) delete process.env.STREAM_TTL_SECS;
+      else process.env.STREAM_TTL_SECS = original;
+    });
+
+    it("uses the script's default when STREAM_TTL_SECS is unset or empty", () => {
+      delete process.env.STREAM_TTL_SECS;
+      expect(users.streamTtlMs(3600)).to.equal(3_600_000);
+      process.env.STREAM_TTL_SECS = "";
+      expect(users.streamTtlMs(3600)).to.equal(3_600_000);
+    });
+
+    it("uses STREAM_TTL_SECS when set, including 0 and fractions", () => {
+      process.env.STREAM_TTL_SECS = "30";
+      expect(users.streamTtlMs(3600)).to.equal(30_000);
+      process.env.STREAM_TTL_SECS = "0";
+      expect(users.streamTtlMs(3600)).to.equal(0);
+      process.env.STREAM_TTL_SECS = "1.5";
+      expect(users.streamTtlMs(3600)).to.equal(1_500);
+    });
+
+    it("rejects a value that is not a non-negative number of seconds", () => {
+      for (const bad of ["abc", "-5", "10s"]) {
+        process.env.STREAM_TTL_SECS = bad;
+        expect(() => users.streamTtlMs(3600)).to.throw(/STREAM_TTL_SECS/);
+      }
+    });
+  });
 }

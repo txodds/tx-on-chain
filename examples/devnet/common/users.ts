@@ -574,6 +574,18 @@ export type BookFixtureQuote = {
   signature: string;
 };
 
+/**
+ * How long a script keeps streaming before it moves on: STREAM_TTL_SECS seconds if set, otherwise `defaultSecs`.
+ * A short value speeds up a test run, but skips anything the default wait exists for, such as the JWT expiring.
+ */
+export function streamTtlMs(defaultSecs: number): number {
+  const raw = process.env.STREAM_TTL_SECS;
+  if (raw === undefined || raw === "") return defaultSecs * 1000;
+  const secs = Number(raw);
+  if (!Number.isFinite(secs) || secs < 0) throw new Error(`STREAM_TTL_SECS must be a number of seconds, got "${raw}"`);
+  return secs * 1000;
+}
+
 /** Returns null on 404: the fixture lacks odds+scores, or its competition has no configured price. */
 export async function requestBookFixtureQuote(
   fixtureId: number,

@@ -506,7 +506,7 @@ async function main() {
 
     listenToScoresStream("1")
 
-    const waitDuration = 3601 * 1000
+    const waitDuration = users.streamTtlMs(3601)
     console.log(`Waiting for ${waitDuration / 1000} seconds for scores to go through...`)
     await new Promise(resolve => setTimeout(resolve, waitDuration))
 
