@@ -219,7 +219,7 @@ export async function setupUser(
   async function discoverPricingMatrix() {
     const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
     console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`); 
-    console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
+    console.log(`Service level id.   Tokens/week   Sampling (sec)  League bundle  Market bundle`);
     console.log(`=================   ===========   ==============  =============  =============`);
 
     matrix.rows.forEach((row: any) => {

@@ -1772,8 +1772,6 @@ export type Txoracle = {
         1,
         162
       ]
-<<<<<<< HEAD
-=======
     }
   ],
   "events": [
@@ -1841,7 +1839,6 @@ export type Txoracle = {
         93,
         216
       ]
->>>>>>> 45e624a (feat: add scripts/idl.ts to trim the txoracle IDL per network and check it against the deployed program.)
     }
   ],
   "errors": [
