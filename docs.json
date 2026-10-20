@@ -61,7 +61,6 @@
             "group": "Legal",
             "pages": [
               "documentation/legal/terms-and-conditions",
-              "documentation/legal/hackathon-terms"
             ]
           }
         ]
@@ -81,10 +80,7 @@
       "source": "/quickstart",
       "destination": "/documentation/quickstart"
     },
-    {
-      "source": "/worldcup",
-      "destination": "/documentation/worldcup"
-    },
+
     {
       "source": "/subscription-tiers",
       "destination": "/documentation/subscription-tiers"
