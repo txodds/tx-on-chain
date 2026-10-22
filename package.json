@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-mocha -p test/tsconfig.json --timeout 20000 'test/**/*.test.ts'"
   },
   "repository": {
     "type": "git",
@@ -20,6 +20,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "0.32.1",
     "@microsoft/fetch-event-source": "^2.0.1",
+    "@solana/kit": "8.5.0",
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.91.9",
     "axios": "^1.12.0",

@@ -49,6 +49,16 @@ Crypto Wallet: Yes. A Solana wallet is strictly required for all tiers—includi
 
 **Do I need to renew my free subscription?** Subscriptions run in 4-week increments. When access expires, simply re-subscribe. Free tier renewals are always no cost.
 
+## Booking Fixtures
+
+**How does booking a fixture relate to a subscription?** A subscription gives access to the fixtures in its league and market bundle. Booking a fixture with `book_fixture` pays TxL once for a single fixture and grants scores and odds access to it whether or not your bundle covers it. Access is denied only when a fixture is neither in your bundle nor booked.
+
+**Do I need a booking to validate data on-chain?** Yes. `validate_odds_v4` and `validate_stat_v4` require your wallet's `fixture_ticket` for the fixture. Validations are not charged per call and have no call limit.
+
+**Can I book the same fixture twice?** No. A repeat `book_fixture` for the same wallet and fixture fails with `FixtureAlreadyBooked` and transfers no TxL.
+
+**Which fixtures can I book?** Those listed by `GET /api/fixtures-schedule`: fixtures with both odds and scores available whose competition has a configured price. See [Booking Fixtures](/documentation/examples/booking-fixtures).
+
 ## Data & Sports Coverage
 
 **What sports and competitions are available?** Football (Soccer) is currently supported, including the FIFA World Cup and International Friendlies on the free tier, plus over 1,000 leagues via paid plans. We also feature premium, in-venue scout-verified scores for US college sports (NCAA Football and Basketball).

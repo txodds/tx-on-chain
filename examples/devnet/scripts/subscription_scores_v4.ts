@@ -1,4 +1,6 @@
-// Demo stat validaton V2 and V4 for comparison
+// Demo stat validation V4
+// V4 needs a booked fixture (book_fixture) and runs validate_fixture_for_tree -> validate_stat_v4 -> close_worker_ticket per validation
+// Optionally pin the fixture with FIXTURE_ID and SEQ; otherwise the first recent scores update is used
 
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_scores_v4.ts
@@ -9,76 +11,31 @@ import { Txoracle } from "../types/txoracle"
 import TxoracleJson from "../idl/txoracle.json";
 import * as config from '../common/config'
 import * as users from '../common/users'
+import * as proof from '../common/proof'
 import axios from "axios"
 import { PublicKey } from "@solana/web3.js"
 import { EventSource } from 'eventsource'
 import BN from "bn.js"
 import { inspect } from 'util'
 import { IdlTypes } from "@coral-xyz/anchor"
-import { Ed25519Program, SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
-import { createHash } from 'crypto';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token"
+import { SYSVAR_INSTRUCTIONS_PUBKEY } from "@solana/web3.js"
 
-async function purchaseCredits(
-  userKey: PublicKey,
-  userProgram: Program<Txoracle>, 
-  userValidationStatePda: PublicKey,
-  tokenMint: PublicKey, 
-  creditsToBuy: number = 1
-) {
-  // Token treasury PDA
-  const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("token_treasury_v2")],
-    userProgram.programId
-  )
-
-  // User associated token account
-  const userTokenAccount = getAssociatedTokenAddressSync(
-    tokenMint,
-    userKey,
-    false,
-    TOKEN_2022_PROGRAM_ID
-  )
-  
-  // Treasury associated token account
-  const tokenTreasuryVault = getAssociatedTokenAddressSync(
-    tokenMint,
-    tokenTreasuryPda,
-    true,
-    TOKEN_2022_PROGRAM_ID
-  )
-
-  // Execute purchase instruction
-  const txSignature = await userProgram.methods
-    .purchaseValidationCredits(creditsToBuy)
-    .accounts({
-      user: userKey,
-      userValidationState: userValidationStatePda,
-      tokenMint: tokenMint,
-      userTokenAccount: userTokenAccount,
-      tokenTreasuryVault: tokenTreasuryVault,
-      tokenTreasuryPda: tokenTreasuryPda,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    })
-    .rpc()
-
-  console.log(`Purchase executed with signature: ${txSignature}`)
-}
+// Client-chosen worker ticket slot; scores use a different domain than the odds script
+const SCORES_DOMAIN = 1
+const WORKER_ID = 0
 
 type OracleTypes = IdlTypes<Txoracle>
 
 // Export the specific types needed to build payloads
 // Convert Rust PascalCase to camelCase automatically via Anchor IDL
 export type NDimensionalStrategy = OracleTypes["nDimensionalStrategy"]
-export type StatValidationInput = OracleTypes["statValidationInput"]
 export type StatPredicate = OracleTypes["statPredicate"]
 export type BinaryExpression = OracleTypes["binaryExpression"]
 export type Comparison = OracleTypes["comparison"]
 export type ProofNode = IdlTypes<Txoracle>["proofNode"]
 export type ScoreStat = IdlTypes<Txoracle>["scoreStat"]
-export type StatLeaf = IdlTypes<Txoracle>["statLeaf"]
+export type StatLeafV1 = IdlTypes<Txoracle>["statLeafV1"]
+export type StatLeafV2 = IdlTypes<Txoracle>["statLeafV2"]
 
 // Define a strict type for the raw backend API response
 interface ApiProofNode {
@@ -116,34 +73,17 @@ async function main() {
     4,
     []
   )
-  console.log("API Token:", users.authState.apiToken)
 
   // Upgrade the provider to use the real funded Trader wallet
   const userWallet = new anchor.Wallet(user.user)
   const userProvider = new anchor.AnchorProvider(connection, userWallet, anchor.AnchorProvider.defaultOptions())
   
   // Create a new program instance permanently bound to Trader A
-  const userProgram = new anchor.Program(program.idl, userProvider)
+  const userProgram = new anchor.Program<Txoracle>(program.idl as Txoracle, userProvider)
   // User public key
   const userKey = userProgram.provider.publicKey!
 
-  // User validation state PDA
-  const [userValidationStatePda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("user_state"), userKey.toBuffer()],
-    userProgram.programId
-  )
-
-  // IF NEEDED, purchase credits before validating
-  // const userValidationStatePda = await purchaseCredits(userKey, userProgram, tokenMint, 5);
-
   try {
-
-    // Spain v Belgium: July 10, 2026
-    // const fixtureId = 18218149;
-    // const seq = 1087;
-    // England v Argentina: July 15, 2026
-    const fixtureId = 18241006;
-    const seq = 962;
 
     // Fetch the scores snapshot for a specific fixture
     async function getScoresSnapshot(fixtureId: number, asOf?: number) {
@@ -166,16 +106,38 @@ async function main() {
       }
     }
 
-    await getScoresSnapshot(fixtureId, Date.now())
-
     var sampleScores: any = null
+
+    // Stat keys requested by the validations below; the widest set is used to check a sample
+    const STAT_KEYS = "1002,1007,2007,1"
+
+    // The server cannot prove every update that carries stats (e.g. connected, comment, fumble), and answers 500.
+    // The endpoint needs no fixture ticket, so check a sample before paying to book its fixture.
+    const canValidate = async (fixtureId: number, seq: number) => {
+      try {
+        await users.apiClient.get(`/scores/stat-validation-v4?fixtureId=${fixtureId}&seq=${seq}&statKeys=${STAT_KEYS}`)
+        return true
+      } catch (error) {
+        if (axios.isAxiosError(error) && error.response?.status === 500) return false
+        throw error
+      }
+    }
 
     const scanRecentScores = async (fixtureId?: number) => {
       const msPerInterval = 300000 
       const now = new Date()
 
-      // Scan backwards through the last twenty hours of intervals
-      for (let i = 0; i < 240; i++) {
+      // Only fixtures in the schedule are bookable, and stat validation needs a booked one.
+      // afterTs defaults to now, which would drop fixtures already under way, so go back almost the 2 weeks allowed.
+      // The server measures the 2 weeks from when the request arrives, so exactly 2 weeks is already too early.
+      const schedule = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
+        params: { afterTs: now.getTime() - 14 * 86400000 + 3600000 },
+      })
+      const bookableFixtureIds = new Set(schedule.data.map(f => f.FixtureId))
+
+      // Scan backwards through the last two weeks of intervals
+      const intervalsInTwoWeeks = (14 * 86400000) / msPerInterval
+      for (let i = 0; i < intervalsInTwoWeeks; i++) {
         const targetTime = new Date(now.getTime() - (i * msPerInterval))
         const epochDay = Math.floor(targetTime.getTime() / 86400000)
         const hourOfDay = targetTime.getUTCHours()
@@ -192,10 +154,16 @@ async function main() {
           if (response.data.length > 0) {
             console.log(`Scores updates found for Epoch ${epochDay} Hour ${hourOfDay} Interval ${interval}:`, response.data)
             
-            // Capture the first score update to use for validation
-            if (!sampleScores) {
-              sampleScores = response.data[0]
-              console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
+            // Capture the first update of a bookable fixture that carries stats and that the server can prove:
+            // coverage records have an empty Stats, and not every update with stats has a processed scores record
+            const withStats = response.data.filter((u: any) =>
+              bookableFixtureIds.has(u.FixtureId) && Object.keys(u.Stats ?? u.Update?.Stats ?? {}).length > 0)
+            for (const candidate of withStats) {
+              if (await canValidate(candidate.FixtureId, candidate.Update?.Seq ?? candidate.Seq)) {
+                sampleScores = candidate
+                console.log(`Captured sample for validation: FixtureId ${sampleScores.FixtureId} @ Ts ${sampleScores.Ts}`)
+                return
+              }
             }
           }
         } catch (error) {
@@ -209,21 +177,32 @@ async function main() {
       }
     }
 
-    // Execute the scanner for all scores
-    await scanRecentScores()
-
-    // Map API proof array to exact shape expected by Anchor
-    const mapProof = (proofArray: ApiProofNode[] | undefined): ProofNode[] => {
-      if (!proofArray) return []
-      return proofArray.map(n => ({
-        hash: Array.from(n.hash),
-        isRightSibling: n.isRightSibling
-      }))
+    let fixtureId: number
+    let seq: number
+    if (process.env.FIXTURE_ID && process.env.SEQ) {
+      fixtureId = Number(process.env.FIXTURE_ID)
+      seq = Number(process.env.SEQ)
+    } else {
+      await scanRecentScores()
+      if (!sampleScores) throw new Error("No recent scores updates found; set FIXTURE_ID and SEQ")
+      fixtureId = sampleScores.FixtureId
+      seq = sampleScores.Update?.Seq ?? sampleScores.Seq
     }
 
-    const computeBudgetIx = anchor.web3.ComputeBudgetProgram.setComputeUnitLimit({ 
-      units: 1_400_000 
-    })
+    console.log(`\n[${name}] Booking fixture ${fixtureId}`)
+    const booking = await users.bookFixture(userProgram, tokenMint, fixtureId, name)
+    if (booking.status === "no-quote") {
+      throw new Error(`Fixture ${fixtureId} is not bookable (no odds and scores, or its competition has no price)`)
+    }
+    if (booking.status === "booked") {
+      console.log(`[${name}] Booked for ${booking.price} TxL base units: ${booking.signature}`)
+    } else {
+      console.log(`[${name}] Fixture ticket already held`)
+    }
+
+    await getScoresSnapshot(fixtureId, Date.now())
+
+    const fixtureTicket = users.fixtureTicketPda(program.programId, userKey, fixtureId)
 
     // Define unified strategies
     const strategy1To3Plus: NDimensionalStrategy = {
@@ -292,59 +271,6 @@ async function main() {
       discretePredicates: []
     }
 
-    // Execute V2 legacy validations
-    console.log(`\n[${name}] Initiating V2 validations`)
-
-    const urlV2 = `/scores/stat-validation?fixtureId=${fixtureId}&seq=${seq}&statKeys=1002,1007,2007,1`;
-    const resV2 = await users.apiClient.get(urlV2, { userName: name } as any)
-    const valV2 = resV2.data
-
-    const targetTs = valV2.summary.updateStats.minTimestamp
-    const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000))
-    const [dailyScoresPda] = anchor.web3.PublicKey.findProgramAddressSync(
-      [Buffer.from("daily_scores_roots"), new BN(epochDay).toBuffer("le", 2)],
-      program.programId
-    )
-
-    const payloadV2: StatValidationInput = {
-      ts: new BN(targetTs),
-      fixtureSummary: {
-        fixtureId: new BN(valV2.summary.fixtureId),
-        updateStats: {
-          updateCount: valV2.summary.updateStats.updateCount,
-          minTimestamp: new BN(valV2.summary.updateStats.minTimestamp),
-          maxTimestamp: new BN(valV2.summary.updateStats.maxTimestamp),
-        },
-        eventsSubTreeRoot: Array.from(valV2.summary.eventStatsSubTreeRoot),
-      },
-      fixtureProof: mapProof(valV2.subTreeProof),
-      mainTreeProof: mapProof(valV2.mainTreeProof),
-      eventStatRoot: Array.from(valV2.eventStatRoot), 
-      stats: valV2.statsToProve.map((statObj: any, index: number) => ({
-        stat: statObj,
-        statProof: mapProof(valV2.statProofs[index])
-      }))
-    }
-
-    const payloadV2_2Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 2) }
-    const payloadV2_3Leg = { ...payloadV2, stats: payloadV2.stats.slice(0, 3) }
-
-    const runV2 = async (payload: any, strategy: any, label: string) => {
-      const isValid = await userProgram.methods
-        .validateStatV2(payload, strategy)
-        .accounts({ dailyScoresMerkleRoots: dailyScoresPda })
-        .preInstructions([computeBudgetIx])
-        .view()
-      console.log(`[${name}] V2 ${label}: ${isValid ? 'passed' : 'rejected'}`)
-    }
-
-    await runV2(payloadV2_2Leg, strategy1To3Plus, "1:3+ discrete")
-    await runV2(payloadV2_2Leg, strategyDraw, "Binary draw")
-    await runV2(payloadV2_3Leg, strategy3Leg, "Combined 3-leg")
-    await runV2(payloadV2, strategy4Leg, "Combined 4-leg")
-    await runV2(payloadV2_2Leg, strategyGeometric, "Geometric 2-leg")
-
-    // Execute V4 multiproof validations
     console.log(`\n[${name}] Initiating V4 validations`)
 
     const fetchV4Payload = async (keys: string) => {
@@ -352,91 +278,117 @@ async function main() {
       const res = await users.apiClient.get(url, { userName: name } as any)
       const response = res.data
 
-      const parseHash = (rawData: any) => {
-        if (typeof rawData === 'string') {
-          const buf = rawData.length === 64 ? Buffer.from(rawData, 'hex') : Buffer.from(rawData, 'base64')
-          return Array.from(buf)
-        }
-        return Array.from(rawData)
-      }
-
-      const mapProofNode = (node: any) => ({
-        hash: parseHash(node.hash),
-        isRightSibling: node.isRightSibling
-      })
-
-      const mappedPayload = {
+      // Staged on-chain by validate_fixture_for_tree; not part of the co-signed validate_stat_v4 payload
+      const treePayload = {
         ts: new BN(response.payload.ts),
-        fixtureSummary: {
+        summary: {
           fixtureId: new BN(response.payload.summary.fixtureId),
           updateStats: {
             updateCount: response.payload.summary.updateStats.updateCount,
             minTimestamp: new BN(response.payload.summary.updateStats.minTimestamp),
             maxTimestamp: new BN(response.payload.summary.updateStats.maxTimestamp),
           },
-          eventsSubTreeRoot: parseHash(response.payload.summary.eventStatsSubTreeRoot),
+          subTreeRoot: proof.parseHash(response.payload.summary.eventStatsSubTreeRoot),
         },
-        fixtureProof: response.payload.fixtureProof.map(mapProofNode),
-        mainTreeProof: response.payload.mainTreeProof.map(mapProofNode),
-        eventStatRoot: parseHash(response.payload.eventStatRoot), 
-        leaves: response.payload.leaves.map((leaf: any) => ({
-          stat: {
-            key: leaf.stat.key,
-            value: leaf.stat.value,
-            period: leaf.stat.period
-          },
-          statProof: leaf.statProof.map(mapProofNode)
-        })),
-        leafIndices: response.payload.leafIndices,
-        multiproofHashes: response.payload.multiproofHashes.map(mapProofNode),
+        mainTreeProof: response.payload.mainTreeProof.map(proof.parseProofNode),
       }
 
+      const common = {
+        ts: new BN(response.payload.ts),
+        fixtureProof: response.payload.fixtureProof.map(proof.parseProofNode),
+        eventStatRoot: proof.parseHash(response.payload.eventStatRoot),
+        leafIndices: response.payload.leafIndices,
+        multiproofHashes: response.payload.multiproofHashes.map(proof.parseProofNode),
+      }
+
+      // The payload is an enum: leaves with a `statProof` are V1, leaves with `isZero` are V2 (which may carry a rawMask)
+      const isV1 = response.payload.leaves.every((leaf: any) => leaf.statProof !== undefined)
+      const mappedPayload = isV1
+        ? {
+            v1: {
+              ...common,
+              leaves: response.payload.leaves.map((leaf: any) => ({
+                stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
+                statProof: leaf.statProof.map(proof.parseProofNode),
+              })),
+            },
+          }
+        : {
+            v2: {
+              ...common,
+              leaves: response.payload.leaves.map((leaf: any) => ({
+                stat: { key: leaf.stat.key, value: leaf.stat.value, period: leaf.stat.period },
+                isZero: leaf.isZero,
+              })),
+              rawMask: response.payload.rawMask ? proof.parseMask(response.payload.rawMask) : null,
+            },
+          }
+
       return {
+        treePayload,
         payload: mappedPayload,
-        signature: Array.from(Buffer.from(response.signature, 'base64'))
+        signature: response.signature as string
       }
     }
 
-    const oraclePublicKey = new PublicKey("QNvM25scLWmdkakdw7TtuAybp9YLfFrMcoz73HhLyxs");
-
     const runV4 = async (v4Data: any, strategy: any, label: string) => {
+      // A rawMask adds 512 bytes. Built from devnet proof data plus a mask, these payloads were 1066 bytes or more (2 to
+      // 4 legs), past the fixed 1000-byte buffer that Anchor 0.32 encodes types and instructions into (ERR_OUT_OF_RANGE),
+      // although they would fit a v1 transaction
+      if (v4Data.payload.v2?.rawMask) {
+        console.log(`[${name}] V4 ${label}: skipped, payload carries a 512-byte rawMask and is too large for Anchor's encoder`)
+        return
+      }
+
       // Encode payload to raw Borsh bytes
-      const serializedPayload = userProgram.coder.types.encode(
-        "statValidationInputV4",
+      const serializedPayload: Buffer = userProgram.coder.types.encode(
+        "statValidationPayload",
         v4Data.payload
       )
 
-      // Hash payload to compress Ed25519 message to 32 bytes
-      const payloadHash = createHash('sha256').update(serializedPayload).digest()
-      console.log("TS Borsh Length:   ", serializedPayload.length, "bytes")
-      console.log("TS SHA-256 Hash:    ", payloadHash.toString('hex'))
+      const ed25519Ix = users.backendCosignInstruction(serializedPayload, v4Data.signature)
 
-      // Decode base64 signature string from API
-      const signatureBuffer = typeof v4Data.signature === 'string' 
-        ? Buffer.from(v4Data.signature, 'base64') 
-        : Buffer.from(v4Data.signature)
-
-      // Construct Ed25519 instruction using 32-byte hash
-      const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
-        publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
-        message: payloadHash,
-        signature: signatureBuffer,
-      })
-
-      // Execute state mutating transaction via RPC
-      const txSignature = await userProgram.methods
-        .validateStatV4(v4Data.payload, strategy)
-        .accounts({ 
+      const ticket = users.workerTicketPda(program.programId, userKey, SCORES_DOMAIN, WORKER_ID)
+      const validateIx = await userProgram.methods
+        .validateStatV4(WORKER_ID, v4Data.payload, strategy)
+        .accounts({
           user: userKey,
-          userValidationState: userValidationStatePda,
-          oracleAuthority: oraclePublicKey,
+          ticket,
+          fixtureTicket,
           instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-          dailyScoresMerkleRoots: dailyScoresPda
         })
-        .preInstructions([computeBudgetIx, ed25519Ix])
-        .rpc()
+        .instruction()
 
-      console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
+      const dailyScoresPda = users.dailyRootsPda(program.programId, "daily_scores_roots", v4Data.treePayload.ts.toNumber())
+
+      await userProgram.methods
+        .validateFixtureForTree({ ...v4Data.treePayload, domain: SCORES_DOMAIN, workerId: WORKER_ID })
+        .accounts({
+          payer: userKey,
+          ticket,
+          dailyMerkleRoots: dailyScoresPda,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        // sendV1Transaction simulates at "confirmed", so the staged ticket must be visible there.
+        // Options replace the provider's rather than merge, so preflightCommitment (also used for the blockhash) is set too.
+        .rpc({ commitment: "confirmed", preflightCommitment: "confirmed" })
+
+      try {
+        // Legacy and v0 transactions stop at 1232 bytes. The payload's proofs grow with the number of legs and differ
+        // between updates, so larger validations exceed that (of two devnet updates measured, 4 legs did on both and
+        // 3 legs on one); send the validation as a v1 transaction, which allows 4096
+        const txSignature = await users.sendV1Transaction(connection, user.user, [ed25519Ix, validateIx])
+
+        console.log(`[${name}] V4 ${label}: executed with signature ${txSignature}`)
+      } finally {
+        // Reclaims the worker ticket's rent and frees the slot for the next validation
+        // A failed close is logged so it doesn't replace the validation error
+        await userProgram.methods
+          .closeWorkerTicket(SCORES_DOMAIN, WORKER_ID)
+          .accounts({ payer: userKey, ticket })
+          .rpc()
+          .catch(closeError => console.error("close_worker_ticket failed:", closeError))
+      }
     }
 
     // Fetch dedicated multiproof payloads mapped to strategy leg counts
@@ -447,7 +399,7 @@ async function main() {
     console.log(payloadPrefix_2Leg, inspectedPayload_2Leg)
 
     const payloadV4_3Leg = await fetchV4Payload("1002,1007,2007")
-    const payloadV4_4Leg = await fetchV4Payload("1002,1007,2007,1")
+    const payloadV4_4Leg = await fetchV4Payload(STAT_KEYS)
 
     const inspectedPayload_4Leg = inspect(payloadV4_4Leg, { depth: null, colors: true })
     const payloadPrefix_4Leg = `[${name}] payload:`
@@ -465,7 +417,7 @@ async function main() {
     for (const v of validations) {
       await runV4(v.payload, v.strategy, v.label)
       
-      // Delay execution to prevent 429 errors on free devnet nodes
+      // Delay execution to prevent 429 errors on free public RPC nodes
       await new Promise(resolve => setTimeout(resolve, 1500))
     }
 
@@ -554,7 +506,7 @@ async function main() {
 
     listenToScoresStream("1")
 
-    const waitDuration = 3601 * 1000
+    const waitDuration = users.streamTtlMs(3601)
     console.log(`Waiting for ${waitDuration / 1000} seconds for scores to go through...`)
     await new Promise(resolve => setTimeout(resolve, waitDuration))
 

@@ -1,6 +1,6 @@
 // Demonstrate
 // - subscription and data access targeting a service level ID with custom selectable league IDs up to the specified limit
-// - paid-for validation of odds using the validation credits
+// - booking a fixture and validating one of its odds updates on-chain (validate_fixture_for_tree -> validate_odds_v4 -> close_worker_ticket)
 
 // Run with
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_granular_custom_demo_v4.ts
@@ -11,21 +11,25 @@ import TxoracleJson from "../idl/txoracle.json";
 import { Txoracle } from "../types/txoracle";
 import * as config from '../common/config';
 import * as users from '../common/users';
+import * as proof from '../common/proof';
 import axios from "axios";
-import { AddressLookupTableProgram, ComputeBudgetProgram, Ed25519Program, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
+import { AddressLookupTableProgram, ComputeBudgetProgram, PublicKey, SYSVAR_INSTRUCTIONS_PUBKEY, Transaction, TransactionMessage, VersionedTransaction } from "@solana/web3.js";
 import {EventSource} from 'eventsource'
 import { BN } from "bn.js";
 import { IdlTypes } from "@coral-xyz/anchor"
-import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { createHash } from "crypto";
+
+// Client-chosen worker ticket slot; odds use a different domain than the scores script
+const ODDS_DOMAIN = 0
+const WORKER_ID = 0
 
 type OracleTypes = IdlTypes<Txoracle>
 
 // Export odds validation IDL types
 export type OddsValidationInputV4 = OracleTypes["oddsValidationInputV4"]
 export type Odds = OracleTypes["odds"]
-export type OddsBatchSummary = OracleTypes["oddsBatchSummary"]
-export type OddsUpdateStats = OracleTypes["oddsUpdateStats"]
+export type BatchSummary = OracleTypes["batchSummary"]
+export type UpdateStats = OracleTypes["updateStats"]
 
 // Define strict type for raw backend API response
 export interface ApiProofNode {
@@ -106,14 +110,13 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   );
-  console.log("API Token:", users.authState.apiToken);
 
   // Upgrade the provider to use the real funded Trader wallet
   const userWallet = new anchor.Wallet(user.user)
   const userProvider = new anchor.AnchorProvider(connection, userWallet, anchor.AnchorProvider.defaultOptions())
   
   // Create a new program instance permanently bound to Trader A
-  const userProgram = new anchor.Program(program.idl, userProvider)
+  const userProgram = new anchor.Program<Txoracle>(program.idl as Txoracle, userProvider)
   
   try {
     const awesomeUrl = `${config.API_BASE_URL}/fixtures/snapshot?competitionId=8`;
@@ -179,32 +182,42 @@ async function main() {
     }
   }
 
-  // Calculate the start of the last fully closed 5-minute interval
+  // Odds validation needs a booked fixture, and only fixtures in the schedule are bookable.
+  // afterTs defaults to now, which would drop fixtures already under way, so go back almost the 2 weeks allowed.
+  // The server measures the 2 weeks from when the request arrives, so exactly 2 weeks is already too early.
   const INTERVAL_MS = 5 * 60 * 1000;
+  const HOUR_MS = 60 * 60 * 1000;
+  const DAY_MS = 24 * HOUR_MS;
+  const TWO_WEEKS_MS = 14 * DAY_MS;
   const now = Date.now();
-  const currentIntervalStart = Math.floor(now / INTERVAL_MS) * INTERVAL_MS;
-  const lastIntervalStart = currentIntervalStart - INTERVAL_MS;
+  const scheduleResponse = await users.apiClient.get<{ FixtureId: number }[]>("/fixtures-schedule", {
+    params: { afterTs: now - TWO_WEEKS_MS + HOUR_MS },
+  });
+  const bookableFixtureIds = new Set(scheduleResponse.data.map(f => f.FixtureId));
 
-  // Derive the exact path parameters required by the API
-  const targetDate = new Date(lastIntervalStart);
-  const epochDay = Math.floor(lastIntervalStart / (24 * 60 * 60 * 1000));
-  const hourOfDay = targetDate.getUTCHours(); // Must be UTC to align with epoch timing
-  const interval = Math.floor(targetDate.getUTCMinutes() / 5);
+  // Walk back from the last fully closed 5-minute interval until an update for a bookable fixture turns up
+  let intervalStart = Math.floor(now / INTERVAL_MS) * INTERVAL_MS - INTERVAL_MS;
+  let sampleOdds: any;
+  let epochDay = 0, hourOfDay = 0, interval = 0;
+  for (; !sampleOdds && intervalStart >= now - TWO_WEEKS_MS; intervalStart -= INTERVAL_MS) {
+    const targetDate = new Date(intervalStart);
+    epochDay = Math.floor(intervalStart / DAY_MS);
+    hourOfDay = targetDate.getUTCHours(); // Must be UTC to align with epoch timing
+    interval = Math.floor(targetDate.getUTCMinutes() / 5);
 
-  console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
-
-  // Fetch the odds updates using the time-based path parameters
-  // (Assuming apiClient handles the /api base path automatically)
-  const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
-  const updates = updatesResponse.data;
-  console.log(updates.data);
-
-  if (!updates || updates.length === 0) {
-    throw new Error(`No odds updates found for interval ${interval} on hour ${hourOfDay}. Wait for more data to be published.`);
+    console.log(`Fetching odds updates for Epoch Day: ${epochDay}, Hour: ${hourOfDay}, Interval: ${interval}`);
+    const updatesResponse = await users.apiClient.get(`/odds/updates/${epochDay}/${hourOfDay}/${interval}`);
+    const updates = updatesResponse.data;
+    if (!Array.isArray(updates)) {
+      throw new Error(`Unexpected GET /odds/updates/${epochDay}/${hourOfDay}/${interval} response (HTTP ${updatesResponse.status}): ${JSON.stringify(updates)}`);
+    }
+    sampleOdds = updates.find(u => bookableFixtureIds.has(u.FixtureId ?? u.fixtureId));
   }
-
-  // Because the endpoint returns all updates in that interval, we can just grab the very first one
-  const sampleOdds = updates[0];
+  if (!sampleOdds) {
+    throw new Error(
+      `No odds update for a bookable fixture within the last 2 weeks (${bookableFixtureIds.size} fixtures in GET /fixtures-schedule).`
+    );
+  }
   const targetMessageId = sampleOdds.MessageId || sampleOdds.messageId;
   const targetTimestamp = Number(sampleOdds.Ts || sampleOdds.ts);
   const targetFixtureId = sampleOdds.FixtureId || sampleOdds.fixtureId;
@@ -226,25 +239,40 @@ async function main() {
         },
       });
       const v4Data = vResponse.data;
-      const payload = v4Data.payload;
+      const payload = v4Data?.payload;
+      if (!payload?.summary || !payload.oddsSnapshot) {
+        throw new Error(
+          `Unexpected /odds/validation-v4 response (HTTP ${vResponse.status}) for messageId ${targetMessageId}, ts ${targetTimestamp}: ${JSON.stringify(v4Data)}`
+        );
+      }
 
-      // Map JSON payload directly from the response wrapper
+      const oddsSnapshot: Odds = {
+        fixtureId: new BN(payload.oddsSnapshot.FixtureId),
+        messageId: payload.oddsSnapshot.MessageId,
+        ts: new BN(payload.oddsSnapshot.Ts),
+        bookmaker: payload.oddsSnapshot.Bookmaker,
+        bookmakerId: payload.oddsSnapshot.BookmakerId,
+        superOddsType: payload.oddsSnapshot.SuperOddsType,
+        gameState: payload.oddsSnapshot.GameState || null,
+        inRunning: payload.oddsSnapshot.InRunning ?? false,
+        marketParameters: payload.oddsSnapshot.MarketParameters || null,
+        marketPeriod: payload.oddsSnapshot.MarketPeriod || null,
+        priceNames: payload.oddsSnapshot.PriceNames || [],
+        prices: payload.oddsSnapshot.Prices || [],
+      };
+
+      // The co-signed payload carries the leaf hash, not the odds themselves
       const mappedPayload: OddsValidationInputV4 = {
         ts: new BN(payload.ts),
-        oddsSnapshot: {
-          fixtureId: new BN(payload.oddsSnapshot.FixtureId),
-          messageId: payload.oddsSnapshot.MessageId,
-          ts: new BN(payload.oddsSnapshot.Ts),
-          bookmaker: payload.oddsSnapshot.Bookmaker,
-          bookmakerId: payload.oddsSnapshot.BookmakerId,
-          superOddsType: payload.oddsSnapshot.SuperOddsType,
-          gameState: payload.oddsSnapshot.GameState || null,
-          inRunning: payload.oddsSnapshot.InRunning ?? false,
-          marketParameters: payload.oddsSnapshot.MarketParameters || null,
-          marketPeriod: payload.oddsSnapshot.MarketPeriod || null,
-          priceNames: payload.oddsSnapshot.PriceNames || [],
-          prices: payload.oddsSnapshot.Prices || [],
-        },
+        oddsLeafHash: Array.from(createHash('sha256').update(userProgram.coder.types.encode("odds", oddsSnapshot)).digest()),
+        subTreeProof: proof.parseOddsProofNodes(payload.subTreeProof),
+      };
+
+      // Staged on-chain by validate_fixture_for_tree against the interval's daily batch roots
+      const treePayload = {
+        ts: new BN(payload.ts),
+        domain: ODDS_DOMAIN,
+        workerId: WORKER_ID,
         summary: {
           fixtureId: new BN(payload.summary.fixtureId),
           updateStats: {
@@ -252,16 +280,9 @@ async function main() {
             minTimestamp: new BN(payload.summary.updateStats.minTimestamp),
             maxTimestamp: new BN(payload.summary.updateStats.maxTimestamp),
           },
-          oddsSubTreeRoot: Array.from(payload.summary.oddsSubTreeRoot)
+          subTreeRoot: Array.from(payload.summary.oddsSubTreeRoot),
         },
-        subTreeProof: payload.subTreeProof.map((node: any) => ({
-          hash: Array.from(node.hash),
-          isRightSibling: node.isRightSibling
-        })),
-        mainTreeProof: payload.mainTreeProof.map((node: any) => ({
-          hash: Array.from(node.hash),
-          isRightSibling: node.isRightSibling
-        }))
+        mainTreeProof: proof.parseOddsProofNodes(payload.mainTreeProof),
       };
 
       // Encode payload to raw Borsh bytes
@@ -270,197 +291,164 @@ async function main() {
         mappedPayload
       )
 
-      // Hash payload to compress Ed25519 message to 32 bytes
-      const payloadHash = createHash('sha256').update(serializedPayload).digest()
-      console.log("TS Borsh Length:   ", serializedPayload.length, "bytes")
-      console.log("TS SHA-256 Hash:    ", payloadHash.toString('hex'))
+      const ed25519Ix = users.backendCosignInstruction(serializedPayload, v4Data.signature)
 
-      // Decode base64 signature string from API
-      const signatureBuffer = typeof v4Data.signature === 'string' 
-        ? Buffer.from(v4Data.signature, 'base64') 
-        : Buffer.from(v4Data.signature)
-
-      // Construct Ed25519 instruction using 32-byte hash
-      const ed25519Ix = Ed25519Program.createInstructionWithPublicKey({
-        publicKey: config.BACKEND_ADMIN_PUBKEY.toBytes(),
-        message: payloadHash,
-        signature: signatureBuffer,
-      })
-
-      // Derive daily batch roots PDA
-      const epochDay = Math.floor(mappedPayload.ts.toNumber() / (24 * 60 * 60 * 1000))
-      const [dailyBatchRootsPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("daily_batch_roots"),
-          new BN(epochDay).toArrayLike(Buffer, "le", 2),
-        ],
-        userProgram.programId
-      )
-
-      // Resolve the user public key to satisfy strict TypeScript definitions
+      const dailyBatchRootsPda = users.dailyRootsPda(userProgram.programId, "daily_batch_roots", payload.ts)
       const userKey = userProgram.provider.publicKey!
+      const ticketPda = users.workerTicketPda(userProgram.programId, userKey, ODDS_DOMAIN, WORKER_ID)
+      const fixtureTicketPda = users.fixtureTicketPda(userProgram.programId, userKey, payload.summary.fixtureId)
 
-      // Derive user validation state PDA
-      const [userValidationStatePda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("user_state"), userKey.toBuffer()],
-        userProgram.programId
-      )
+      // Odds are only validatable for a booked fixture
+      console.log(`Booking fixture ${payload.summary.fixtureId}...`)
+      const booking = await users.bookFixture(userProgram, tokenMint, payload.summary.fixtureId, name)
+      if (booking.status === "no-quote") {
+        throw new Error(`Fixture ${payload.summary.fixtureId} is not bookable (no odds and scores, or its competition has no price)`)
+      }
+      console.log(booking.status === "booked" ? `Booked: ${booking.signature}` : "Fixture ticket already held")
 
-      // Derive token treasury PDA
-      const [tokenTreasuryPda] = PublicKey.findProgramAddressSync(
-        [Buffer.from("token_treasury_v2")],
-        userProgram.programId
-      )
-
-      // Derive user token account
-      const userTokenAccount = getAssociatedTokenAddressSync(
-        tokenMint,
-        userKey,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      )
-      
-      // Derive token treasury vault
-      const tokenTreasuryVault = getAssociatedTokenAddressSync(
-        tokenMint,
-        tokenTreasuryPda,
-        true,
-        TOKEN_2022_PROGRAM_ID
-      )
-
-      // Purchase 1 validation credit
-      console.log("Purchasing validation credits...")
+      console.log("Staging worker ticket...")
       await userProgram.methods
-        .purchaseValidationCredits(1)
+        .validateFixtureForTree(treePayload)
         .accounts({
-          user: userKey,
-          userValidationState: userValidationStatePda,
-          tokenMint: tokenMint,
-          userTokenAccount: userTokenAccount,
-          tokenTreasuryVault: tokenTreasuryVault,
-          tokenTreasuryPda: tokenTreasuryPda,
-          tokenProgram: TOKEN_2022_PROGRAM_ID,
+          payer: userKey,
+          ticket: ticketPda,
+          dailyMerkleRoots: dailyBatchRootsPda,
           systemProgram: anchor.web3.SystemProgram.programId,
-          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         })
         .rpc()
 
-      // Prepare compute budget instruction
-      const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
-        units: 500000, 
-      })
-
-      console.log("Executing V4 odds validation on-chain...")
-
-      // Get the raw validation instruction instead of executing rpc
-      const validateIx = await userProgram.methods
-        .validateOddsV4(mappedPayload)
-        .accounts({ 
-          user: userKey,
-          userValidationState: userValidationStatePda,
-          instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-          dailyOddsMerkleRoots: dailyBatchRootsPda
+      try {
+        // Prepare compute budget instruction
+        const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+          units: 500000, 
         })
-        .instruction()
 
-      // Extract funded keypair directly from active session
-      const signer = user.user
-      const payerPubkey = signer.publicKey
+        // Get the raw validation instruction instead of executing rpc
+        const validateIx = await userProgram.methods
+          .validateOddsV4(WORKER_ID, mappedPayload)
+          .accounts({ 
+            user: userKey,
+            ticket: ticketPda,
+            fixtureTicket: fixtureTicketPda,
+            instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+          })
+          .instruction()
 
-      // Fetch confirmed slot and step backward to guarantee sysvar presence
-      const currentSlot = await userProvider.connection.getSlot("confirmed")
-      const slot = currentSlot - 10
+        // Extract funded keypair directly from active session
+        const signer = user.user
+        const payerPubkey = signer.publicKey
 
-      // Create address lookup table
-      const [lookupTableIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
-        authority: payerPubkey,
-        payer: payerPubkey,
-        recentSlot: slot,
-      })
+        // Fetch confirmed slot and step backward to guarantee sysvar presence
+        const currentSlot = await userProvider.connection.getSlot("confirmed")
+        const slot = currentSlot - 10
 
-      // Store static accounts in lookup table
-      const extendLookupTableIx = AddressLookupTableProgram.extendLookupTable({
-        payer: payerPubkey,
-        authority: payerPubkey,
-        lookupTable: lookupTableAddress,
-        addresses: [
-          payerPubkey,
-          userValidationStatePda,
-          SYSVAR_INSTRUCTIONS_PUBKEY,
-          dailyBatchRootsPda,
-          userProgram.programId,
-          ComputeBudgetProgram.programId
-        ],
-      })
+        // Create address lookup table
+        const [lookupTableIx, lookupTableAddress] = AddressLookupTableProgram.createLookupTable({
+          authority: payerPubkey,
+          payer: payerPubkey,
+          recentSlot: slot,
+        })
 
-      // Explicitly set the fee payer to the funded account
-      const altTx = new Transaction().add(lookupTableIx, extendLookupTableIx)
-      altTx.feePayer = payerPubkey
+        // Store static accounts in lookup table
+        const extendLookupTableIx = AddressLookupTableProgram.extendLookupTable({
+          payer: payerPubkey,
+          authority: payerPubkey,
+          lookupTable: lookupTableAddress,
+          addresses: [
+            payerPubkey,
+            ticketPda,
+            fixtureTicketPda,
+            SYSVAR_INSTRUCTIONS_PUBKEY,
+            userProgram.programId,
+            ComputeBudgetProgram.programId
+          ],
+        })
 
-      console.log("Creating address lookup table...")
+        // Explicitly set the fee payer to the funded account
+        const altTx = new Transaction().add(lookupTableIx, extendLookupTableIx)
+        altTx.feePayer = payerPubkey
 
-      // Submit lookup transaction using the specific user provider
-      await userProvider.sendAndConfirm(altTx, [signer])
-      
-      console.log("Waiting for address lookup table activation...")
+        console.log("Creating address lookup table...")
 
-      // Poll network until lookup table is fully initialized and populated
-      let lookupTableAccount = null
-      let retries = 0
-      
-      // Increased to 25 to account for localnet finalization times (~12-15 seconds)
-      while (retries < 25) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        // Submit lookup transaction using the specific user provider
+        await userProvider.sendAndConfirm(altTx, [signer])
         
-        // Fetch with 'finalized' to ensure the simulation bank will absolutely recognize it
-        const response = await userProvider.connection.getAddressLookupTable(
-          lookupTableAddress, 
-          { commitment: "finalized" }
-        )
+        console.log("Waiting for address lookup table activation...")
+
+        // Poll network until lookup table is fully initialized and populated
+        let lookupTableAccount = null
+        let retries = 0
         
-        // Ensure the account exists AND the addresses have been successfully written to it
-        if (response.value && response.value.state.addresses.length > 0) {
-          lookupTableAccount = response.value
-          break
+        // Increased to 25 to account for localnet finalization times (~12-15 seconds)
+        while (retries < 25) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Fetch with 'finalized' to ensure the simulation bank will absolutely recognize it
+          const response = await userProvider.connection.getAddressLookupTable(
+            lookupTableAddress, 
+            { commitment: "finalized" }
+          )
+          
+          // Ensure the account exists AND the addresses have been successfully written to it
+          if (response.value && response.value.state.addresses.length > 0) {
+            lookupTableAccount = response.value
+            break
+          }
+          retries++
         }
-        retries++
+
+        if (!lookupTableAccount) {
+          throw new Error("Address lookup table failed to activate within the timeout period")
+        }
+
+        console.log("Executing V4 odds validation on-chain...")
+        
+        // Compile and send final versioned transaction
+        const latestBlockhash = await userProvider.connection.getLatestBlockhash()
+        const messageV0 = new TransactionMessage({
+          payerKey: payerPubkey,
+          recentBlockhash: latestBlockhash.blockhash,
+          instructions: [computeBudgetIx, ed25519Ix, validateIx],
+        }).compileToV0Message([lookupTableAccount])
+
+        const v0Tx = new VersionedTransaction(messageV0)
+        v0Tx.sign([signer])
+
+        // Send transaction
+        const txSignature = await userProvider.connection.sendTransaction(v0Tx)
+        // The close below must not land before the validation does
+        const confirmation = await userProvider.connection.confirmTransaction(
+          { signature: txSignature, ...latestBlockhash },
+          "confirmed"
+        )
+        if (confirmation.value.err) {
+          throw new Error(`validate_odds_v4 failed: ${JSON.stringify(confirmation.value.err)}`)
+        }
+        console.log(`Odds validation V4 executed with signature ${txSignature}`)
+
+        // // Execute state mutating transaction via RPC
+        // console.log("Executing V4 odds validation on-chain...")
+        // const txSignature = await userProgram.methods
+        //   .validateOddsV4(WORKER_ID, mappedPayload)
+        //   .accounts({ 
+        //     user: userKey,
+        //     ticket: ticketPda,
+        //     fixtureTicket: fixtureTicketPda,
+        //     instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
+        //   })
+        //   .preInstructions([computeBudgetIx, ed25519Ix])
+        //   .rpc()
+
+        // console.log(`Odds validation V4 executed with signature ${txSignature}`)
+      } finally {
+        // Reclaims the worker ticket's rent and frees the slot
+        // A failed close is logged so it doesn't replace the validation error
+        await userProgram.methods
+          .closeWorkerTicket(ODDS_DOMAIN, WORKER_ID)
+          .accounts({ payer: userKey, ticket: ticketPda })
+          .rpc()
+          .catch(closeError => console.error("close_worker_ticket failed:", closeError))
       }
-
-      if (!lookupTableAccount) {
-        throw new Error("Address lookup table failed to activate within the timeout period")
-      }
-
-      console.log("Executing V4 odds validation on-chain...")
-      
-      // Compile and send final versioned transaction
-      const latestBlockhash = await userProvider.connection.getLatestBlockhash()
-      const messageV0 = new TransactionMessage({
-        payerKey: payerPubkey,
-        recentBlockhash: latestBlockhash.blockhash,
-        instructions: [computeBudgetIx, ed25519Ix, validateIx],
-      }).compileToV0Message([lookupTableAccount])
-
-      const v0Tx = new VersionedTransaction(messageV0)
-      v0Tx.sign([signer])
-
-      // Send transaction
-      const txSignature = await userProvider.connection.sendTransaction(v0Tx)
-      console.log(`Odds validation V4 executed with signature ${txSignature}`)
-
-      // // Execute state mutating transaction via RPC
-      // console.log("Executing V4 odds validation on-chain...")
-      // const txSignature = await userProgram.methods
-      //   .validateOddsV4(mappedPayload)
-      //   .accounts({ 
-      //     user: userKey,
-      //     userValidationState: userValidationStatePda,
-      //     instructionsSysvar: SYSVAR_INSTRUCTIONS_PUBKEY,
-      //     dailyOddsMerkleRoots: dailyBatchRootsPda
-      //   })
-      //   .preInstructions([computeBudgetIx, ed25519Ix])
-      //   .rpc()
-
-      // console.log(`Odds validation V4 executed with signature ${txSignature}`)
 
     } catch (error) {
       console.error("Odds validation V4 failed:", error)
@@ -550,7 +538,7 @@ async function main() {
 
   // await listenToOddsStream("1")
 
-  const waitDuration = 3600 * 1000;
+  const waitDuration = users.streamTtlMs(3600);
   console.log(`Waiting for ${waitDuration / 1000} seconds for odds to go through...`);
   await new Promise(resolve => setTimeout(resolve, waitDuration));
 

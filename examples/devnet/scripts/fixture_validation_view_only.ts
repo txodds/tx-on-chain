@@ -46,15 +46,14 @@ async function main() {
     undefined,
     undefined   // Alternatively, use a working API Token here
   );
-  // console.log("API Token:", users.authState.apiToken);
 
   var sampleFixture: any = null
 
-  const scanLast12Hours = async (user: users.User) => {
+  const scanLast7Days = async (user: users.User) => {
     const MS_PER_HOUR = 3600000;
     const now = new Date();
 
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 24*7; i++) {
       const targetTime = new Date(now.getTime() - (i * MS_PER_HOUR));
       const epochDay = Math.floor(targetTime.getTime() / (24 * MS_PER_HOUR));     
       const hourOfDay = targetTime.getUTCHours();
@@ -84,7 +83,7 @@ async function main() {
       }
     }
   };
-  await scanLast12Hours(user);
+  await scanLast7Days(user);
 
   // Perform the fixture snapshot validation view call
   if (sampleFixture) {

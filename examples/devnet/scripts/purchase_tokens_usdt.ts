@@ -1,5 +1,5 @@
 // Run with
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
+// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
 
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
@@ -44,7 +44,6 @@ const provider = anchor.AnchorProvider.env();
   // Pass an empty object to force application/json content type
   const authResponse = await axios.post(JWT_URL, {});
   const jwt = authResponse.data.token;
-  console.log(`JWT: ${jwt}`);
 
   // Load the persistent keypair
   let user: anchor.web3.Keypair;
@@ -92,6 +91,7 @@ const provider = anchor.AnchorProvider.env();
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept-Encoding": "gzip",
         Authorization: `Bearer ${jwt}`
       },
       body: JSON.stringify({

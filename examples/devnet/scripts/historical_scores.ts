@@ -44,7 +44,6 @@ async function main() {
     undefined,  // Alternatively, use a working JWT Token here
     undefined   // Alternatively, use a working API Token here
   )
-  // console.log("API Token:", users.authState.apiToken);
 
   try {
     // Fetch the scores snapshot for a specific fixture
@@ -76,7 +75,7 @@ async function main() {
     // England v Argentina -- July 15, 2026
     // await fetchHistoricalScores(18241006);
     // Cincinnati Bengals v Detroit Lions -- July 13, 2026
-    await fetchHistoricalScores(18086637);    
+    await fetchHistoricalScores(config.SAMPLE_FIXTURES.historicalScores);
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
