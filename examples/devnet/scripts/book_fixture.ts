@@ -1,5 +1,3 @@
-// TODO: Does not seem to work at the quote getting stage
-
 // Demonstrate direct fixture booking with TXLINE targeting devnet
 // Run from the project root using this command
 // TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-2.json" ts-node examples/devnet/scripts/book_fixture.ts
