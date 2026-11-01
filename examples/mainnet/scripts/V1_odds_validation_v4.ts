@@ -277,6 +277,11 @@ async function main() {
 
   const authority = user.user;
 
+  // Only fixtures listed by the schedule can be booked; quotes for any other fixture return 404
+  const scheduleRes = await users.apiClient.get(`/fixtures-schedule`);
+  const bookableFixtureIds = new Set<number>((scheduleRes.data as any[]).map((f) => Number(f.FixtureId)));
+  console.log(`Bookable fixtures in schedule: ${bookableFixtureIds.size}`);
+
   // Scan recent intervals to locate finalized odds updates
   const intervalMs = 5 * 60 * 1000;
   const now = Date.now();
@@ -299,7 +304,9 @@ async function main() {
 
       if (!updates || updates.length === 0) continue;
 
-      const finalizedCandidates = [...updates].reverse();
+      const finalizedCandidates = [...updates]
+        .filter((u: any) => bookableFixtureIds.has(Number(u.FixtureId || u.fixtureId)))
+        .reverse();
 
       for (const sampleOdds of finalizedCandidates) {
         const targetMessageId = sampleOdds.MessageId || sampleOdds.messageId;
