@@ -1,8 +1,8 @@
 // TODO: Does not seem to work at the quote getting stage
 
-// Demonstrate direct fixture booking with TXLINE targeting devnet
-// Run script
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="mainnet/keys/testuser-wallet.json" ts-node mainnet/scripts/book_fixture.ts
+// Demonstrate direct fixture booking with TXLINE targeting mainnet
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/book_fixture.ts
 
 import TxoracleJson from "../../target/idl/txoracle.json";
 import * as config from '../common/config';
@@ -102,7 +102,7 @@ async function getAtaAddress(wallet: Address, mint: Address): Promise<Address> {
 }
 
 async function main() {
-  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.mainnet-beta.solana.com";
   const wsUrl = rpcUrl.replace("https://", "wss://").replace("http://", "ws://");
 
   // Initialize network clients

@@ -1,7 +1,7 @@
 // Demonstrate fixture validation by simulation with view call
 
-// Run from project root using this command and replace wallet location
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="mainnet/keys/testuser-wallet.json" ts-node mainnet/scripts/fixture_validation_view_only.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/fixture_validation_view_only.ts
 
 import TxoracleJson from "../idl/txoracle.json";
 import * as config from '../common/config';

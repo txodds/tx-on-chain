@@ -1,8 +1,8 @@
 // Validate stat v4 for scores record targeting mainnet
 // Direct fixture booking, data access, and stat validation
 
-// Run from project root using this command and replace wallet location
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="mainnet/keys/testuser-wallet.json" ts-node mainnet/scripts/V1_stat_validation_v4.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/V1_stat_validation_v4.ts
 
 import TxoracleJson from "../idl/txoracle.json";
 import * as users from '../common/users';

@@ -1,5 +1,5 @@
-// Run with
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="mainnet/keys/testuser-wallet.json" ts-node mainnet/scripts/show_pricing_matrix.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/show_pricing_matrix.ts
 
 import TxoracleJson from "../idl/txoracle.json";
 import * as fs from "fs";
@@ -62,8 +62,8 @@ const rowEncoder = getStructEncoder([
 ]);
 
 async function main() {
-  // Initialize connection using environment URL or devnet fallback
-  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  // Initialize connection using environment URL or mainnet fallback
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.mainnet-beta.solana.com";
   const rpc = createSolanaRpc(rpcUrl);
 
   // Establish WebSocket client for confirmation
@@ -82,7 +82,7 @@ async function main() {
   const programId = address(programIdString);
 
   // Load authority signer from wallet keypair file
-  const walletPath = process.env.ANCHOR_WALLET || "./devnet/keys/devnet-wallet-2.json";
+  const walletPath = process.env.ANCHOR_WALLET || "_keys/testuser-wallet.json";
   let authoritySigner;
   try {
     const secretKeyString = fs.readFileSync(walletPath, "utf8");

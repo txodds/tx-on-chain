@@ -1,7 +1,7 @@
 // Demonstrate token purchasing using USDT quote flow targeting mainnet
 
-// Run script
-// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet.solana.com" ANCHOR_WALLET="mainnet/keys/testuser-wallet.json" ts-node mainnet/scripts/purchase_tokens_usdt.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/purchase_tokens_usdt.ts
 
 import TxoracleJson from "../idl/txoracle.json";
 import * as users from '../common/users';
@@ -23,7 +23,7 @@ import {
 
 async function main() {
   // Initialize connection using environment URL or mainnet fallback
-  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.mainnet.solana.com";
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.mainnet-beta.solana.com";
   const rpc = createSolanaRpc(rpcUrl);
 
   // Establish WebSocket subscriptions client for native confirmation
@@ -37,7 +37,7 @@ async function main() {
   });
 
   // Resolve keypair path and runtime identity dynamically
-  const walletPath = process.env.ANCHOR_WALLET || "mainnet/keys/testuser-wallet.json";
+  const walletPath = process.env.ANCHOR_WALLET || "_keys/testuser-wallet.json";
   const name = "Trader A";
 
   // Pass empty object to force application/json content type
