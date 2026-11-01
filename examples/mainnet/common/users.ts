@@ -1,4 +1,5 @@
 import * as config from './config';
+import TxoracleJson from "../idl/txoracle.json";
 import * as fs from "fs";
 import axios from "axios";
 import nacl from "tweetnacl";
@@ -458,10 +459,10 @@ export function verifyTransactionSafety(
     throw new Error(`Safety check failed: Fee payer is not the expected buyer wallet (got ${feePayer}, expected ${expectedBuyer})`);
   }
 
-  // Ensure backend admin has already signed transaction
-  const hasAdminSignature = Object.keys(transaction.signatures || {}).some(
-    signerAddress => signerAddress !== expectedBuyer
-  );
+  // Ensure backend admin has already signed transaction. The signatures map lists every required signer,
+  // with null for one that has not signed yet, so check the admin's entry holds a signature.
+  const backendAdmin = (TxoracleJson as any).constants.find((c: any) => c.name === "BACKEND_ADMIN_PUBKEY").value;
+  const hasAdminSignature = Boolean(transaction.signatures?.[backendAdmin]);
   if (!hasAdminSignature) {
     throw new Error("Safety check failed: Missing backend admin signature");
   }
