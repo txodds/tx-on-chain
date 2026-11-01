@@ -4,7 +4,7 @@
 // Run from the project root using this command
 // TOKEN_MINT_ADDRESS=Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL ANCHOR_PROVIDER_URL="https://api.mainnet-beta.solana.com" ANCHOR_WALLET="_keys/testuser-wallet.json" ts-node examples/mainnet/scripts/book_fixture.ts
 
-import TxoracleJson from "../../target/idl/txoracle.json";
+import TxoracleJson from "../idl/txoracle.json";
 import * as config from '../common/config';
 import * as users from '../common/users';
 import * as utils from '../common/utils';
