@@ -1,33 +1,31 @@
-// Demo for fetching the full historical scores log for a specific fixture
+// Demonstrate fetching the full historical scores log for a specific fixture
 
-// Run from the project root using this command:
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/historical_scores.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-2.json" ts-node examples/devnet/scripts/historical_scores.ts
 
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
 import * as config from '../common/config';
 import * as users from '../common/users';
-import { PublicKey } from "@solana/web3.js";
 import axios from "axios";
+import {
+  address,
+  createSolanaRpc,
+} from "@solana/kit";
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  const rpc = createSolanaRpc(rpcUrl);
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  const programIdString = (TxoracleJson as any).address || (TxoracleJson as any).metadata?.address;
+  if (!programIdString) throw new Error("Program ID not found in IDL!");
+  const programId = address(programIdString);
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
-  const tokenMint = new PublicKey(mintAddress);
+  const tokenMint = address(mintAddress);
 
-  console.log("Program ID:", program.programId.toBase58());
-  console.log("Token Mint:", tokenMint.toBase58());
+  console.log("Program ID:", programId);
+  console.log("Token Mint:", tokenMint);
 
   const walletPath = process.env.ANCHOR_WALLET!;
   const name = "Trader A";
@@ -36,46 +34,45 @@ async function main() {
     name,
     walletPath,
     tokenMint,
-    connection,
-    program,
+    rpc,
+    programId,
     1,
     4,
     [],
-    undefined,  // Alternatively, use a working JWT Token here
-    undefined   // Alternatively, use a working API Token here
-  )
+    undefined,
+    undefined   
+  );
 
   try {
-    // Fetch the scores snapshot for a specific fixture
+    // Fetch scores snapshot for a specific fixture
     async function fetchHistoricalScores(fixtureId: number) {
-      let updateUrl = `${config.API_BASE_URL}/scores/historical/${fixtureId}`;
+      const updateUrl = `${config.API_BASE_URL}/scores/historical/${fixtureId}`;
       
       try {
-        const response = await users.apiClient.get(updateUrl)
+        const response = await users.apiClient.get(updateUrl);
         
         if (response.data.length > 0) {
-          console.log(`Scores updates found for fixtureId ${fixtureId}:`, response.data)
+          console.log(`Scores updates found for fixtureId ${fixtureId}:`, response.data);
         } else {
-          console.log(`Historical endpoint returned success, but data is empty.`);
+          console.log("Historical endpoint returned success, but data is empty.");
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          console.error("Request failed:", error.response?.data || error.message)
+          console.error("Request failed:", error.response?.data || error.message);
         } else {
-          console.error("Error:", error)
+          console.error("Error:", error);
         }
-        process.exit(1)
+        process.exit(1);
       }
     }
 
     // Norway v England -- July 11, 2026
-    // await fetchHistoricalScores(18202783); //18213979);
+    // await fetchHistoricalScores(18202783);
     // France v Spain -- July 14, 2026
     // await fetchHistoricalScores(18237038);
     // England v Argentina -- July 15, 2026
     // await fetchHistoricalScores(18241006);
-    // Cincinnati Bengals v Detroit Lions -- July 13, 2026
-    await fetchHistoricalScores(config.SAMPLE_FIXTURES.historicalScores);
+    await fetchHistoricalScores(18041503);    
 
   } catch (error) {
     if (axios.isAxiosError(error)) {
@@ -85,7 +82,6 @@ async function main() {
     }
     process.exit(1);
   }
-
 }
 
 main().then(

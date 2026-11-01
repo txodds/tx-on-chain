@@ -1,34 +1,31 @@
 // Demo subscription and data access for free tier (World Cup)
 
-// Run from the project root using this command BUT REPLACE THE LOCATION OF YOUR WALLET BELOW: ANCHOR_WALLET="./_keys/testuser-wallet-1.json"
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="./_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/subscription_free_tier.ts
+// Run from the project root using this command
+// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-2.json" ts-node examples/devnet/scripts/subscription_free_tier.ts
 
-import { Program } from "@coral-xyz/anchor";
-import { Txoracle } from "../types/txoracle";
 import TxoracleJson from "../idl/txoracle.json";
-import * as anchor from "@coral-xyz/anchor";
 import * as config from '../common/config';
 import * as users from '../common/users';
-import { PublicKey } from "@solana/web3.js";
+import { address, createSolanaRpc } from "@solana/kit";
 import axios from "axios";
-import { EventSource } from 'eventsource'
+import { EventSource } from 'eventsource';
 
 async function main() {
-  const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
+  // Initialize kit RPC client
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  const rpc = createSolanaRpc(rpcUrl);
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
-  const connection = provider.connection;
+  // Extract Program ID from IDL (supports both Anchor <=0.29 and >=0.30 formats)
+  const programIdString = (TxoracleJson as any).address || (TxoracleJson as any).metadata?.address;
+  if (!programIdString) throw new Error("Program ID not found in IDL!");
+  const programId = address(programIdString);
 
   const mintAddress = process.env.TOKEN_MINT_ADDRESS;
   if (!mintAddress) throw new Error("TOKEN_MINT_ADDRESS is not set!");
-  const tokenMint = new PublicKey(mintAddress);
+  const tokenMint = address(mintAddress);
 
-  console.log("Program ID:", program.programId.toBase58());
-  console.log("Token Mint:", tokenMint.toBase58());
+  console.log("Program ID:", programId);
+  console.log("Token Mint:", tokenMint);
 
   const walletPath = process.env.ANCHOR_WALLET!;
   const name = "Trader A";
@@ -37,23 +34,28 @@ async function main() {
     name,
     walletPath,
     tokenMint,
-    connection,
-    program,
+    rpc,
+    programId,
     1,
     4,
     [],
-    undefined,  // Alternatively, use a working JWT Token here
-    undefined   // Alternatively, use a working API Token here
-  )
+    undefined,  // Alternatively, use a working JWT token here
+    undefined   // Alternatively, use a working API token here
+  );
+  // console.log("API Token:", users.authState.apiToken);
 
   try {
-    const awesomeUrl = `/fixtures/snapshot?competitionId=72&startEpochDay=20624`;
+    const awesomeUrl = `/fixtures/snapshot?competitionId=500001&startEpochDay=20624`;
     const response = await users.apiClient.get(awesomeUrl);
 
     console.log("Premium Data Response:", response.data);
 
-    // Fetch the odds snapshot for a specific fixture
-    var sampleOdds: any = null
+    const response2 = await users.apiClient.get(awesomeUrl);
+
+    console.log("Premium Data Response 2:", response.data);
+
+    // Fetch odds snapshot for a specific fixture
+    var sampleOdds: any = null;
 
     async function getOddsSnapshot(fixtureId: number, asOf?: number) {
       const baseUrl = `/odds/snapshot/${fixtureId}`;
@@ -63,23 +65,23 @@ async function main() {
         const response = await users.apiClient.get(url);
 
         console.log(`Snapshot for fixture ${fixtureId}:`, response.data);
-        // Capture the first odds to use for validation
+        
+        // Capture first odds to use for validation
         if (!sampleOdds) {
           sampleOdds = response.data[0];
-          // console.log(`Captured sample for validation: MessageId ${sampleOdds.MessageId} @ Ts ${sampleOdds.Ts}`);
           console.log(`Captured sample for validation: ${sampleOdds}`);
         }
         return response.data;
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 403) {
-          console.error("Access denied: verify the league bundle or token status");
+          console.error("Access denied: verify league bundle or token status");
         } else {
           console.error("Failed to retrieve odds snapshot:", error);
         }
         throw error;
       }
     }
-    await getOddsSnapshot(config.SAMPLE_FIXTURES.freeTierOdds, Date.now());
+    await getOddsSnapshot(18086637, Date.now());
 
     async function listenToOddsStream(streamId: string): Promise<void> {
       console.log(`[Odds] Subscribing to all permitted odds updates...`);
@@ -88,7 +90,7 @@ async function main() {
 
       const eventSource = new EventSource(streamUrl, {
         fetch: async (input, init) => {
-          // Helper to execute the request with a specific token
+          // Helper to execute request with specific token
           const attemptFetch = (token: string) => 
             fetch(input, {
               ...init,
@@ -100,18 +102,18 @@ async function main() {
               },
             });
 
-            // Attempt connection using the current global token
-            let response = await attemptFetch(users.authState.jwt);
-            // If rejected due to expiration, pause the stream builder, renew, and retry
-            if (response.status === 403 || response.status === 401) {
-              console.log(`[Odds - ${streamId}] SSE connection rejected. Renewing JWT...`);
-              const newJwt = await users.renewJwt();
-              response = await attemptFetch(newJwt);
-            }
+          // Attempt connection using current global token
+          let response = await attemptFetch(users.authState.jwt);
+          
+          // If rejected due to expiration, pause stream builder, renew, and retry
+          if (response.status === 403 || response.status === 401) {
+            console.log(`[Odds - ${streamId}] SSE connection rejected. Renewing JWT...`);
+            const newJwt = await users.renewJwt();
+            response = await attemptFetch(newJwt);
+          }
 
-            return response;
-
-          },
+          return response;
+        },
       });
 
       // Process incoming server sent events
@@ -119,9 +121,9 @@ async function main() {
         console.log(`[Odds - ${streamId}] Received payload:`, event.data);
       };
       
-      // Log when the connection opens
+      // Log when connection opens
       eventSource.onopen = () => {
-        console.log(`[Odds - ${streamId}] Stream connection opened.`);
+        console.log(`[Odds - ${streamId}] Stream connection opened`);
       };
 
       // Log any connection errors
@@ -131,10 +133,10 @@ async function main() {
     }
 
     // Execute with unique identifiers
-    await Promise.all([
-      listenToOddsStream('Instance A'),
-      listenToOddsStream('Instance B')
-    ]);
+    // await Promise.all([
+    //   listenToOddsStream('Instance A'),
+    //   listenToOddsStream('Instance B')
+    // ]);
 
     const waitDuration = 3600 * 1000;
     console.log(`Waiting for ${waitDuration / 1000} seconds for odds to go through...`);
