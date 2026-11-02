@@ -698,13 +698,18 @@ async function main() {
 
     await runV4(payloadV4_2Leg, strategyGeometric, "Geometric 2-leg");
 
+    // Calibrate the next three strategies to the proven values, so each should return true
+    const provenLeaves = (payloadV4_2Leg.payload as any).leaves;
+    const statA = Number(provenLeaves[0].stat.value);
+    const statB = Number(provenLeaves[1].stat.value);
+
     // Evaluate calibrated discrete strategy
     const winningDiscrete: NDimensionalStrategy = {
       geometricTargets: [],
       distancePredicate: null,
       discretePredicates: [
-        { single: { index: 0, predicate: { threshold: 9, comparison: { equalTo: {} } } } },
-        { single: { index: 1, predicate: { threshold: 2, comparison: { equalTo: {} } } } }
+        { single: { index: 0, predicate: { threshold: statA, comparison: { equalTo: {} } } } },
+        { single: { index: 1, predicate: { threshold: statB, comparison: { equalTo: {} } } } }
       ]
     };
 
@@ -718,7 +723,7 @@ async function main() {
             index_a: 0,
             index_b: 1,
             op: { subtract: {} },
-            predicate: { threshold: 7, comparison: { equalTo: {} } }
+            predicate: { threshold: statA - statB, comparison: { equalTo: {} } }
           }
         }
       ]
@@ -727,17 +732,17 @@ async function main() {
     // Evaluate calibrated geometric distance
     const winningGeometric: NDimensionalStrategy = {
       geometricTargets: [
-        { statIndex: 0, prediction: 10 },
-        { statIndex: 1, prediction: 2 }
+        { statIndex: 0, prediction: statA + 1 },
+        { statIndex: 1, prediction: statB }
       ],
       distancePredicate: { threshold: 3, comparison: { lessThan: {} } },
       discretePredicates: []
     };
 
-    await runV4(payloadV4_2Leg, winningDiscrete, "Calibrated discrete (9 == 9 && 2 == 2)");
+    await runV4(payloadV4_2Leg, winningDiscrete, `Calibrated discrete (${statA} == ${statA} && ${statB} == ${statB})`);
     await sleep(2000);
 
-    await runV4(payloadV4_2Leg, winningBinaryDiff, "Calibrated binary diff (9 - 2 == 7)");
+    await runV4(payloadV4_2Leg, winningBinaryDiff, `Calibrated binary diff (${statA} - ${statB} == ${statA - statB})`);
     await sleep(2000);
 
     await runV4(payloadV4_2Leg, winningGeometric, "Calibrated geometric (dist 1 < 3)");
