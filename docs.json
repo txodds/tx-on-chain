@@ -26,6 +26,7 @@
             "group": "Odds",
             "pages": [
               "documentation/odds/overview",
+              "documentation/odds/odds-fields",
               "documentation/odds/odds-coverage"
             ]
           },
@@ -52,6 +53,7 @@
             "pages": [
               "documentation/examples/fetching-snapshots",
               "documentation/examples/streaming-data",
+              "documentation/examples/booking-fixtures",
               "documentation/examples/onchain-validation",
               "documentation/examples/devnet-examples",
               "documentation/examples/troubleshooting"

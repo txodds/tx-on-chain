@@ -8,7 +8,7 @@ description: "Retrieve fixtures, odds, and scores data"
 </Info>
 
 <Info>
-**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
+**Prerequisites**: Complete [Quickstart activation](/documentation/quickstart) first. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`. For a fixture outside your subscription bundle, [book the fixture](/documentation/examples/booking-fixtures) first, or scores and odds requests return `403`.
 </Info>
 
 ## Fetch Fixtures Snapshot
@@ -65,6 +65,33 @@ const allFixtures = allFixturesResponse.data;
 console.log(`Retrieved ${allFixtures.length} total fixtures`);
 ```
 
+## Time Period Parameters
+
+The `updates` endpoints return the records published in one period, identified by path parameters. All three are in UTC.
+
+| Parameter | Range | Meaning |
+|-----------|-------|---------|
+| `epochDay` | `0` and up | Whole days since 1 January 1970 UTC: `Math.floor(timestampMs / 86_400_000)`. See [Epoch Day](/documentation/programs/addresses#epoch-day). |
+| `hourOfDay` | `0`–`23` | The UTC hour within that day. |
+| `interval` | `0`–`11` | The 5-minute slot within that hour: `Math.floor(utcMinutes / 5)`. Odds and scores only. |
+
+Odds and scores are published every 5 minutes, so their paths take all three: `/api/odds/updates/{epochDay}/{hourOfDay}/{interval}` and `/api/scores/updates/{epochDay}/{hourOfDay}/{interval}`. Fixtures are published hourly, so `/api/fixtures/updates/{epochDay}/{hourOfDay}` has no `interval`.
+
+Compute all three from one timestamp so they describe the same period:
+
+```typescript
+function periodOf(timestampMs: number) {
+  const date = new Date(timestampMs);
+  return {
+    epochDay: Math.floor(timestampMs / 86_400_000),
+    hourOfDay: date.getUTCHours(),
+    interval: Math.floor(date.getUTCMinutes() / 5),
+  };
+}
+
+periodOf(Date.UTC(2026, 10, 1, 15, 20)); // 1 Nov 2026 15:20 UTC -> { epochDay: 20758, hourOfDay: 15, interval: 4 }
+```
+
 ## Fetch Odds Snapshot
 
 Get odds data for a specific fixture or time period.
@@ -80,10 +107,8 @@ const fixtureOdds = fixtureOddsResponse.data;
 
 console.log(`Retrieved ${fixtureOdds.length} odds entries`);
 
-// Get odds for time period
-const epochDay = 20085;
-const hourOfDay = 15;
-const interval = 0;
+// Get odds published between 15:20 and 15:25 UTC on 1 November 2026
+const { epochDay, hourOfDay, interval } = periodOf(Date.UTC(2026, 10, 1, 15, 20));
 
 const updatesResponse = await httpClient.get(
   `/api/odds/updates/${epochDay}/${hourOfDay}/${interval}`
@@ -116,10 +141,8 @@ const liveScores = liveScoresResponse.data;
 
 console.log(`Retrieved ${liveScores.length} live scores updates`);
 
-// Get scores for time period
-const epochDay = 20085;
-const hourOfDay = 15;
-const interval = 0;
+// Get scores published between 15:20 and 15:25 UTC on 1 November 2026
+const { epochDay, hourOfDay, interval } = periodOf(Date.UTC(2026, 10, 1, 15, 20));
 
 const historicalUpdatesResponse = await httpClient.get(
   `/api/scores/updates/${epochDay}/${hourOfDay}/${interval}`

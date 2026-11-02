@@ -1,92 +1,70 @@
-// Run with
-// TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-1.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
+// Demonstrate token purchasing using USDT quote flow targeting devnet
 
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+// Run from the project root using this command
+// ANCHOR_PROVIDER_URL="https://api.devnet.solana.com" ANCHOR_WALLET="_keys/testuser-wallet-2.json" ts-node examples/devnet/scripts/purchase_tokens_usdt.ts
+
 import TxoracleJson from "../idl/txoracle.json";
-import {
-  TOKEN_2022_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountInstruction,
-} from "@solana/spl-token";
+import * as users from '../common/users';
+import { API_BASE_URL, JWT_URL } from '../common/config';
 import axios from "axios";
 import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import { Txoracle } from "../types/txoracle";
-import { API_BASE_URL, JWT_URL } from "../common/config";
-import * as users from '../common/users';
+import {
+  createSolanaRpc,
+  createSolanaRpcSubscriptions,
+  address,
+  createKeyPairSignerFromBytes,
+  getBase64Encoder,
+  getTransactionDecoder,
+  signTransaction,
+  sendAndConfirmTransactionFactory,
+  getSignatureFromTransaction,
+  getCompiledTransactionMessageDecoder
+} from "@solana/kit";
 
 async function main() {
-const provider = anchor.AnchorProvider.env();
-  anchor.setProvider(provider);
-  const connection = provider.connection;
+  // Initialize connection using environment URL or devnet fallback
+  const rpcUrl = process.env.ANCHOR_PROVIDER_URL || "https://api.devnet.solana.com";
+  const rpc = createSolanaRpc(rpcUrl);
 
-  const program = new Program<Txoracle>(
-    TxoracleJson as unknown as Txoracle,
-    provider
-  );
+  // Establish WebSocket subscriptions client for native confirmation
+  const wsUrl = rpcUrl.replace("https://", "wss://").replace("http://", "ws://");
+  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
 
-  const tokenMintAddress = process.env.TOKEN_MINT_ADDRESS;
-  if (!tokenMintAddress) throw new Error("TOKEN_MINT_ADDRESS not set");
-  const tokenMint = new anchor.web3.PublicKey(tokenMintAddress);
+  // Initialize transaction factory to bundle send and confirm steps
+  const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+    rpc,
+    rpcSubscriptions,
+  });
 
-  const walletPath = process.env.ANCHOR_WALLET;
-  if (!walletPath) throw new Error("Environment variable ANCHOR_WALLET is not set");
+  // Resolve keypair path and runtime identity dynamically
+  const walletPath = process.env.ANCHOR_WALLET || "_keys/testuser-wallet-2.json";
+  const name = "Trader A";
 
-  const keypairLocation = walletPath.startsWith("~")
-    ? path.join(os.homedir(), walletPath.slice(1))
-    : path.resolve(walletPath);
-
-  const name = path.basename(walletPath, ".json");
-
-  // Pass an empty object to force application/json content type
+  // Pass empty object to force application/json content type
   const authResponse = await axios.post(JWT_URL, {});
   const jwt = authResponse.data.token;
   console.log(`JWT: ${jwt}`);
 
-  // Load the persistent keypair
-  let user: anchor.web3.Keypair;
+  // Load persistent keypair
+  let userSigner;
   try {
-    const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
-    const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    user = anchor.web3.Keypair.fromSecretKey(secretKey);
-    console.log(`[${name}] Wallet loaded: ${user.publicKey.toBase58()}`);
+    const secretKeyString = fs.readFileSync(walletPath, "utf8");
+    const secretKey = new Uint8Array(JSON.parse(secretKeyString));
+    userSigner = await createKeyPairSignerFromBytes(secretKey);
+    console.log(`[${name}] Wallet loaded: ${userSigner.address}`);
   } catch (err) {
-    console.error(`[${name}] Failed to load keypair at ${keypairLocation}`);
+    console.error(`[${name}] Failed to load keypair at ${walletPath}`);
     throw err;
   }
 
-  // Derive associated token accounts
-  const userSubTokenAccount = getAssociatedTokenAddressSync(tokenMint, user.publicKey, false, TOKEN_2022_PROGRAM_ID);
-
-  console.log("Sub Token Mint:", tokenMint.toBase58());
-
-  // Check token associated token account
-  const tokenAccountInfo = await connection.getAccountInfo(userSubTokenAccount);
-  if (!tokenAccountInfo) {
-    console.log(`[${name}] Initializing new token ATA...`);
-    const tx = new anchor.web3.Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        user.publicKey,
-        userSubTokenAccount,
-        user.publicKey,
-        tokenMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
-    await anchor.web3.sendAndConfirmTransaction(connection, tx, [user]);
-    console.log(`[${name}] Token ATA created`);
-  }
-
-  // Acquire 50 TxLINE tokens and pay all necessary fees
-  // The amount passed is in whole TxLINE units
+  // Set purchase quantity in whole TxLINE units
   const txlineAmount = 50;
+  const programIdString = (TxoracleJson as any).address || (TxoracleJson as any).metadata?.address;
+  if (!programIdString) throw new Error("Program ID not found in IDL");
+  const programId = address(programIdString);
 
   try {
-    // Request transaction quote from the backend
+    // Request purchase quote from backend service
     console.log(`[${name}] Requesting purchase quote from backend...`);
     const quoteResponse = await fetch(`${API_BASE_URL}/guest/purchase/quote`, {
       method: "POST",
@@ -95,7 +73,7 @@ const provider = anchor.AnchorProvider.env();
         Authorization: `Bearer ${jwt}`
       },
       body: JSON.stringify({
-        buyerPubkey: user.publicKey.toBase58(),
+        buyerPubkey: userSigner.address,
         txlineAmount: txlineAmount
       })
     });
@@ -105,51 +83,65 @@ const provider = anchor.AnchorProvider.env();
       throw new Error(`Quote request failed: ${errorText}`);
     }
 
-    // Parse the quote response
+    // Parse inbound quote data
     const quoteData = await quoteResponse.json();
 
-    // Display the human readable pricing breakdown
+    // Log price breakdown metrics to console
     console.log(`[${name}] Quote received successfully`);
     console.log(` - Base Cost: ${quoteData.baseUsdtCost} USDT`);
     console.log(` - Premium Fee: ${quoteData.feeUsdtAmount} USDT`);
     console.log(` - Total to Charge: ${quoteData.totalUsdtCharged} USDT`);
 
-    // Extract the encoded string using the correct key from the console output
+    // Extract binary string payload
     const txBase64 = quoteData.transactionBase64;
+    const txBytes = getBase64Encoder().encode(txBase64);
+    const decodedTx = getTransactionDecoder().decode(txBytes);
 
-    // Deserialize the encoded transaction
-    const txBuffer = Buffer.from(txBase64, "base64");
+    // Decode compiled message to extract the original blockhash
+    const compiledMessage = getCompiledTransactionMessageDecoder().decode(decodedTx.messageBytes);
 
-    const transaction = anchor.web3.Transaction.from(txBuffer);
+    // Fetch latest blockhash to approximate expiration height
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
 
-    // Execute the zero trust safety check
+    // Inject lifetime constraint for confirmation tracking
+    const txWithLifetime = {
+      ...decodedTx,
+      lifetimeConstraint: {
+        blockhash: compiledMessage.lifetimeToken,
+        lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+      }
+    };
+
+    // Execute security verification rules
     console.log(`[${name}] Running local safety verification...`);
     users.verifyTransactionSafety(
-      transaction,
-      user.publicKey,
-      program,
-      new anchor.BN(txlineAmount)
+      txWithLifetime,
+      userSigner.address,
+      programId,
+      BigInt(txlineAmount)
     );
+    await users.verifyPurchaseAccounts(txWithLifetime, userSigner.address, programId);
     console.log(`[${name}] Transaction cryptographically verified and safe to sign`);
 
-    // Sign the transaction with the local bot wallet
+    // Sign transaction with local keypair
     console.log(`[${name}] Signing the transaction...`);
-    transaction.partialSign(user);
+    const signedTx = await signTransaction([userSigner.keyPair], txWithLifetime);
 
-    // Submit the fully signed transaction to the network
-    console.log(`[${name}] Broadcasting transaction...`);
-    const txSignature = await connection.sendRawTransaction(transaction.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: "confirmed"
-    });
+    // Broadcast signed transaction payload to cluster and await finality
+    console.log(`[${name}] Broadcasting transaction and waiting for confirmation...`);
 
-    // Confirm the transaction on the blockchain
-    await connection.confirmTransaction(txSignature, "confirmed");
+    // Suppress compiler warning due to void return type mismatch in SDK
+    // @ts-expect-error
+    await sendAndConfirmTransaction(signedTx, { commitment: "confirmed" });
+
+    // Extract transaction signature for logging
+    const txSignature = getSignatureFromTransaction(signedTx);
     console.log("M2M purchase successful");
     console.log("Transaction signature:", txSignature);
 
   } catch (error) {
     console.error("Purchase failed:", error);
+    process.exit(1);
   }
 }
 

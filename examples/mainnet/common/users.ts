@@ -1,21 +1,43 @@
-import * as anchor from "@coral-xyz/anchor";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  Account,
-  TOKEN_2022_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  getAccount,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token"
 import * as config from './config';
+import TxoracleJson from "../idl/txoracle.json";
 import * as fs from "fs";
 import axios from "axios";
-import { Txoracle } from "../types/txoracle";
 import nacl from "tweetnacl";
+import { createHash } from "crypto";
+import {
+  Address,
+  Rpc,
+  SolanaRpcApi,
+  KeyPairSigner,
+  createKeyPairSignerFromBytes,
+  address,
+  getProgramDerivedAddress,
+  getUtf8Encoder,
+  getAddressEncoder,
+  AccountRole,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+  signTransactionMessageWithSigners,
+  getBase64EncodedWireTransaction,
+  getStructEncoder,
+  getU8Encoder,
+  getU32Encoder,
+  getU16Encoder,
+  getU64Decoder,
+  getCompiledTransactionMessageDecoder,
+  decompileTransactionMessage,
+} from "@solana/kit";
+
+const TOKEN_2022_PROGRAM_ID = address("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
+const ASSOCIATED_TOKEN_PROGRAM_ID = address("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL");
+const SYSTEM_PROGRAM_ID = address("11111111111111111111111111111111");
 
 export type User = {
-  user: anchor.web3.Keypair,
-  userTokenAccount: Account | undefined
+  user: KeyPairSigner;
+  userTokenAccount: Address | undefined;
 }
 
 export type UserAuthState = {
@@ -25,17 +47,17 @@ export type UserAuthState = {
   refreshSubscribers: ((token: string) => void)[];
 };
 
-// Global fallback state populated by the first user for backwards compatibility
+// Populate global fallback state by first user for backward compatibility
 export const authState = {
-  apiToken: '', // Long-lived B2B token
-  jwt: ''        // Short-lived session token
+  apiToken: '', 
+  jwt: ''       
 };
 
-// Global locks for requests that do not specify a userName
+// Set global locks for requests that do not specify username
 let globalIsRefreshing = false;
 let globalRefreshSubscribers: ((token: string) => void)[] = [];
 
-// Map to handle concurrent multi-user states
+// Handle concurrent multi-user states
 export const userAuthMap = new Map<string, UserAuthState>();
 
 function onTokenRefreshed(name: string | undefined, newToken: string) {
@@ -61,7 +83,7 @@ export async function renewJwt(name?: string): Promise<string> {
   const logName = name || "Global";
   console.log(`[Auth] JWT expired or missing for ${logName}. Acquiring new guest session...`);
   
-  // Adjust the payload/headers if your /start endpoint requires the X-Api-Token
+  // Adjust payload or headers if endpoint requires X-Api-Token
   const response = await axios.post(config.JWT_URL);
   const newJwt = response.data.token;
 
@@ -69,7 +91,7 @@ export async function renewJwt(name?: string): Promise<string> {
     userAuthMap.get(name)!.jwt = newJwt;
   }
   
-  // Populate default global state if this is the first user or a global request
+  // Populate default global state if this is first user or global request
   if (!name || userAuthMap.size === 1) {
     authState.jwt = newJwt;
   }
@@ -81,7 +103,31 @@ export const apiClient = axios.create({
   baseURL: `${config.API_BASE_URL}`,
 });
 
-// Request interceptor: Always inject the latest tokens
+// Timing interceptor for apiClient
+apiClient.interceptors.request.use(config => {
+  (config as any).metadata = { start: Date.now() };
+  return config;
+});
+apiClient.interceptors.response.use(response => {
+  const config: any = response.config;
+  const start = config?.metadata?.start;
+  if (start) {
+    const dur = Date.now() - start;
+    const hdr = response.headers['x-response-time'] || response.headers['server-timing'] || '';
+    console.log(`[axios] ${config.method?.toUpperCase() || 'GET'} ${config.url} ${dur}ms status=${response.status} server=${hdr}`);
+  }
+  return response;
+}, error => {
+  const config: any = error.config;
+  const start = config?.metadata?.start;
+  if (start) {
+    const dur = Date.now() - start;
+    console.log(`[axios] ${config?.method?.toUpperCase() || 'GET'} ${config?.url} ${dur}ms error=${error.message}`);
+  }
+  return Promise.reject(error);
+});
+
+// Inject latest tokens via request interceptor
 apiClient.interceptors.request.use(config => {
   const name = (config as any).userName as string | undefined;
   const state = name ? userAuthMap.get(name) : undefined;
@@ -98,18 +144,18 @@ apiClient.interceptors.request.use(config => {
   return config;
 });
 
-// Response interceptor: Catch 401s and retry
+// Catch unauthorized errors and retry via response interceptor
 apiClient.interceptors.response.use(
-  (response) => response, // Pass through successful responses immediately
+  (response) => response, 
   async (error) => {
     const originalRequest = error.config;
     const name = (originalRequest as any).userName as string | undefined;
     const state = name ? userAuthMap.get(name) : undefined;
 
-    // Check if the specific user or global is currently refreshing
+    // Check if specific user or global is currently refreshing
     const isCurrentlyRefreshing = state ? state.isRefreshing : globalIsRefreshing;
 
-    // If we receive a 401 and have not already retried this specific request
+    // Retry specific request if we receive an unauthorized error
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -118,7 +164,7 @@ apiClient.interceptors.response.use(
         else globalIsRefreshing = true;
 
         try {
-          // Fetch the new token
+          // Fetch new token
           const newToken = await renewJwt(name);
           
           if (state) state.isRefreshing = false;
@@ -126,7 +172,7 @@ apiClient.interceptors.response.use(
           
           onTokenRefreshed(name, newToken);
           
-          // Retry the original request immediately
+          // Retry original request immediately
           return apiClient(originalRequest);
         } catch (refreshError) {
           if (state) state.isRefreshing = false;
@@ -136,7 +182,7 @@ apiClient.interceptors.response.use(
           return Promise.reject(refreshError);
         }
       } else {
-        // If another request is already fetching the token, wait in line, then retry
+        // Wait in line then retry if another request is fetching token
         return new Promise(resolve => {
           addRefreshSubscriber(name, (newToken) => {
             originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
@@ -151,33 +197,47 @@ apiClient.interceptors.response.use(
   }
 );
 
+async function getAtaAddress(owner: Address, mint: Address): Promise<Address> {
+  const [ata] = await getProgramDerivedAddress({
+    programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
+    seeds: [
+      getAddressEncoder().encode(owner),
+      getAddressEncoder().encode(TOKEN_2022_PROGRAM_ID),
+      getAddressEncoder().encode(mint),
+    ]
+  });
+  return ata;
+}
+
 /**
- * Set up a user with tokens and perform a subscription use case.
- * Optional existingJwt and existingApiToken could be used to bypass acquisition.
+ * Set up a user with tokens and perform a subscription use case
+ * Bypass acquisition using optional existingJwt and existingApiToken
  */
 export async function setupUser(
   name: string,
   keypairLocation: string,
-  tokenMint: anchor.web3.PublicKey,
-  connection: anchor.web3.Connection,
-  program: anchor.Program<Txoracle>,
+  tokenMint: Address,
+  rpc: Rpc<SolanaRpcApi>,
+  programId: Address,
   serviceLevelId: number,
   weeks: number,
   selectedLeagues: number[],
   existingJwt?: string,
   existingApiToken?: string 
 ): Promise<User> {
-  let user: anchor.web3.Keypair;
+  let user: KeyPairSigner;
+  let secretKey: Uint8Array;
+  
   try {
     const secretKeyString = fs.readFileSync(keypairLocation, "utf8");
-    const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
-    user = anchor.web3.Keypair.fromSecretKey(secretKey);
+    secretKey = Uint8Array.from(JSON.parse(secretKeyString));
+    user = await createKeyPairSignerFromBytes(secretKey);
   } catch (err) {
     console.error(`[${name}] Could not load user keypair at ${keypairLocation}`);
     throw err;
   }
 
-  // Initialize the user auth state
+  // Initialize user auth state
   let userState = userAuthMap.get(name);
   if (!userState) {
     userState = {
@@ -189,33 +249,26 @@ export async function setupUser(
     userAuthMap.set(name, userState);
   }
 
-  const userTokenAccountAddress = getAssociatedTokenAddressSync(
-    tokenMint, user.publicKey, false, TOKEN_2022_PROGRAM_ID
-  );
+  const userTokenAccountAddress = await getAtaAddress(user.address, tokenMint);
 
-  const [pricingMatrixPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("pricing_matrix")], program.programId);
+  const [pricingMatrixPda] = await getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [getUtf8Encoder().encode("pricing_matrix")]
+  });
   
-  // Fetch and display the service tier pricing matrix
+  // Note: Decode pricing matrix manually using codecs when not using Anchor
   async function discoverPricingMatrix() {
-    const matrix = await program.account.pricingMatrix.fetch(pricingMatrixPda);
-    console.log(`Pricing matrix by authority: ${matrix.admin.toBase58()}`); 
-    console.log(`Service level id.  Tokens/week   Sampling (sec)  League bundle  Market bundle`);
-    console.log(`=================   ===========   ==============  =============  =============`);
-
-    matrix.rows.forEach((row: any) => {
-      console.log(
-        String(row.rowId).padStart(12, " ")
-        + String(row.pricePerWeekToken).padStart(17, " ")
-        + String(row.samplingIntervalSec).padStart(15, " ")
-        + String(row.leagueBundleId).padStart(15, " ")
-        + String(row.marketBundleId).padStart(12, " ")
-      );
-    });        
+    const { value: matrixAccount } = await rpc.getAccountInfo(pricingMatrixPda, { encoding: 'base64' }).send();
+    if (!matrixAccount) {
+      console.log(`[${name}] Pricing matrix account not found on-chain`);
+      return;
+    }
+    console.log(`[${name}] Pricing matrix fetched. Manual decoding required for console output`);
   }
   
   await discoverPricingMatrix();
 
-  // Ensure we have a JWT for backend requests
+  // Ensure JWT exists for backend requests
   if (!userState.jwt) {
     console.log(`[${name}] No existing JWT. Acquiring new guest session...`);
     const response = await axios.post(config.JWT_URL);
@@ -224,27 +277,22 @@ export async function setupUser(
     console.log(`[${name}] Using provided JWT.`);
   }
 
-  // Populate default global state if this is the first user
+  // Populate default global state if this is first user
   if (userAuthMap.size === 1) {
     authState.jwt = userState.jwt;
     authState.apiToken = userState.apiToken;
   }
 
-  // If the API Token exists, the user has already paid. Bypass on-chain and activation flows.
+  // Bypass on-chain and activation flows if API token exists
   if (userState.apiToken) {
     console.log(`[${name}] Existing API Token detected. Bypassing on-chain payment and backend activation.`);
     
-    let userTokenAccount;
+    let userTokenAccount: Address | undefined;
     try {
-      // Attempt to fetch the account to populate the return object, but do not crash if network is laggy
-      userTokenAccount = await getAccount(
-        connection,
-        userTokenAccountAddress,
-        'confirmed',
-        TOKEN_2022_PROGRAM_ID
-      );
+      const { value: accountData } = await rpc.getAccountInfo(userTokenAccountAddress, { encoding: 'base64' }).send();
+      if (accountData) userTokenAccount = userTokenAccountAddress;
     } catch (e) {
-      console.log(`[${name}] Note: Could not fetch Token-2022 account on-chain. Assuming it exists.`);
+      console.log(`[${name}] Note: Could not fetch Token-2022 account on-chain`);
     }
 
     return {
@@ -253,93 +301,123 @@ export async function setupUser(
     };
   }
 
-  // Standard subscription flow
+  // Execute standard subscription flow
   const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-  const accountInfo = await connection.getAccountInfo(userTokenAccountAddress);
+  const { value: accountInfo } = await rpc.getAccountInfo(userTokenAccountAddress, { encoding: 'base64' }).send();
   
   if (!accountInfo) {
     console.log(`[${name}] Creating User Token-2022 Account`);
-    const transaction = new anchor.web3.Transaction().add(
-      createAssociatedTokenAccountInstruction(
-        user.publicKey,
-        userTokenAccountAddress,
-        user.publicKey,
-        tokenMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID
-      )
-    );
     
-    await anchor.web3.sendAndConfirmTransaction(connection, transaction, [user], { commitment: "confirmed" });
+    const { value: ataBlockhash } = await rpc.getLatestBlockhash().send();
+
+    const createAtaInstruction = {
+      programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
+      accounts: [
+        { address: user.address, role: AccountRole.WRITABLE_SIGNER },
+        { address: userTokenAccountAddress, role: AccountRole.WRITABLE },
+        { address: user.address, role: AccountRole.READONLY },
+        { address: tokenMint, role: AccountRole.READONLY },
+        { address: SYSTEM_PROGRAM_ID, role: AccountRole.READONLY },
+        { address: TOKEN_2022_PROGRAM_ID, role: AccountRole.READONLY },
+      ],
+      data: new Uint8Array(0),
+    };
+
+    const ataMessage = pipe(
+      createTransactionMessage({ version: "legacy" }),
+      (m) => setTransactionMessageFeePayerSigner(user, m),
+      (m) => setTransactionMessageLifetimeUsingBlockhash(ataBlockhash, m),
+      (m) => appendTransactionMessageInstruction(createAtaInstruction, m)
+    );
+
+    const signedAtaTx = await signTransactionMessageWithSigners(ataMessage);
+    const wireAtaTx = getBase64EncodedWireTransaction(signedAtaTx);
+    
+    await rpc.sendTransaction(wireAtaTx, { encoding: "base64" }).send();
     console.log(`[${name}] Account created`);
     await delay(3000); 
   }
 
-  let userTokenAccount;
+  let userTokenAccount: Address | undefined;
   let attempts = 0;
   while (attempts < 5) {
-    try {
-      userTokenAccount = await getAccount(connection, userTokenAccountAddress, 'confirmed', TOKEN_2022_PROGRAM_ID);
+    const { value: checkInfo } = await rpc.getAccountInfo(userTokenAccountAddress, { encoding: 'base64' }).send();
+    if (checkInfo) {
+      userTokenAccount = userTokenAccountAddress;
       break; 
-    } catch (err: any) {
-      if (err.name === 'TokenAccountNotFoundError') {
-        attempts++;
-        console.log(`[${name}] RPC not synced. Retrying (${attempts}/5)...`);
-        await delay(2000);
-      } else {
-        throw err; 
-      }
     }
+    attempts++;
+    console.log(`[${name}] RPC not synced. Retrying (${attempts}/5)...`);
+    await delay(2000);
   }
 
   if (!userTokenAccount) {
-    throw new Error(`[${name}] RPC failed to sync the new token account.`);
+    throw new Error(`[${name}] RPC failed to sync new token account`);
   }
 
-  const [tokenTreasuryPda] = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("token_treasury_v2")], program.programId);
-  const tokenTreasuryVault = getAssociatedTokenAddressSync(tokenMint, tokenTreasuryPda, true, TOKEN_2022_PROGRAM_ID);
+  const [tokenTreasuryPda] = await getProgramDerivedAddress({
+    programAddress: programId,
+    seeds: [getUtf8Encoder().encode("token_treasury_v2")]
+  });
+  
+  const tokenTreasuryVault = await getAtaAddress(tokenTreasuryPda, tokenMint);
 
   if (weeks < 4 || weeks % 4 !== 0) {
-    throw new Error(`Invalid subscription duration: ${weeks} weeks. Must be a multiple of 4.`);
+    throw new Error(`Invalid subscription duration: ${weeks} weeks. Must be a multiple of 4`);
   }
 
   console.log(`[${name}] Subscribing on-chain: Level ${serviceLevelId}, Duration ${weeks} weeks`);
 
-  let tx: anchor.web3.Transaction;
+  const { value: subBlockhash } = await rpc.getLatestBlockhash().send();
 
-  tx = await program.methods
-    .subscribe(serviceLevelId, weeks)
-    .accounts({
-      user: user.publicKey,
-      pricingMatrix: pricingMatrixPda,
-      tokenMint: tokenMint,
-      userTokenAccount: userTokenAccount.address,
-      tokenTreasuryVault: tokenTreasuryVault,
-      tokenTreasuryPda: tokenTreasuryPda,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
-      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-      systemProgram: anchor.web3.SystemProgram.programId,
-    })
-    .transaction();
+  // Use exact instruction discriminator from IDL
+  const subscribeDiscriminator = new Uint8Array([254, 28, 191, 138, 156, 179, 183, 53]);
+  
+  // Encode arguments exactly as defined in Rust program
+  const argsEncoder = getStructEncoder([
+    ['serviceLevelId', getU16Encoder()],
+    ['weeks', getU8Encoder()]
+  ]);
+  
+  const argsData = argsEncoder.encode({ serviceLevelId, weeks });
+  const subscribeData = new Uint8Array(8 + argsData.length);
+  subscribeData.set(subscribeDiscriminator, 0);
+  subscribeData.set(argsData, 8);
 
-  const latestBlockhash = await connection.getLatestBlockhash('confirmed');
-  tx.recentBlockhash = latestBlockhash.blockhash;
-  tx.feePayer = user.publicKey;
-  tx.sign(user);
+  const subscribeInstruction = {
+    programAddress: programId,
+    accounts: [
+      { address: user.address, role: AccountRole.WRITABLE_SIGNER },
+      { address: pricingMatrixPda, role: AccountRole.READONLY },
+      { address: tokenMint, role: AccountRole.READONLY },
+      { address: userTokenAccount, role: AccountRole.WRITABLE },
+      { address: tokenTreasuryVault, role: AccountRole.WRITABLE },
+      { address: tokenTreasuryPda, role: AccountRole.READONLY },
+      { address: TOKEN_2022_PROGRAM_ID, role: AccountRole.READONLY },
+      { address: SYSTEM_PROGRAM_ID, role: AccountRole.READONLY },
+      { address: ASSOCIATED_TOKEN_PROGRAM_ID, role: AccountRole.READONLY },
+    ],
+    data: subscribeData,
+  };
 
-  const txSig = await connection.sendRawTransaction(tx.serialize());
-  await connection.confirmTransaction({
-    signature: txSig,
-    blockhash: latestBlockhash.blockhash,
-    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
-  }, 'confirmed');
+  const subMessage = pipe(
+    createTransactionMessage({ version: "legacy" }),
+    (m) => setTransactionMessageFeePayerSigner(user, m),
+    (m) => setTransactionMessageLifetimeUsingBlockhash(subBlockhash, m),
+    (m) => appendTransactionMessageInstruction(subscribeInstruction, m)
+  );
+
+  const signedSubTx = await signTransactionMessageWithSigners(subMessage);
+  const wireSubTx = getBase64EncodedWireTransaction(signedSubTx);
+  
+  const txSig = await rpc.sendTransaction(wireSubTx, { encoding: "base64" }).send();
 
   console.log(`[${name}] Transaction confirmed: ${txSig}`);
   console.log(`[${name}] Acquiring API Token via activation endpoint...`);
   
   const messageString = `${txSig}:${selectedLeagues.join(",")}:${userState.jwt}`;
-  const message = new TextEncoder().encode(messageString);
-  const signatureBytes = nacl.sign.detached(message, user.secretKey);
+  const messageBytes = new TextEncoder().encode(messageString);
+  const signatureBytes = nacl.sign.detached(messageBytes, secretKey);
   const signatureBase64 = Buffer.from(signatureBytes).toString("base64");
 
   const activationUrl = `${config.API_BASE_URL}/token/activate`;
@@ -351,7 +429,7 @@ export async function setupUser(
   
   userState.apiToken = activationResponse.data.token || activationResponse.data;
 
-  // Update global fallback if this is the first user
+  // Update global fallback if this is first user
   if (userAuthMap.size === 1) {
     authState.apiToken = userState.apiToken;
   }
@@ -360,4 +438,173 @@ export async function setupUser(
     user: user,
     userTokenAccount: userTokenAccount
   };
+}
+
+// Verify decoded compiled wire transaction to ensure safety
+export function verifyTransactionSafety(
+  transaction: any,
+  expectedBuyer: Address,
+  programId: Address,
+  expectedAmount: bigint
+): void {
+  // Decode raw binary message into compiled message object
+  const compiledMessage = getCompiledTransactionMessageDecoder().decode(transaction.messageBytes);
+
+  // Decompile message back into high level transaction message structure
+  const message = decompileTransactionMessage(compiledMessage);
+
+  // Extract fee payer directly from compiled account keys
+  const feePayer = compiledMessage.staticAccounts[0];
+  if (!feePayer || feePayer !== expectedBuyer) {
+    throw new Error(`Safety check failed: Fee payer is not the expected buyer wallet (got ${feePayer}, expected ${expectedBuyer})`);
+  }
+
+  // Ensure backend admin has already signed transaction. The signatures map lists every required signer,
+  // with null for one that has not signed yet, so check the admin's entry holds a signature.
+  const backendAdmin = (TxoracleJson as any).constants.find((c: any) => c.name === "BACKEND_ADMIN_PUBKEY").value;
+  const hasAdminSignature = Boolean(transaction.signatures?.[backendAdmin]);
+  if (!hasAdminSignature) {
+    throw new Error("Safety check failed: Missing backend admin signature");
+  }
+
+  // Whitelist permitted programs that transaction can invoke
+  const allowedPrograms = [
+    programId,
+    "ComputeBudget111111111111111111111111111111",
+    "11111111111111111111111111111111",
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+  ];
+
+  let oracleInstructionCount = 0;
+
+  // Inspect every instruction in decompiled payload
+  message.instructions.forEach((instruction: any) => {
+    const currentProgramId = instruction.programAddress;
+
+    if (!allowedPrograms.includes(currentProgramId)) {
+      throw new Error(`Safety check failed: Unauthorized program invocation detected ${currentProgramId}`);
+    }
+
+    // Verify buyer is not set as signer on unintended accounts
+    instruction.accounts?.forEach((account: any) => {
+      const isSigner = account.role === AccountRole.WRITABLE_SIGNER || account.role === AccountRole.READONLY_SIGNER;
+
+      if (isSigner && account.address === expectedBuyer) {
+        const isAuthorizedSigner = currentProgramId === programId || currentProgramId === "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL";
+        if (!isAuthorizedSigner) {
+          throw new Error(`Safety check failed: Buyer wallet requested as signer for unauthorized program ${currentProgramId}`);
+        }
+      }
+    });
+
+    // Decode and verify specific oracle business logic
+    if (currentProgramId === programId) {
+      oracleInstructionCount++;
+
+      if (!instruction.data) {
+        throw new Error("Safety check failed: Could not decode instruction data");
+      }
+
+      // Check byte discriminator for function targeting using canonical snake case identifier
+      const expectedDiscriminator = createHash("sha256")
+        .update("global:purchase_subscription_token_usdt")
+        .digest()
+        .subarray(0, 8);
+      const actualDiscriminator = instruction.data.subarray(0, 8);
+
+      for (let i = 0; i < 8; i++) {
+        if (actualDiscriminator[i] !== expectedDiscriminator[i]) {
+          throw new Error("Safety check failed: Server attempted to execute unauthorized function");
+        }
+      }
+
+      // Extract and verify requested amount using kit decoder
+      const amountData = instruction.data.subarray(8, 16);
+      const payloadAmount = getU64Decoder().decode(amountData);
+
+      if (payloadAmount !== expectedAmount) {
+        throw new Error(`Safety check failed: Amount mismatch! Expected ${expectedAmount.toString()}, found ${payloadAmount.toString()}`);
+      }
+    }
+  });
+
+  if (oracleInstructionCount === 0) {
+    throw new Error("Safety check failed: No Oracle instruction found in payload");
+  }
+
+  if (oracleInstructionCount > 1) {
+    throw new Error("Safety check failed: Multiple Oracle instructions detected in payload");
+  }
+}
+
+const TOKEN_PROGRAM_ID = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+
+async function deriveAta(owner: Address, mint: Address, tokenProgram: Address): Promise<Address> {
+  const [ata] = await getProgramDerivedAddress({
+    programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
+    seeds: [
+      getAddressEncoder().encode(owner),
+      getAddressEncoder().encode(tokenProgram),
+      getAddressEncoder().encode(mint),
+    ]
+  });
+  return ata;
+}
+
+/**
+ * Checks every account of the purchase_subscription_token_usdt instruction against values derived locally.
+ * verifyTransactionSafety checks the programs, signers and amount, but a quote could still name other token
+ * accounts and redirect the buyer's USDT or the purchased TxL.
+ */
+export async function verifyPurchaseAccounts(
+  transaction: any,
+  expectedBuyer: Address,
+  programId: Address
+): Promise<void> {
+  const message = decompileTransactionMessage(getCompiledTransactionMessageDecoder().decode(transaction.messageBytes));
+  const instruction: any = message.instructions.find((ix: any) => ix.programAddress === programId);
+  if (!instruction) {
+    throw new Error("Safety check failed: No Oracle instruction found in payload");
+  }
+
+  const idl = TxoracleJson as any;
+  const constant = (name: string) => address(idl.constants.find((c: any) => c.name === name).value);
+  const usdtMint = constant("USDT_MINT");
+  const txlMint = constant("TXLINE_MINT");
+  const programPda = async (seed: string) =>
+    (await getProgramDerivedAddress({ programAddress: programId, seeds: [getUtf8Encoder().encode(seed)] }))[0];
+  const usdtTreasury = await programPda("usdt_treasury");
+  const tokenTreasury = await programPda("token_treasury_v2");
+
+  const expected: Record<string, Address> = {
+    buyer: expectedBuyer,
+    backend_admin: constant("BACKEND_ADMIN_PUBKEY"),
+    usdt_mint: usdtMint,
+    buyer_usdt_account: await deriveAta(expectedBuyer, usdtMint, TOKEN_PROGRAM_ID),
+    usdt_treasury_vault: await deriveAta(usdtTreasury, usdtMint, TOKEN_PROGRAM_ID),
+    usdt_treasury_pda: usdtTreasury,
+    subscription_token_mint: txlMint,
+    token_treasury_vault: await deriveAta(tokenTreasury, txlMint, TOKEN_2022_PROGRAM_ID),
+    token_treasury_pda: tokenTreasury,
+    buyer_token_account: await deriveAta(expectedBuyer, txlMint, TOKEN_2022_PROGRAM_ID),
+    token_program: TOKEN_PROGRAM_ID,
+    token_2022_program: TOKEN_2022_PROGRAM_ID,
+    system_program: SYSTEM_PROGRAM_ID,
+    associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
+  };
+
+  const names: string[] = idl.instructions
+    .find((ix: any) => ix.name === "purchase_subscription_token_usdt")
+    .accounts.map((account: any) => account.name);
+  if (instruction.accounts?.length !== names.length) {
+    throw new Error(`Safety check failed: Expected ${names.length} purchase accounts, found ${instruction.accounts?.length}`);
+  }
+  names.forEach((name, i) => {
+    const actual = instruction.accounts[i].address;
+    if (actual !== expected[name]) {
+      throw new Error(`Safety check failed: ${name} is ${actual}, expected ${expected[name]}`);
+    }
+  });
 }

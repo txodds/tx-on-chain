@@ -97,7 +97,7 @@ The `wallet` variable is your signing wallet. In a browser app, use your wallet 
 </Note>
 
 <Info>
-For a runnable devnet version of the activation and stream flow, use the scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). They include free-tier activation, odds and scores streams, fixture validation, and `validateStatV2` examples.
+For a runnable devnet version of the activation and stream flow, use the scripts in [Runnable Devnet Examples](/documentation/examples/devnet-examples). They include free-tier activation, odds and scores streams, fixture validation, and `validateStatV4` examples.
 </Info>
 
 ## Purchase TxL (Optional)
@@ -124,7 +124,8 @@ const quoteResponse = await fetch(`${apiBaseUrl}/guest/purchase/quote`, {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${jwt}`
+    Authorization: `Bearer ${jwt}`,
+    "Accept-Encoding": "gzip" // Node 22+ fetch otherwise offers zstd, whose responses arrive truncated
   },
   body: JSON.stringify({
     buyerPubkey: wallet.publicKey.toBase58(),
@@ -145,8 +146,62 @@ console.log(`Total: ${quoteData.totalUsdtCharged} USDT`);
 const txBuffer = Buffer.from(quoteData.transactionBase64, "base64");
 const transaction = anchor.web3.Transaction.from(txBuffer);
 
-// Verify transaction safety locally (recommended)
-// This ensures the transaction matches what you requested
+// Verify the transaction before signing it. Refuse to sign if any check fails.
+const buyer = wallet.publicKey;
+const backendAdminPubkey = new PublicKey(
+  program.idl.constants.find((c) => c.name === "backendAdminPubkey")!.value
+);
+const ATA_PROGRAM = ASSOCIATED_TOKEN_PROGRAM_ID.toBase58();
+const ALLOWED_PROGRAMS = new Set([
+  program.programId.toBase58(),
+  "ComputeBudget111111111111111111111111111111",
+  SystemProgram.programId.toBase58(),
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
+  TOKEN_2022_PROGRAM_ID.toBase58(),
+  ATA_PROGRAM,
+]);
+
+// 1. Your wallet is the fee payer.
+if (!transaction.feePayer?.equals(buyer)) {
+  throw new Error("Fee payer is not your wallet");
+}
+
+// 2. The backend admin has already signed.
+const adminSignature = transaction.signatures.find((s) => s.publicKey.equals(backendAdminPubkey));
+if (!adminSignature?.signature) {
+  throw new Error("Backend admin signature is missing");
+}
+
+let txoracleInstructions = 0;
+for (const ix of transaction.instructions) {
+  const ixProgram = ix.programId.toBase58();
+
+  // 3. Every instruction targets an allow-listed program.
+  if (!ALLOWED_PROGRAMS.has(ixProgram)) {
+    throw new Error(`Unexpected program ${ixProgram}`);
+  }
+
+  // 4. Your wallet signs only for txoracle or the Associated Token program.
+  const walletSigns = ix.keys.some((k) => k.isSigner && k.pubkey.equals(buyer));
+  if (walletSigns && ixProgram !== program.programId.toBase58() && ixProgram !== ATA_PROGRAM) {
+    throw new Error(`Your wallet is asked to sign for ${ixProgram}`);
+  }
+
+  // 5. Exactly one txoracle instruction: purchase_subscription_token_usdt for the amount you requested.
+  if (ixProgram === program.programId.toBase58()) {
+    txoracleInstructions++;
+    const decoded = program.coder.instruction.decode(ix.data);
+    if (decoded?.name !== "purchaseSubscriptionTokenUsdt") {
+      throw new Error(`Unexpected txoracle instruction ${decoded?.name}`);
+    }
+    if ((decoded.data as any).txlineAmount.toString() !== String(txlineAmount)) {
+      throw new Error("Purchase amount does not match the requested amount");
+    }
+  }
+}
+if (txoracleInstructions !== 1) {
+  throw new Error(`Expected one txoracle instruction, found ${txoracleInstructions}`);
+}
 
 // Sign the transaction with either a local Keypair or a wallet adapter
 const signedTransaction =
@@ -167,6 +222,10 @@ console.log("Purchase successful:", txSignature);
 
 <Note>
 TxODDS may refuse purchase requests and ask for KYC (Know Your Customer) verification in accordance with compliance requirements.
+</Note>
+
+<Note>
+Your TxL token account stays frozen before and after a purchase. Only `txoracle` program instructions, such as a purchase, `subscribe`, or `book_fixture`, move TxL into or out of it. Ordinary token transfers from it fail.
 </Note>
 
 ## Subscribe On-Chain
@@ -325,5 +384,6 @@ If a data request returns `401`, renew the guest JWT from the same network host 
 
 - View the complete [API Reference](/api-reference/authentication/start-a-new-guest-session) to explore all available endpoints
 - Check out [Subscription Tiers](/documentation/subscription-tiers) for pricing and plan options
-- Run the [Runnable Devnet Examples](/documentation/examples/devnet-examples) for end-to-end devnet activation, streaming, and validation
+- [Book a fixture](/documentation/examples/booking-fixtures) before you validate its data on-chain, or to access a fixture outside your subscription bundle
+- Run the [Runnable Devnet Examples](/documentation/examples/devnet-examples) for end-to-end devnet activation, booking, streaming, and validation
 - Use [Troubleshooting](/documentation/examples/troubleshooting) to diagnose activation, streaming, and validation errors

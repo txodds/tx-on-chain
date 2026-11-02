@@ -8,131 +8,39 @@ export type Txoracle = {
   "address": "6pW64gN1s2uqjHkn1unFeEjAwJkPGHoppGvS715wyP2J",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.11",
+    "version": "1.5.17",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
     {
-      "name": "closePricingMatrix",
+      "name": "bookFixture",
       "discriminator": [
-        251,
-        118,
-        215,
-        117,
-        22,
-        155,
-        38,
-        73
+        48,
+        127,
+        234,
+        70,
+        187,
+        214,
+        206,
+        109
       ],
       "accounts": [
         {
-          "name": "pricingMatrix",
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fixtureTicket",
           "writable": true
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          "name": "tokenMint"
         },
         {
-          "name": "systemProgram"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "giftValidationCredits",
-      "discriminator": [
-        213,
-        25,
-        82,
-        97,
-        102,
-        26,
-        240,
-        132
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "targetUser"
-        },
-        {
-          "name": "userValidationState",
+          "name": "userTokenAccount",
           "writable": true
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "units",
-          "type": "u32"
-        }
-      ]
-    },
-    {
-      "name": "initializePricingMatrix",
-      "discriminator": [
-        147,
-        32,
-        167,
-        248,
-        235,
-        57,
-        210,
-        6
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pricingMatrix",
-          "writable": true
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "rows",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "serviceRow"
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "initializeTreasuryV2",
-      "discriminator": [
-        18,
-        140,
-        152,
-        210,
-        31,
-        25,
-        22,
-        171
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
         },
         {
           "name": "tokenTreasuryVault",
@@ -142,215 +50,60 @@ export type Txoracle = {
           "name": "tokenTreasuryPda"
         },
         {
-          "name": "subscriptionTokenMint"
-        },
-        {
-          "name": "systemProgram"
+          "name": "instructionsSysvar"
         },
         {
           "name": "tokenProgram"
         },
         {
-          "name": "associatedTokenProgram"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initializeUsdtTreasury",
-      "discriminator": [
-        81,
-        0,
-        86,
-        241,
-        86,
-        85,
-        243,
-        74
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "usdtTreasuryVault",
-          "writable": true
-        },
-        {
-          "name": "usdtTreasuryPda"
-        },
-        {
-          "name": "usdtMint"
-        },
-        {
-          "name": "tokenProgram"
+          "name": "systemProgram"
         },
         {
           "name": "associatedTokenProgram"
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "insertBatchRoot",
-      "discriminator": [
-        243,
-        170,
-        208,
-        158,
-        207,
-        29,
-        237,
-        93
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "dailyBatchRoots",
-          "writable": true
-        },
-        {
-          "name": "systemProgram"
         }
       ],
       "args": [
         {
-          "name": "epochDay",
-          "type": "u16"
-        },
-        {
-          "name": "hourOfDay",
-          "type": "u8"
-        },
-        {
-          "name": "minuteOfHour",
-          "type": "u8"
-        },
-        {
-          "name": "root",
+          "name": "payload",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "accountBump",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "insertFixturesRoot",
-      "discriminator": [
-        18,
-        70,
-        8,
-        160,
-        75,
-        200,
-        109,
-        235
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "tenDailyFixturesRoots",
-          "docs": [
-            "The address is constrained by the seeds, and we verify the",
-            "discriminator and owner inside the instruction."
-          ],
-          "writable": true
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "epochDay",
-          "type": "u16"
-        },
-        {
-          "name": "index",
-          "type": "u64"
-        },
-        {
-          "name": "root",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "defined": {
+              "name": "bookFixturePayload"
+            }
           }
         }
       ]
     },
     {
-      "name": "insertScoresRoot",
+      "name": "closeWorkerTicket",
       "discriminator": [
-        137,
-        39,
-        242,
-        97,
-        131,
-        204,
-        100,
-        133
+        51,
+        20,
+        55,
+        115,
+        249,
+        56,
+        9,
+        14
       ],
       "accounts": [
         {
-          "name": "authority",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "dailyScoresRoots",
-          "docs": [
-            "The address is constrained by the seeds, and we verify the",
-            "discriminator and owner inside the instruction."
-          ],
+          "name": "ticket",
           "writable": true
-        },
-        {
-          "name": "systemProgram"
         }
       ],
       "args": [
         {
-          "name": "epochDay",
+          "name": "domain",
+          "type": "u8"
+        },
+        {
+          "name": "workerId",
           "type": "u16"
-        },
-        {
-          "name": "hourOfDay",
-          "type": "u8"
-        },
-        {
-          "name": "minuteOfHour",
-          "type": "u8"
-        },
-        {
-          "name": "root",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
         }
       ]
     },
@@ -428,16 +181,16 @@ export type Txoracle = {
       ]
     },
     {
-      "name": "purchaseValidationCredits",
+      "name": "requestDevnetFaucet",
       "discriminator": [
-        166,
-        59,
-        67,
-        252,
-        177,
-        13,
-        82,
-        112
+        49,
+        178,
+        104,
+        8,
+        23,
+        120,
+        186,
+        21
       ],
       "accounts": [
         {
@@ -446,39 +199,31 @@ export type Txoracle = {
           "signer": true
         },
         {
-          "name": "userValidationState",
+          "name": "faucetTracker",
           "writable": true
         },
         {
-          "name": "tokenMint"
-        },
-        {
-          "name": "userTokenAccount",
+          "name": "usdtMint",
           "writable": true
         },
         {
-          "name": "tokenTreasuryVault",
+          "name": "userUsdtAta",
           "writable": true
         },
         {
-          "name": "tokenTreasuryPda"
+          "name": "usdtTreasuryPda"
         },
         {
           "name": "tokenProgram"
         },
         {
-          "name": "systemProgram"
+          "name": "associatedTokenProgram"
         },
         {
-          "name": "associatedTokenProgram"
+          "name": "systemProgram"
         }
       ],
-      "args": [
-        {
-          "name": "units",
-          "type": "u32"
-        }
-      ]
+      "args": []
     },
     {
       "name": "subscribe",
@@ -536,45 +281,6 @@ export type Txoracle = {
         {
           "name": "weeks",
           "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "updatePricingMatrix",
-      "discriminator": [
-        177,
-        191,
-        172,
-        252,
-        42,
-        203,
-        8,
-        164
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pricingMatrix",
-          "writable": true
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "rows",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "serviceRow"
-              }
-            }
-          }
         }
       ]
     },
@@ -685,6 +391,46 @@ export type Txoracle = {
       "returns": "bool"
     },
     {
+      "name": "validateFixtureForTree",
+      "discriminator": [
+        118,
+        85,
+        77,
+        234,
+        117,
+        87,
+        168,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "dailyMerkleRoots"
+        },
+        {
+          "name": "systemProgram"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "fixtureForTreeValidationInput"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "validateOdds",
       "discriminator": [
         192,
@@ -764,185 +510,26 @@ export type Txoracle = {
           "signer": true
         },
         {
-          "name": "userValidationState",
+          "name": "ticket"
+        },
+        {
+          "name": "fixtureTicket",
           "writable": true
         },
         {
           "name": "instructionsSysvar"
-        },
-        {
-          "name": "dailyOddsMerkleRoots"
         }
       ],
       "args": [
+        {
+          "name": "workerId",
+          "type": "u16"
+        },
         {
           "name": "payload",
           "type": {
             "defined": {
               "name": "oddsValidationInputV4"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validateStat",
-      "discriminator": [
-        107,
-        197,
-        232,
-        90,
-        191,
-        136,
-        105,
-        185
-      ],
-      "accounts": [
-        {
-          "name": "dailyScoresMerkleRoots"
-        }
-      ],
-      "args": [
-        {
-          "name": "ts",
-          "type": "i64"
-        },
-        {
-          "name": "fixtureSummary",
-          "type": {
-            "defined": {
-              "name": "scoresBatchSummary"
-            }
-          }
-        },
-        {
-          "name": "fixtureProof",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "proofNode"
-              }
-            }
-          }
-        },
-        {
-          "name": "mainTreeProof",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "proofNode"
-              }
-            }
-          }
-        },
-        {
-          "name": "predicate",
-          "type": {
-            "defined": {
-              "name": "traderPredicate"
-            }
-          }
-        },
-        {
-          "name": "statA",
-          "type": {
-            "defined": {
-              "name": "statTerm"
-            }
-          }
-        },
-        {
-          "name": "statB",
-          "type": {
-            "option": {
-              "defined": {
-                "name": "statTerm"
-              }
-            }
-          }
-        },
-        {
-          "name": "op",
-          "type": {
-            "option": {
-              "defined": {
-                "name": "binaryExpression"
-              }
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validateStatV2",
-      "discriminator": [
-        208,
-        215,
-        194,
-        214,
-        241,
-        71,
-        246,
-        178
-      ],
-      "accounts": [
-        {
-          "name": "dailyScoresMerkleRoots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "statValidationInput"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "nDimensionalStrategy"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validateStatV3",
-      "discriminator": [
-        150,
-        37,
-        155,
-        89,
-        141,
-        190,
-        77,
-        203
-      ],
-      "accounts": [
-        {
-          "name": "dailyScoresMerkleRoots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "statValidationInputV3"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "nDimensionalStrategy"
             }
           }
         }
@@ -968,22 +555,25 @@ export type Txoracle = {
           "signer": true
         },
         {
-          "name": "userValidationState",
-          "writable": true
+          "name": "ticket"
+        },
+        {
+          "name": "fixtureTicket"
         },
         {
           "name": "instructionsSysvar"
-        },
-        {
-          "name": "dailyScoresMerkleRoots"
         }
       ],
       "args": [
         {
+          "name": "workerId",
+          "type": "u16"
+        },
+        {
           "name": "payload",
           "type": {
             "defined": {
-              "name": "statValidationInputV4"
+              "name": "statValidationPayload"
             }
           }
         },
@@ -997,103 +587,35 @@ export type Txoracle = {
         }
       ],
       "returns": "bool"
-    },
-    {
-      "name": "withdrawUsdt",
-      "discriminator": [
-        117,
-        75,
-        94,
-        162,
-        178,
-        92,
-        19,
-        141
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "adminDestination",
-          "writable": true
-        },
-        {
-          "name": "usdtTreasuryVault",
-          "writable": true
-        },
-        {
-          "name": "usdtTreasuryPda"
-        },
-        {
-          "name": "usdtMint"
-        },
-        {
-          "name": "tokenProgram"
-        },
-        {
-          "name": "associatedTokenProgram"
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": [
-        {
-          "name": "amount",
-          "type": "u64"
-        }
-      ]
-    },
-    {
-      "name": "requestDevnetFaucet",
-      "discriminator": [
-        49,
-        178,
-        104,
-        8,
-        23,
-        120,
-        186,
-        21
-      ],
-      "accounts": [
-        {
-          "name": "user",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "faucetTracker",
-          "writable": true
-        },
-        {
-          "name": "usdtMint",
-          "writable": true
-        },
-        {
-          "name": "userUsdtAta",
-          "writable": true
-        },
-        {
-          "name": "usdtTreasuryPda"
-        },
-        {
-          "name": "tokenProgram"
-        },
-        {
-          "name": "associatedTokenProgram"
-        },
-        {
-          "name": "systemProgram"
-        }
-      ],
-      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "faucetTracker",
+      "discriminator": [
+        247,
+        221,
+        212,
+        62,
+        42,
+        233,
+        215,
+        190
+      ]
+    },
+    {
+      "name": "fixtureTicket",
+      "discriminator": [
+        251,
+        200,
+        228,
+        250,
+        96,
+        10,
+        109,
+        36
+      ]
+    },
     {
       "name": "pricingMatrix",
       "discriminator": [
@@ -1108,29 +630,16 @@ export type Txoracle = {
       ]
     },
     {
-      "name": "userValidationState",
+      "name": "workerTicket",
       "discriminator": [
-        167,
-        213,
-        143,
-        125,
-        207,
-        78,
-        245,
-        87
-      ]
-    },
-    {
-      "name": "faucetTracker",
-      "discriminator": [
-        247,
-        221,
-        212,
-        62,
-        42,
-        233,
-        215,
-        190
+        205,
+        149,
+        102,
+        53,
+        98,
+        192,
+        1,
+        162
       ]
     }
   ],
@@ -1207,8 +716,8 @@ export type Txoracle = {
     },
     {
       "code": 6014,
-      "name": "stakeStillLocked",
-      "msg": "Stake is still locked and cannot be withdrawn yet."
+      "name": "ffex1",
+      "msg": "For future expansion"
     },
     {
       "code": 6015,
@@ -1273,32 +782,32 @@ export type Txoracle = {
     {
       "code": 6027,
       "name": "overflow",
-      "msg": "overflow"
+      "msg": "Overflow"
     },
     {
       "code": 6028,
-      "name": "tradeNotActive",
-      "msg": "Trade not active"
+      "name": "ffex2",
+      "msg": "For future expansion"
     },
     {
       "code": 6029,
-      "name": "invalidTrader",
-      "msg": "Invalid trader"
+      "name": "ffex3",
+      "msg": "For future expansion"
     },
     {
       "code": 6030,
-      "name": "winnerMismatch",
-      "msg": "Winner mismatch"
+      "name": "ffex4",
+      "msg": "For future expansion"
     },
     {
       "code": 6031,
-      "name": "tradeTermsMismatch",
-      "msg": "Trade terms mismatch"
+      "name": "ffex5",
+      "msg": "For future expansion"
     },
     {
       "code": 6032,
-      "name": "unauthorizedSettler",
-      "msg": "Unauthorized settler"
+      "name": "ffex6",
+      "msg": "For future expansion"
     },
     {
       "code": 6033,
@@ -1362,8 +871,8 @@ export type Txoracle = {
     },
     {
       "code": 6045,
-      "name": "insufficientLiquidity",
-      "msg": "Insufficient liquidity"
+      "name": "ffex7",
+      "msg": "For future expansion"
     },
     {
       "code": 6046,
@@ -1372,8 +881,8 @@ export type Txoracle = {
     },
     {
       "code": 6047,
-      "name": "invalidExpiration",
-      "msg": "Invalid expiration"
+      "name": "ffex8",
+      "msg": "For future expansion"
     },
     {
       "code": 6048,
@@ -1387,18 +896,18 @@ export type Txoracle = {
     },
     {
       "code": 6050,
-      "name": "intentNotActive",
-      "msg": "Intent not active"
+      "name": "ffex9",
+      "msg": "For future expansion"
     },
     {
       "code": 6051,
-      "name": "orderNotYetExpired",
-      "msg": "Order not yet expired"
+      "name": "ffex10",
+      "msg": "For future expansion"
     },
     {
       "code": 6052,
-      "name": "termsMismatch",
-      "msg": "Terms mismatch"
+      "name": "ffex11",
+      "msg": "For future expansion"
     },
     {
       "code": 6053,
@@ -1452,8 +961,8 @@ export type Txoracle = {
     },
     {
       "code": 6063,
-      "name": "tradeTooSmall",
-      "msg": "Trade too small"
+      "name": "ffex12",
+      "msg": "For future expansion"
     },
     {
       "code": 6064,
@@ -1567,8 +1076,33 @@ export type Txoracle = {
     },
     {
       "code": 6086,
-      "name": "invalidPackQuantity",
-      "msg": "Invalid pack quantity"
+      "name": "fixtureAlreadyBooked",
+      "msg": "Fixture already booked for validation"
+    },
+    {
+      "code": 6087,
+      "name": "invalidTimestamp",
+      "msg": "Invalid timestamp"
+    },
+    {
+      "code": 6088,
+      "name": "quoteExpired",
+      "msg": "Quote expired"
+    },
+    {
+      "code": 6089,
+      "name": "invalidDomain",
+      "msg": "Invalid domain"
+    },
+    {
+      "code": 6090,
+      "name": "invalidDailyRootsPda",
+      "msg": "Invalid daily roots Pda"
+    },
+    {
+      "code": 6091,
+      "name": "missingZeroMask",
+      "msg": "Missing zeromask"
     }
   ],
   "types": [
@@ -1597,6 +1131,39 @@ export type Txoracle = {
       }
     },
     {
+      "name": "batchSummary",
+      "docs": [
+        "The summary for a single fixture's tree events within a 5-minute batch.",
+        "This contains the root of the sub-tree of all tree events for that fixture."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fixtureId",
+            "type": "i64"
+          },
+          {
+            "name": "updateStats",
+            "type": {
+              "defined": {
+                "name": "updateStats"
+              }
+            }
+          },
+          {
+            "name": "subTreeRoot",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "binaryExpression",
       "type": {
         "kind": "enum",
@@ -1606,6 +1173,34 @@ export type Txoracle = {
           },
           {
             "name": "subtract"
+          }
+        ]
+      }
+    },
+    {
+      "name": "bookFixturePayload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixtureId",
+            "type": "u32"
+          },
+          {
+            "name": "price",
+            "type": "u32"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "validity",
+            "type": "i64"
           }
         ]
       }
@@ -1623,6 +1218,18 @@ export type Txoracle = {
           },
           {
             "name": "equalTo"
+          }
+        ]
+      }
+    },
+    {
+      "name": "faucetTracker",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "lastRequestTime",
+            "type": "i64"
           }
         ]
       }
@@ -1717,6 +1324,64 @@ export type Txoracle = {
       }
     },
     {
+      "name": "fixtureForTreeValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "domain",
+            "type": "u8"
+          },
+          {
+            "name": "workerId",
+            "type": "u16"
+          },
+          {
+            "name": "summary",
+            "type": {
+              "defined": {
+                "name": "batchSummary"
+              }
+            }
+          },
+          {
+            "name": "mainTreeProof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "proofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "fixtureTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixtureId",
+            "type": "u32"
+          },
+          {
+            "name": "validationsRemaining",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
       "name": "fixtureUpdateStats",
       "type": {
         "kind": "struct",
@@ -1750,13 +1415,6 @@ export type Txoracle = {
             "type": "i32"
           }
         ]
-      }
-    },
-    {
-      "name": "marketIntentParams",
-      "type": {
-        "kind": "struct",
-        "fields": []
       }
     },
     {
@@ -1922,33 +1580,16 @@ export type Txoracle = {
             "type": "i64"
           },
           {
-            "name": "oddsSnapshot",
+            "name": "oddsLeafHash",
             "type": {
-              "defined": {
-                "name": "odds"
-              }
-            }
-          },
-          {
-            "name": "summary",
-            "type": {
-              "defined": {
-                "name": "oddsBatchSummary"
-              }
+              "array": [
+                "u8",
+                32
+              ]
             }
           },
           {
             "name": "subTreeProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "mainTreeProof",
             "type": {
               "vec": {
                 "defined": {
@@ -2028,59 +1669,6 @@ export type Txoracle = {
       }
     },
     {
-      "name": "scoresBatchSummary",
-      "docs": [
-        "The summary for a single fixture's scores events within a 5-minute batch.",
-        "This contains the root of the sub-tree of all events for that fixture."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "fixtureId",
-            "type": "i64"
-          },
-          {
-            "name": "updateStats",
-            "type": {
-              "defined": {
-                "name": "scoresUpdateStats"
-              }
-            }
-          },
-          {
-            "name": "eventsSubTreeRoot",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "scoresUpdateStats",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "updateCount",
-            "type": "i32"
-          },
-          {
-            "name": "minTimestamp",
-            "type": "i64"
-          },
-          {
-            "name": "maxTimestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "serviceRow",
       "type": {
         "kind": "struct",
@@ -2109,7 +1697,7 @@ export type Txoracle = {
       }
     },
     {
-      "name": "statLeaf",
+      "name": "statLeafV1",
       "type": {
         "kind": "struct",
         "fields": [
@@ -2130,6 +1718,26 @@ export type Txoracle = {
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "statLeafV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "scoreStat"
+              }
+            }
+          },
+          {
+            "name": "isZero",
+            "type": "bool"
           }
         ]
       }
@@ -2189,245 +1797,128 @@ export type Txoracle = {
       }
     },
     {
-      "name": "statTerm",
+      "name": "statValidationPayload",
       "type": {
-        "kind": "struct",
-        "fields": [
+        "kind": "enum",
+        "variants": [
           {
-            "name": "statToProve",
-            "type": {
-              "defined": {
-                "name": "scoreStat"
-              }
-            }
-          },
-          {
-            "name": "eventStatRoot",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "statProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
+            "name": "v1",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "eventStatRoot",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixtureProof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "proofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "statLeafV1"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproofHashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "proofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leafIndices",
+                "type": {
+                  "vec": "u32"
                 }
               }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "statValidationInput",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
+            ]
           },
           {
-            "name": "fixtureSummary",
-            "type": {
-              "defined": {
-                "name": "scoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixtureProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
+            "name": "v2",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "eventStatRoot",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixtureProof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "proofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "statLeafV2"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproofHashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "proofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leafIndices",
+                "type": {
+                  "vec": "u32"
+                }
+              },
+              {
+                "name": "rawMask",
+                "type": {
+                  "option": {
+                    "array": [
+                      "u8",
+                      512
+                    ]
+                  }
                 }
               }
-            }
-          },
-          {
-            "name": "mainTreeProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "eventStatRoot",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "stats",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "statLeaf"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "statValidationInputV3",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "fixtureSummary",
-            "type": {
-              "defined": {
-                "name": "scoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixtureProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "mainTreeProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "eventStatRoot",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "leaves",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "statLeaf"
-                }
-              }
-            }
-          },
-          {
-            "name": "multiproofHashes",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leafIndices",
-            "type": {
-              "vec": "u32"
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "statValidationInputV4",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "fixtureSummary",
-            "type": {
-              "defined": {
-                "name": "scoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixtureProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "mainTreeProof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "eventStatRoot",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "leaves",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "statLeaf"
-                }
-              }
-            }
-          },
-          {
-            "name": "multiproofHashes",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "proofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leafIndices",
-            "type": {
-              "vec": "u32"
-            }
+            ]
           }
         ]
       }
@@ -2453,28 +1944,41 @@ export type Txoracle = {
       }
     },
     {
-      "name": "userValidationState",
+      "name": "updateStats",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "owner",
-            "type": "pubkey"
+            "name": "updateCount",
+            "type": "i32"
           },
           {
-            "name": "credits",
-            "type": "u32"
+            "name": "minTimestamp",
+            "type": "i64"
+          },
+          {
+            "name": "maxTimestamp",
+            "type": "i64"
           }
         ]
       }
     },
     {
-      "name": "faucetTracker",
+      "name": "workerTicket",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "lastRequestTime",
+            "name": "cachedRoot",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixtureId",
             "type": "i64"
           }
         ]
@@ -2485,17 +1989,12 @@ export type Txoracle = {
     {
       "name": "backendAdminPubkey",
       "type": "pubkey",
-      "value": "54Wot8oX53yKTtfoJwMc8RHrsqL1p6WC71devAoB1GGT"
+      "value": "Ah5xwzHxRYBBV3BWHDCHdfzQJfBehzGQcc7A9QX1DLUB"
     },
     {
       "name": "lamportsPerSol",
       "type": "f64",
       "value": "1000000000.0"
-    },
-    {
-      "name": "minDepositTokens",
-      "type": "u64",
-      "value": "1000000"
     },
     {
       "name": "minUserBalance",
@@ -2505,22 +2004,17 @@ export type Txoracle = {
     {
       "name": "programAdminPubkey",
       "type": "pubkey",
-      "value": "GbUDHMkPnPiZ8tgqZGjrL4tLxyEBnMCjMLukrx5fz9p6"
-    },
-    {
-      "name": "stakeAmount",
-      "type": "u64",
-      "value": "250000000"
+      "value": "AQA2iP5AWEmDrGihXG39SKgBJnC52UTCvSNjp5vQf8R9"
     },
     {
       "name": "subscriptionDuration",
       "type": "i64",
-      "value": "604800"
+      "value": "3600"
     },
     {
       "name": "subscriptionPriceToken",
       "type": "u64",
-      "value": "25000000"
+      "value": "1"
     },
     {
       "name": "tokenDecimals",
@@ -2540,7 +2034,7 @@ export type Txoracle = {
     {
       "name": "txlineMint",
       "type": "pubkey",
-      "value": "Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL"
+      "value": "4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG"
     },
     {
       "name": "usdtDecimalsFactor",
@@ -2550,7 +2044,12 @@ export type Txoracle = {
     {
       "name": "usdtMint",
       "type": "pubkey",
-      "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+      "value": "ELWTKspHKCnCfCiCiqYw1EDH77k8VCP74dK9qytG2Ujh"
+    },
+    {
+      "name": "validationsPerBooking",
+      "type": "u32",
+      "value": "1"
     }
   ]
 };

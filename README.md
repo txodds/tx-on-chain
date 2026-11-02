@@ -30,7 +30,7 @@ The data the Oracle system is currently offering includes
 - odds: specifically, what is known as TxODDS stable de-margined price available for much more sports and markets in the TxODDS Fusion product;
 - scores: fully detailed (down to every on-the field action) updates for US College Football and US College Basketball matches.
 
-The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 jour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
+The data is distributed in real-time via request-response or low latency streaming to paying blockchain customers known only by the public keys of their wallets. Simultaneously, the batches accumulated over revolving UTC clock-aligned time intervals periods of 5 minutes for odds and scores and 1 hour for fixture snapshots, are cryptographically signed at the end of these intervals. The resulting signature, known as a `Merkle root`, is published on-chain in perpetuity. The `txoracle` Solana program developed by TxODDS in the Rust language and deployed to both Solana DevNet and Solana MainNet (see the public keys below) is working in tandem with the off-chain components to ensure that any published data from the above three channels can be validated against the on-chain signatures.
 
 This validation is based on the mathematical property of Merkle roots such that it is possoble to cryptographically verify whether a given record is *contained* in the referenced batch of data. This serves two purposes: first, the customers can ascertain that the fixture, odds, or scores event was genuine, and secondly, they can engage is trading activities facilitated by the on-chain `txoracle` program and the TxODDS off-chain services, such that one side is able to propose a signed offer based on a prediction that a certain scores event will occur at the specific phase of the game and once the counter-party "agrees to disagreee", accepting the challenge, and with the signed Trade published on-chain, the settlement and funds allocation is based on on-chain proofs that the winning condition was verified. A non-custodial orderbook trading model is also in preparation.
 
@@ -95,14 +95,14 @@ Use one network consistently. Devnet subscribe transactions must use the devnet 
 
 ## Current Examples
 
-The current copy-paste examples live in the hosted documentation pages rather than a top-level `examples/` directory:
+Copy-paste snippets live in the hosted documentation pages, and runnable scripts are in [`examples/devnet`](examples/devnet) and [`examples/mainnet`](examples/mainnet):
 
 - [Quickstart](https://txline.txodds.com/documentation/quickstart) - purchase, subscribe, activate, and API-token header setup.
 - [Fetching Snapshots](https://txline.txodds.com/documentation/examples/fetching-snapshots) - fixtures, odds, and scores snapshots.
 - [Streaming Data](https://txline.txodds.com/documentation/examples/streaming-data) - odds and scores Server-Sent Events.
-- [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls.
-
-The `backup/` directory is a historical archive of older Anchor examples and IDL snapshots. It is kept for reference only and should not be treated as the current integration path.
+- [Booking Fixtures](https://txline.txodds.com/documentation/examples/booking-fixtures) - book a fixture with TxL for scores and odds access and onchain validation.
+- [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation) - validation proof retrieval and program calls. Requires a booked fixture.
+- [Runnable Devnet Examples](https://txline.txodds.com/documentation/examples/devnet-examples) - setup and run order for the devnet scripts.
 
 ## Trading Flow
 
@@ -848,6 +848,8 @@ The TxODDS service then copies the same `TradeMatched` notifications to respecti
 ```
 
 ### The winning trader submits a `settle_trade` transaction directly to the `txoracle` program on blockchain
+
+> Note: the walkthrough below uses the `stat-validation` proof format. The current on-chain validation path is V4: book the fixture with `book_fixture` (see [Booking Fixtures](https://txline.txodds.com/documentation/examples/booking-fixtures)), then fetch `GET /api/scores/stat-validation-v4` or `GET /api/odds/validation-v4` payloads and run `validate_fixture_for_tree` -> `validate_stat_v4` / `validate_odds_v4` -> `close_worker_ticket`. See [On-Chain Validation](https://txline.txodds.com/documentation/examples/onchain-validation).
 
 Both traders manage their positions by front-running their subscriptions to the odds and scores channels. Once one of them is clear the prediction can be resolved in their favour (there can be only one winner to any given predicate), they call the off-chain TxODDS service to obtain a partial proof of the scores record that settles the prediction in their favour and then call the `txoracle` program with this proof.
 

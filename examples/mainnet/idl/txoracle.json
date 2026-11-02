@@ -2,95 +2,39 @@
   "address": "9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJgcKaA",
   "metadata": {
     "name": "txoracle",
-    "version": "1.5.6",
+    "version": "1.5.17",
     "spec": "0.1.0",
     "description": "TxODDS TxLINE Data system"
   },
   "instructions": [
     {
-      "name": "close_pricing_matrix",
+      "name": "book_fixture",
       "discriminator": [
-        251,
-        118,
-        215,
-        117,
-        22,
-        155,
-        38,
-        73
+        48,
+        127,
+        234,
+        70,
+        187,
+        214,
+        206,
+        109
       ],
       "accounts": [
         {
-          "name": "pricing_matrix",
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "fixture_ticket",
           "writable": true
         },
         {
-          "name": "authority",
-          "writable": true,
-          "signer": true
+          "name": "token_mint"
         },
         {
-          "name": "system_program"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initialize_pricing_matrix",
-      "discriminator": [
-        147,
-        32,
-        167,
-        248,
-        235,
-        57,
-        210,
-        6
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pricing_matrix",
+          "name": "user_token_account",
           "writable": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "rows",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "ServiceRow"
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "initialize_treasury_v2",
-      "discriminator": [
-        18,
-        140,
-        152,
-        210,
-        31,
-        25,
-        22,
-        171
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
         },
         {
           "name": "token_treasury_vault",
@@ -100,215 +44,60 @@
           "name": "token_treasury_pda"
         },
         {
-          "name": "subscription_token_mint"
-        },
-        {
-          "name": "system_program"
+          "name": "instructions_sysvar"
         },
         {
           "name": "token_program"
         },
         {
-          "name": "associated_token_program"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "initialize_usdt_treasury",
-      "discriminator": [
-        81,
-        0,
-        86,
-        241,
-        86,
-        85,
-        243,
-        74
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "usdt_treasury_vault",
-          "writable": true
-        },
-        {
-          "name": "usdt_treasury_pda"
-        },
-        {
-          "name": "usdt_mint"
-        },
-        {
-          "name": "token_program"
+          "name": "system_program"
         },
         {
           "name": "associated_token_program"
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "insert_batch_root",
-      "discriminator": [
-        243,
-        170,
-        208,
-        158,
-        207,
-        29,
-        237,
-        93
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "daily_batch_roots",
-          "writable": true
-        },
-        {
-          "name": "system_program"
         }
       ],
       "args": [
         {
-          "name": "epoch_day",
-          "type": "u16"
-        },
-        {
-          "name": "hour_of_day",
-          "type": "u8"
-        },
-        {
-          "name": "minute_of_hour",
-          "type": "u8"
-        },
-        {
-          "name": "root",
+          "name": "payload",
           "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
-        },
-        {
-          "name": "account_bump",
-          "type": "u8"
-        }
-      ]
-    },
-    {
-      "name": "insert_fixtures_root",
-      "discriminator": [
-        18,
-        70,
-        8,
-        160,
-        75,
-        200,
-        109,
-        235
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "ten_daily_fixtures_roots",
-          "docs": [
-            "The address is constrained by the seeds, and we verify the",
-            "discriminator and owner inside the instruction."
-          ],
-          "writable": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "epoch_day",
-          "type": "u16"
-        },
-        {
-          "name": "index",
-          "type": "u64"
-        },
-        {
-          "name": "root",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
+            "defined": {
+              "name": "BookFixturePayload"
+            }
           }
         }
       ]
     },
     {
-      "name": "insert_scores_root",
+      "name": "close_worker_ticket",
       "discriminator": [
-        137,
-        39,
-        242,
-        97,
-        131,
-        204,
-        100,
-        133
+        51,
+        20,
+        55,
+        115,
+        249,
+        56,
+        9,
+        14
       ],
       "accounts": [
         {
-          "name": "authority",
+          "name": "payer",
           "writable": true,
           "signer": true
         },
         {
-          "name": "daily_scores_roots",
-          "docs": [
-            "The address is constrained by the seeds, and we verify the",
-            "discriminator and owner inside the instruction."
-          ],
+          "name": "ticket",
           "writable": true
-        },
-        {
-          "name": "system_program"
         }
       ],
       "args": [
         {
-          "name": "epoch_day",
+          "name": "_domain",
+          "type": "u8"
+        },
+        {
+          "name": "_worker_id",
           "type": "u16"
-        },
-        {
-          "name": "hour_of_day",
-          "type": "u8"
-        },
-        {
-          "name": "minute_of_hour",
-          "type": "u8"
-        },
-        {
-          "name": "root",
-          "type": {
-            "array": [
-              "u8",
-              32
-            ]
-          }
         }
       ]
     },
@@ -445,45 +234,6 @@
       ]
     },
     {
-      "name": "update_pricing_matrix",
-      "discriminator": [
-        177,
-        191,
-        172,
-        252,
-        42,
-        203,
-        8,
-        164
-      ],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "pricing_matrix",
-          "writable": true
-        },
-        {
-          "name": "system_program"
-        }
-      ],
-      "args": [
-        {
-          "name": "rows",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "ServiceRow"
-              }
-            }
-          }
-        }
-      ]
-    },
-    {
       "name": "validate_fixture",
       "discriminator": [
         231,
@@ -590,6 +340,46 @@
       "returns": "bool"
     },
     {
+      "name": "validate_fixture_for_tree",
+      "discriminator": [
+        118,
+        85,
+        77,
+        234,
+        117,
+        87,
+        168,
+        190
+      ],
+      "accounts": [
+        {
+          "name": "payer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket",
+          "writable": true
+        },
+        {
+          "name": "daily_merkle_roots"
+        },
+        {
+          "name": "system_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "FixtureForTreeValidationInput"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "validate_odds",
       "discriminator": [
         192,
@@ -651,219 +441,117 @@
       "returns": "bool"
     },
     {
-      "name": "validate_stat",
+      "name": "validate_odds_v4",
       "discriminator": [
-        107,
-        197,
-        232,
-        90,
-        191,
-        136,
-        105,
-        185
+        147,
+        143,
+        200,
+        85,
+        251,
+        48,
+        42,
+        173
       ],
       "accounts": [
         {
-          "name": "daily_scores_merkle_roots"
-        }
-      ],
-      "args": [
-        {
-          "name": "ts",
-          "type": "i64"
-        },
-        {
-          "name": "fixture_summary",
-          "type": {
-            "defined": {
-              "name": "ScoresBatchSummary"
-            }
-          }
-        },
-        {
-          "name": "fixture_proof",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "ProofNode"
-              }
-            }
-          }
-        },
-        {
-          "name": "main_tree_proof",
-          "type": {
-            "vec": {
-              "defined": {
-                "name": "ProofNode"
-              }
-            }
-          }
-        },
-        {
-          "name": "predicate",
-          "type": {
-            "defined": {
-              "name": "TraderPredicate"
-            }
-          }
-        },
-        {
-          "name": "stat_a",
-          "type": {
-            "defined": {
-              "name": "StatTerm"
-            }
-          }
-        },
-        {
-          "name": "stat_b",
-          "type": {
-            "option": {
-              "defined": {
-                "name": "StatTerm"
-              }
-            }
-          }
-        },
-        {
-          "name": "op",
-          "type": {
-            "option": {
-              "defined": {
-                "name": "BinaryExpression"
-              }
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validate_stat_v2",
-      "discriminator": [
-        208,
-        215,
-        194,
-        214,
-        241,
-        71,
-        246,
-        178
-      ],
-      "accounts": [
-        {
-          "name": "daily_scores_merkle_roots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "StatValidationInput"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "NDimensionalStrategy"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "validate_stat_v3",
-      "discriminator": [
-        150,
-        37,
-        155,
-        89,
-        141,
-        190,
-        77,
-        203
-      ],
-      "accounts": [
-        {
-          "name": "daily_scores_merkle_roots"
-        }
-      ],
-      "args": [
-        {
-          "name": "payload",
-          "type": {
-            "defined": {
-              "name": "StatValidationInputV3"
-            }
-          }
-        },
-        {
-          "name": "strategy",
-          "type": {
-            "defined": {
-              "name": "NDimensionalStrategy"
-            }
-          }
-        }
-      ],
-      "returns": "bool"
-    },
-    {
-      "name": "withdraw_usdt",
-      "discriminator": [
-        117,
-        75,
-        94,
-        162,
-        178,
-        92,
-        19,
-        141
-      ],
-      "accounts": [
-        {
-          "name": "authority",
+          "name": "user",
           "writable": true,
           "signer": true
         },
         {
-          "name": "admin_destination",
+          "name": "ticket"
+        },
+        {
+          "name": "fixture_ticket",
           "writable": true
         },
         {
-          "name": "usdt_treasury_vault",
-          "writable": true
-        },
-        {
-          "name": "usdt_treasury_pda"
-        },
-        {
-          "name": "usdt_mint"
-        },
-        {
-          "name": "token_program"
-        },
-        {
-          "name": "associated_token_program"
-        },
-        {
-          "name": "system_program"
+          "name": "instructions_sysvar"
         }
       ],
       "args": [
         {
-          "name": "amount",
-          "type": "u64"
+          "name": "_worker_id",
+          "type": "u16"
+        },
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "OddsValidationInputV4"
+            }
+          }
         }
-      ]
+      ],
+      "returns": "bool"
+    },
+    {
+      "name": "validate_stat_v4",
+      "discriminator": [
+        17,
+        11,
+        195,
+        64,
+        250,
+        26,
+        27,
+        211
+      ],
+      "accounts": [
+        {
+          "name": "user",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "ticket"
+        },
+        {
+          "name": "fixture_ticket"
+        },
+        {
+          "name": "instructions_sysvar"
+        }
+      ],
+      "args": [
+        {
+          "name": "_worker_id",
+          "type": "u16"
+        },
+        {
+          "name": "payload",
+          "type": {
+            "defined": {
+              "name": "StatValidationPayload"
+            }
+          }
+        },
+        {
+          "name": "strategy",
+          "type": {
+            "defined": {
+              "name": "NDimensionalStrategy"
+            }
+          }
+        }
+      ],
+      "returns": "bool"
     }
   ],
   "accounts": [
+    {
+      "name": "FixtureTicket",
+      "discriminator": [
+        251,
+        200,
+        228,
+        250,
+        96,
+        10,
+        109,
+        36
+      ]
+    },
     {
       "name": "PricingMatrix",
       "discriminator": [
@@ -875,6 +563,19 @@
         77,
         110,
         106
+      ]
+    },
+    {
+      "name": "WorkerTicket",
+      "discriminator": [
+        205,
+        149,
+        102,
+        53,
+        98,
+        192,
+        1,
+        162
       ]
     }
   ],
@@ -951,8 +652,8 @@
     },
     {
       "code": 6014,
-      "name": "StakeStillLocked",
-      "msg": "Stake is still locked and cannot be withdrawn yet."
+      "name": "FFEX1",
+      "msg": "For future expansion"
     },
     {
       "code": 6015,
@@ -1021,28 +722,28 @@
     },
     {
       "code": 6028,
-      "name": "TradeNotActive",
-      "msg": "Trade not active"
+      "name": "FFEX2",
+      "msg": "For future expansion"
     },
     {
       "code": 6029,
-      "name": "InvalidTrader",
-      "msg": "Invalid trader"
+      "name": "FFEX3",
+      "msg": "For future expansion"
     },
     {
       "code": 6030,
-      "name": "WinnerMismatch",
-      "msg": "Winner mismatch"
+      "name": "FFEX4",
+      "msg": "For future expansion"
     },
     {
       "code": 6031,
-      "name": "TradeTermsMismatch",
-      "msg": "Trade terms mismatch"
+      "name": "FFEX5",
+      "msg": "For future expansion"
     },
     {
       "code": 6032,
-      "name": "UnauthorizedSettler",
-      "msg": "Unauthorized settler"
+      "name": "FFEX6",
+      "msg": "For future expansion"
     },
     {
       "code": 6033,
@@ -1106,8 +807,8 @@
     },
     {
       "code": 6045,
-      "name": "InsufficientLiquidity",
-      "msg": "Insufficient liquidity"
+      "name": "FFEX7",
+      "msg": "For future expansion"
     },
     {
       "code": 6046,
@@ -1116,8 +817,8 @@
     },
     {
       "code": 6047,
-      "name": "InvalidExpiration",
-      "msg": "Invalid expiration"
+      "name": "FFEX8",
+      "msg": "For future expansion"
     },
     {
       "code": 6048,
@@ -1131,18 +832,18 @@
     },
     {
       "code": 6050,
-      "name": "IntentNotActive",
-      "msg": "Intent not active"
+      "name": "FFEX9",
+      "msg": "For future expansion"
     },
     {
       "code": 6051,
-      "name": "OrderNotYetExpired",
-      "msg": "Order not yet expired"
+      "name": "FFEX10",
+      "msg": "For future expansion"
     },
     {
       "code": 6052,
-      "name": "TermsMismatch",
-      "msg": "Terms mismatch"
+      "name": "FFEX11",
+      "msg": "For future expansion"
     },
     {
       "code": 6053,
@@ -1196,8 +897,8 @@
     },
     {
       "code": 6063,
-      "name": "TradeTooSmall",
-      "msg": "Trade too small"
+      "name": "FFEX12",
+      "msg": "For future expansion"
     },
     {
       "code": 6064,
@@ -1273,6 +974,71 @@
       "code": 6078,
       "name": "InvalidProofPath",
       "msg": "Invalid proof path"
+    },
+    {
+      "code": 6079,
+      "name": "InsufficientCredits",
+      "msg": "Insufficient credits"
+    },
+    {
+      "code": 6080,
+      "name": "MissingSignatureInstruction",
+      "msg": "Missing signature instruction"
+    },
+    {
+      "code": 6081,
+      "name": "InvalidSignatureProgram",
+      "msg": "Invalid signature program"
+    },
+    {
+      "code": 6082,
+      "name": "SerializationFailed",
+      "msg": "Serialization failed"
+    },
+    {
+      "code": 6083,
+      "name": "InvalidOracleSignature",
+      "msg": "Invalid oracle signature"
+    },
+    {
+      "code": 6084,
+      "name": "InvalidSequenceNumber",
+      "msg": "Invalid sequence number"
+    },
+    {
+      "code": 6085,
+      "name": "MessageMismatch",
+      "msg": "Message mismatch"
+    },
+    {
+      "code": 6086,
+      "name": "FixtureAlreadyBooked",
+      "msg": "Fixture already booked for validation"
+    },
+    {
+      "code": 6087,
+      "name": "InvalidTimestamp",
+      "msg": "Invalid timestamp"
+    },
+    {
+      "code": 6088,
+      "name": "QuoteExpired",
+      "msg": "Quote expired"
+    },
+    {
+      "code": 6089,
+      "name": "InvalidDomain",
+      "msg": "Invalid domain"
+    },
+    {
+      "code": 6090,
+      "name": "InvalidDailyRootsPda",
+      "msg": "Invalid daily roots Pda"
+    },
+    {
+      "code": 6091,
+      "name": "MissingZeroMask",
+      "msg": "Missing zeromask"
     }
   ],
   "types": [
@@ -1301,6 +1067,39 @@
       }
     },
     {
+      "name": "BatchSummary",
+      "docs": [
+        "The summary for a single fixture's tree events within a 5-minute batch.",
+        "This contains the root of the sub-tree of all tree events for that fixture."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fixture_id",
+            "type": "i64"
+          },
+          {
+            "name": "update_stats",
+            "type": {
+              "defined": {
+                "name": "UpdateStats"
+              }
+            }
+          },
+          {
+            "name": "sub_tree_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "BinaryExpression",
       "type": {
         "kind": "enum",
@@ -1310,6 +1109,34 @@
           },
           {
             "name": "Subtract"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BookFixturePayload",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "user",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixture_id",
+            "type": "u32"
+          },
+          {
+            "name": "price",
+            "type": "u32"
+          },
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "validity",
+            "type": "i64"
           }
         ]
       }
@@ -1421,6 +1248,64 @@
       }
     },
     {
+      "name": "FixtureForTreeValidationInput",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "domain",
+            "type": "u8"
+          },
+          {
+            "name": "worker_id",
+            "type": "u16"
+          },
+          {
+            "name": "summary",
+            "type": {
+              "defined": {
+                "name": "BatchSummary"
+              }
+            }
+          },
+          {
+            "name": "main_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FixtureTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "fixture_id",
+            "type": "u32"
+          },
+          {
+            "name": "validations_remaining",
+            "type": "u32"
+          }
+        ]
+      }
+    },
+    {
       "name": "FixtureUpdateStats",
       "type": {
         "kind": "struct",
@@ -1454,13 +1339,6 @@
             "type": "i32"
           }
         ]
-      }
-    },
-    {
-      "name": "MarketIntentParams",
-      "type": {
-        "kind": "struct",
-        "fields": []
       }
     },
     {
@@ -1617,6 +1495,37 @@
       }
     },
     {
+      "name": "OddsValidationInputV4",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ts",
+            "type": "i64"
+          },
+          {
+            "name": "odds_leaf_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "sub_tree_proof",
+            "type": {
+              "vec": {
+                "defined": {
+                  "name": "ProofNode"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "PricingMatrix",
       "type": {
         "kind": "struct",
@@ -1684,59 +1593,6 @@
       }
     },
     {
-      "name": "ScoresBatchSummary",
-      "docs": [
-        "The summary for a single fixture's scores events within a 5-minute batch.",
-        "This contains the root of the sub-tree of all events for that fixture."
-      ],
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "fixture_id",
-            "type": "i64"
-          },
-          {
-            "name": "update_stats",
-            "type": {
-              "defined": {
-                "name": "ScoresUpdateStats"
-              }
-            }
-          },
-          {
-            "name": "events_sub_tree_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ScoresUpdateStats",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "update_count",
-            "type": "i32"
-          },
-          {
-            "name": "min_timestamp",
-            "type": "i64"
-          },
-          {
-            "name": "max_timestamp",
-            "type": "i64"
-          }
-        ]
-      }
-    },
-    {
       "name": "ServiceRow",
       "type": {
         "kind": "struct",
@@ -1765,7 +1621,7 @@
       }
     },
     {
-      "name": "StatLeaf",
+      "name": "StatLeafV1",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1786,6 +1642,26 @@
                 }
               }
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "StatLeafV2",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "stat",
+            "type": {
+              "defined": {
+                "name": "ScoreStat"
+              }
+            }
+          },
+          {
+            "name": "is_zero",
+            "type": "bool"
           }
         ]
       }
@@ -1845,170 +1721,128 @@
       }
     },
     {
-      "name": "StatTerm",
+      "name": "StatValidationPayload",
       "type": {
-        "kind": "struct",
-        "fields": [
+        "kind": "enum",
+        "variants": [
           {
-            "name": "stat_to_prove",
-            "type": {
-              "defined": {
-                "name": "ScoreStat"
-              }
-            }
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "stat_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
+            "name": "V1",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "event_stat_root",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixture_proof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "StatLeafV1"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproof_hashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaf_indices",
+                "type": {
+                  "vec": "u32"
                 }
               }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "StatValidationInput",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
+            ]
           },
           {
-            "name": "fixture_summary",
-            "type": {
-              "defined": {
-                "name": "ScoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixture_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
+            "name": "V2",
+            "fields": [
+              {
+                "name": "ts",
+                "type": "i64"
+              },
+              {
+                "name": "event_stat_root",
+                "type": {
+                  "array": [
+                    "u8",
+                    32
+                  ]
+                }
+              },
+              {
+                "name": "fixture_proof",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaves",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "StatLeafV2"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "multiproof_hashes",
+                "type": {
+                  "vec": {
+                    "defined": {
+                      "name": "ProofNode"
+                    }
+                  }
+                }
+              },
+              {
+                "name": "leaf_indices",
+                "type": {
+                  "vec": "u32"
+                }
+              },
+              {
+                "name": "raw_mask",
+                "type": {
+                  "option": {
+                    "array": [
+                      "u8",
+                      512
+                    ]
+                  }
                 }
               }
-            }
-          },
-          {
-            "name": "main_tree_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "stats",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "StatLeaf"
-                }
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "name": "StatValidationInputV3",
-      "type": {
-        "kind": "struct",
-        "fields": [
-          {
-            "name": "ts",
-            "type": "i64"
-          },
-          {
-            "name": "fixture_summary",
-            "type": {
-              "defined": {
-                "name": "ScoresBatchSummary"
-              }
-            }
-          },
-          {
-            "name": "fixture_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "main_tree_proof",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "event_stat_root",
-            "type": {
-              "array": [
-                "u8",
-                32
-              ]
-            }
-          },
-          {
-            "name": "leaves",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "StatLeaf"
-                }
-              }
-            }
-          },
-          {
-            "name": "multiproof_hashes",
-            "type": {
-              "vec": {
-                "defined": {
-                  "name": "ProofNode"
-                }
-              }
-            }
-          },
-          {
-            "name": "leaf_indices",
-            "type": {
-              "vec": "u32"
-            }
+            ]
           }
         ]
       }
@@ -2032,6 +1866,47 @@
           }
         ]
       }
+    },
+    {
+      "name": "UpdateStats",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "update_count",
+            "type": "i32"
+          },
+          {
+            "name": "min_timestamp",
+            "type": "i64"
+          },
+          {
+            "name": "max_timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "WorkerTicket",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "cached_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "fixture_id",
+            "type": "i64"
+          }
+        ]
+      }
     }
   ],
   "constants": [
@@ -2046,19 +1921,14 @@
       "value": "1000000000.0"
     },
     {
-      "name": "MIN_DEPOSIT_TOKENS",
-      "type": "u64",
-      "value": "1000000"
-    },
-    {
       "name": "MIN_USER_BALANCE",
       "type": "u64",
       "value": "1000000"
     },
     {
-      "name": "STAKE_AMOUNT",
-      "type": "u64",
-      "value": "250000000"
+      "name": "PROGRAM_ADMIN_PUBKEY",
+      "type": "pubkey",
+      "value": "GbUDHMkPnPiZ8tgqZGjrL4tLxyEBnMCjMLukrx5fz9p6"
     },
     {
       "name": "SUBSCRIPTION_DURATION",
@@ -2099,6 +1969,11 @@
       "name": "USDT_MINT",
       "type": "pubkey",
       "value": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB"
+    },
+    {
+      "name": "VALIDATIONS_PER_BOOKING",
+      "type": "u32",
+      "value": "1"
     }
   ]
 }

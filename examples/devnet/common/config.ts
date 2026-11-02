@@ -1,5 +1,3 @@
-import { PublicKey } from "@solana/web3.js";
-
 export const API_BASE_URL = "https://txline-dev.txodds.com/api";
 
 export const JWT_URL = "https://txline-dev.txodds.com/auth/guest/start";
@@ -11,6 +9,3 @@ export const durationInSeconds = 300;
 export const currentTs = Math.floor(Date.now() / 1000);
 
 export const subscriptionEndTs = currentTs + durationInSeconds;
-
-export const BACKEND_ADMIN_PUBKEY = new PublicKey("Ah5xwzHxRYBBV3BWHDCHdfzQJfBehzGQcc7A9QX1DLUB");
-

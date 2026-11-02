@@ -32,12 +32,12 @@ The repository includes runnable devnet stream scripts that handle activation, A
 
 | Script | Stream coverage |
 |--------|-----------------|
-| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Odds snapshots and odds SSE streams. |
-| [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, score validation, and scores SSE streams. |
-| [`subscription_scores_v2.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2.ts) | Scores stream handling alongside V2 score validation. |
-| [`subscription_scores_v2a.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v2a.ts) | Multi-leg V2 validation with multiple stat keys. |
-| [`subscription_scores_v3c.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v3c.ts) | V3 multiproof validation comparing V2 and V3 approaches. |
+| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Fixture and odds snapshots on the free tier. |
+| [`V1_stat_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_stat_validation_v4.ts) | Scores snapshots, V4 stat validation for a booked fixture, then a scores SSE stream. |
+| [`V1_odds_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_odds_validation_v4.ts) | V4 odds validation for a booked fixture, then an odds SSE stream. |
 | [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Fetching historical score updates for completed fixtures. |
+
+The stream scripts keep the connection open for about an hour. Stop them with `Ctrl+C` once you have seen enough updates.
 
 See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the required devnet environment variables and Node.js runtime notes.
 
@@ -169,7 +169,7 @@ for await (const message of readSseMessages(streamResponse)) {
 
 Use `https://txline-dev.txodds.com/api/scores/stream` for a devnet subscription.
 
-Scores stream messages can be used as validation inputs. When a message contains a real sequence field, use its observed `Seq` or `seq` value with `/api/scores/stat-validation`; do not replace it with `0` or a synthetic sequence number.
+Scores stream messages can be used as validation inputs. When a message contains a real sequence field, use its observed `Seq` or `seq` value with `/api/scores/stat-validation-v4`; do not replace it with `0` or a synthetic sequence number. On-chain validation also needs a booked fixture; see [Booking Fixtures](/documentation/examples/booking-fixtures).
 
 ## Historical Scores
 
