@@ -1,10 +1,10 @@
 ---
 title: "On-Chain Validation"
-description: "Validate scores data using cryptographic Merkle proofs"
+description: "Validate scores and odds data using cryptographic Merkle proofs"
 ---
 
 <Info>
-**Prerequisites**: Complete the [Quickstart](/documentation/quickstart) guide to set up authentication and subscriptions. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
+**Prerequisites**: Complete the [Quickstart](/documentation/quickstart) guide to set up authentication and subscriptions, and [book the fixture](/documentation/examples/booking-fixtures) you want to validate. The snippets assume `jwt` is the guest JWT from `/auth/guest/start` and `apiToken` is the value returned by `/api/token/activate`.
 </Info>
 
 <Info>
@@ -17,38 +17,121 @@ description: "Validate scores data using cryptographic Merkle proofs"
 
 ## Overview
 
-This guide demonstrates how to validate scores data against on-chain Merkle roots using cryptographic proofs. You'll learn how to fetch validation data and perform single-stat and two-stat validations, and V4 multi-stat validation.
+On-chain validation proves, inside a Solana transaction, that TxODDS published a particular score record or odds update. For stats, it also checks a condition you choose, such as "Participant 1 scored more goals than Participant 2". The instruction returns `true` only when the proof matches the published root and the condition holds. Otherwise it returns `false`; it does not fail the transaction.
 
-The public `/api/scores/stat-validation` endpoint serves single-stat and two-stat validation:
-
-| Query shape | On-chain method | Notes |
-|-------------|-----------------|-------|
-| `statKey=...` and optional `statKey2=...` | `validateStat` | Single-stat and two-stat validation. |
-
-V4 validation uses separate endpoints and a three-instruction on-chain sequence; see [V4 Validation](#v4-validation).
-
-| Endpoint | On-chain method | Notes |
-|----------|-----------------|-------|
-| `GET /api/scores/stat-validation-v4` | `validateStatV4` | Multiproof stat validation with a `strategy`. Requires a booked `fixture_ticket`. |
-| `GET /api/odds/validation-v4` | `validateOddsV4` | Validation of one odds update. Requires a booked `fixture_ticket`. |
+| What you prove | API endpoint | Instruction |
+|----------------|--------------|-------------|
+| A condition on one or more stats from a score record | `GET /api/scores/stat-validation-v4` | `validateStatV4` |
+| One odds update | `GET /api/odds/validation-v4` | `validateOddsV4` |
 
 Use the same network for the API request, IDL/types, program ID, and on-chain root PDA.
 
+## Before You Validate: Book the Fixture
+
+Validation is tied to booking. Before you validate a fixture's stats or odds, the validating wallet must book that fixture with `book_fixture`. Booking creates a `fixture_ticket` for your wallet and that fixture. `validateStatV4` and `validateOddsV4` check for it and fail without it. This applies even when your subscription bundle already covers the fixture.
+
+- **Book once per fixture,** with the wallet that will sign the validations.
+- **One booking covers every later validation of that fixture,** stats and odds alike, with no per-call fee.
+- **The proof must be for the booked fixture.** A ticket for one fixture cannot validate another.
+
+See [How a Booking Connects to Validation](/documentation/examples/booking-fixtures#how-a-booking-connects-to-validation) for the details.
+
+<Note>
+The legacy `validateStat` instruction and its `/api/scores/stat-validation` endpoint are not part of the current program interface. Single-stat and two-stat checks are V4 strategies; see [Single-Stat and Two-Stat Checks](#single-stat-and-two-stat-checks). Fixture proof validation with `validateFixture` is a read-only simulation and does not need a booking; see [Runnable Devnet Examples](/documentation/examples/devnet-examples).
+</Note>
+
+## Worked Example: Prove a Match Result
+
+This example proves on-chain that Participant 1 beat Participant 2 in a finished soccer match. In the [Soccer Feed](/documentation/scores/soccer-feed), stat key `1` is Participant 1's total goals and key `2` is Participant 2's.
+
+```mermaid
+sequenceDiagram
+  participant C as Your client
+  participant API as TxLINE API
+  participant P as txoracle program
+  Note over C,P: Once per fixture
+  C->>API: GET /api/quotes/book-fixture
+  API-->>C: signed quote
+  C->>P: book_fixture
+  P-->>C: fixture_ticket created
+  Note over C,P: Each validation
+  C->>API: GET /api/scores/historical/{fixtureId}
+  API-->>C: score records
+  C->>API: GET /api/scores/stat-validation-v4
+  API-->>C: signed proof payload
+  C->>P: validateFixtureForTree
+  P-->>C: worker_ticket staged
+  C->>P: Ed25519 verify + validateStatV4
+  P-->>C: fixture_ticket checked, result true or false
+  C->>P: closeWorkerTicket
+```
+
+<Steps>
+  <Step title="Book the fixture">
+    Pick the match from `GET /api/fixtures-schedule`, request a quote, and submit `book_fixture`, as described in [Booking Fixtures](/documentation/examples/booking-fixtures). Do this once. If your wallet already has the fixture's `fixture_ticket`, skip this step.
+  </Step>
+  <Step title="Find the final score record">
+    The match result is in the record whose `Action` is `game_finalised`. Take its `Seq`.
+
+    ```typescript
+    const { data: records } = await httpClient.get(`/api/scores/historical/${fixtureId}`);
+    const finalRecord = records.find((r: any) => r.Action === "game_finalised");
+    const seq = finalRecord.Seq;
+    ```
+
+    The historical endpoint covers fixtures that started between two weeks and six hours ago. For a more recent match, take the record from the scores stream or updates instead. See [Choosing the Score Sequence](#choosing-the-score-sequence).
+  </Step>
+  <Step title="Fetch the proof">
+    Request both goal totals. The order of `statKeys` sets the order of `payload.leaves`, so `leaves[0]` is Participant 1's goals and `leaves[1]` is Participant 2's.
+
+    ```typescript
+    const { data } = await httpClient.get("/api/scores/stat-validation-v4", {
+      params: { fixtureId, seq, statKeys: "1,2" },
+    });
+    const { payload, signature } = data;
+    ```
+  </Step>
+  <Step title="Stage a worker ticket">
+    Send `validateFixtureForTree`. It checks the proof's fixture summary against the day's on-chain scores root and keeps the verified root in a short-lived `worker_ticket`. This step does not check the booking.
+  </Step>
+  <Step title="Validate the result">
+    Describe the condition as a strategy. Here it is "goals 1 minus goals 2 is greater than 0".
+
+    ```typescript
+    const participant1Won = {
+      geometricTargets: [],
+      distancePredicate: null,
+      discretePredicates: [
+        { binary: { indexA: 0, indexB: 1, op: { subtract: {} }, predicate: { threshold: 0, comparison: { greaterThan: {} } } } },
+      ],
+    };
+    ```
+
+    Send an Ed25519 verify instruction for the backend `signature`, followed by `validateStatV4` with the payload, the strategy, and your `fixture_ticket`. The program checks the booking, then the proof, then evaluates the strategy. The result is `true` if the proof matches and Participant 1 won. It is `false` if Participant 1 did not win or if the proof does not match.
+  </Step>
+  <Step title="Close the worker ticket">
+    Send `closeWorkerTicket` to reclaim the worker ticket's rent. The `fixture_ticket` stays, so later validations of this fixture skip step 1.
+  </Step>
+</Steps>
+
+The same booking also lets this wallet validate the fixture's odds updates with `validateOddsV4`. The rest of this page is the reference for each step.
+
 <Info>
-The repository now includes runnable devnet examples for both paths in [`examples/devnet/scripts`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet/scripts). See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for setup and script mapping.
+The repository includes runnable devnet examples for both paths in [`examples/devnet/scripts`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet/scripts). See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for setup and script mapping.
 </Info>
 
 ## Validation Checklist
 
-Before calling `validateStat`, confirm:
+Before sending a V4 validation, confirm:
 
+- The wallet holds a `fixture_ticket` for the fixture being validated.
 - The proof came from the same API host as your activated subscription.
 - The program ID matches the network used for the proof.
-- `daily_scores_roots` is derived from the same timestamp you pass into `validateStat`.
+- The root PDA (`daily_scores_roots` or `daily_batch_roots`) is derived from `payload.ts`.
 - The epoch day is encoded as u16 little-endian.
 - Every proof hash is decoded to exactly 32 bytes.
 - The fixture ID and sequence number refer to the score update you intend to validate.
-- For V4, each strategy index refers to the same position in the requested `statKeys` array.
+- Each strategy index refers to the same position in the requested `statKeys` array.
 
 ## Setup
 
@@ -61,6 +144,7 @@ import axios from "axios";
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
 const program = anchor.workspace.Txoracle as anchor.Program<Txoracle>;
+const wallet = provider.wallet;
 
 // Create HTTP client with authentication
 const httpClient = axios.create({
@@ -74,6 +158,10 @@ const httpClient = axios.create({
 });
 
 // For devnet, use baseURL: "https://txline-dev.txodds.com".
+
+const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
+  units: 1_400_000
+});
 
 function toBytes32(value: string | number[] | Uint8Array): number[] {
   const bytes = Array.isArray(value)
@@ -101,7 +189,7 @@ function toProofNodes(nodes: Array<{ hash: string | number[] | Uint8Array; isRig
 
 ## Fetching Scores Data
 
-Retrieve a snapshot of scores for a specific fixture:
+Retrieve a snapshot of scores for a booked fixture:
 
 ```typescript
 const fixtureId = 17952170;
@@ -131,7 +219,7 @@ The `seq` parameter is not a placeholder. Use the sequence value from a real sco
 - `/api/scores/historical/{fixtureId}`
 - `/api/scores/stream`
 
-Do not call `/api/scores/stat-validation` with `seq=0`. Score sequences start at `1` for a fixture and increment as new score records are produced. Depending on your client and response mapper, the payload field may appear as `Seq` or `seq`; use that observed value when requesting the validation proof.
+Do not call `/api/scores/stat-validation-v4` with `seq=0`. Score sequences start at `1` for a fixture and increment as new score records are produced. Depending on your client and response mapper, the payload field may appear as `Seq` or `seq`; use that observed value when requesting the validation proof.
 
 ```typescript
 const scoreRecord = updates.data[0];
@@ -141,11 +229,11 @@ if (!Number.isInteger(seq) || seq < 1) {
   throw new Error("Use a real score record sequence; seq=0 is not valid");
 }
 
-const validation = await httpClient.get("/api/scores/stat-validation", {
+const validation = await httpClient.get("/api/scores/stat-validation-v4", {
   params: {
     fixtureId: scoreRecord.FixtureId ?? scoreRecord.fixtureId,
     seq,
-    statKey: 1002
+    statKeys: "1002"
   }
 });
 ```
@@ -158,155 +246,9 @@ If you validate an in-running first-half record, the predicate means the conditi
 
 For final match outcome settlement on the current devnet and mainnet releases, use a scores record with `action=game_finalised`. These finalisation records set `statusId` and `period` to `100`, so the same final-outcome validation path covers regulation-time wins, extra-time wins, penalty wins, and abandoned matches.
 
-## Single-Stat Validation
-
-Validate a single statistic against on-chain Merkle roots:
-
-```typescript
-// Fetch validation data from API
-const response = await httpClient.get("/api/scores/stat-validation", {
-  params: {
-    fixtureId: 17952170,
-    seq: 941,
-    statKey: 1002
-  }
-});
-const validation = response.data;
-
-// Prepare fixture summary
-const fixtureSummary = {
-  fixtureId: new BN(validation.summary.fixtureId),
-  updateStats: {
-    updateCount: validation.summary.updateStats.updateCount,
-    minTimestamp: new BN(validation.summary.updateStats.minTimestamp),
-    maxTimestamp: new BN(validation.summary.updateStats.maxTimestamp),
-  },
-  eventsSubTreeRoot: toBytes32(validation.summary.eventStatsSubTreeRoot),
-};
-
-// Prepare Merkle proofs
-const fixtureProof = toProofNodes(validation.subTreeProof);
-const mainTreeProof = toProofNodes(validation.mainTreeProof);
-
-// Prepare stat to validate
-const stat1 = {
-  statToProve: validation.statToProve,
-  eventStatRoot: toBytes32(validation.eventStatRoot),
-  statProof: toProofNodes(validation.statProof),
-};
-
-// Define validation predicate
-const predicate = {
-  threshold: 0,
-  comparison: { greaterThan: {} },
-};
-
-// For a first sanity check, use exact equality if the response exposes
-// validation.statToProve.value:
-// const predicate = {
-//   threshold: validation.statToProve.value,
-//   comparison: { equalTo: {} },
-// };
-
-// Find the daily scores PDA
-const targetTs = validation.summary.updateStats.minTimestamp;
-const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
-
-const [dailyScoresPda] = PublicKey.findProgramAddressSync(
-  [
-    Buffer.from("daily_scores_roots"),
-    new BN(epochDay).toArrayLike(Buffer, "le", 2),
-  ],
-  program.programId
-);
-
-// Execute validation using view (read-only simulation)
-const computeBudgetIx = ComputeBudgetProgram.setComputeUnitLimit({
-  units: 1_400_000
-});
-
-try {
-  const isValid = await program.methods
-    .validateStat(
-      new BN(targetTs),
-      fixtureSummary,
-      fixtureProof,
-      mainTreeProof,
-      predicate,
-      stat1,
-      null,  // No second stat
-      null   // No operator
-    )
-    .accounts({
-      dailyScoresMerkleRoots: dailyScoresPda
-    })
-    .preInstructions([computeBudgetIx])
-    .view();
-
-  if (isValid) {
-    console.log("On-chain stat validation passed");
-  } else {
-    console.log("On-chain stat validation rejected the predicate");
-  }
-} catch (err) {
-  console.error("Validation simulation failed:", err);
-}
-```
-
-## Two-Stat Validation
-
-Validate a comparison between two stats (e.g., score difference). This example builds on the single-stat validation above:
-
-```typescript
-// Fetch validation data including a second stat
-const response2 = await httpClient.get("/api/scores/stat-validation", {
-  params: {
-    fixtureId: 17952170,
-    seq: 941,
-    statKey: 1002,
-    statKey2: 1003
-  }
-});
-const validation2 = response2.data;
-
-// Prepare second stat (stat1 is already defined above)
-const stat2 = {
-  statToProve: validation2.statToProve2,
-  eventStatRoot: toBytes32(validation2.eventStatRoot),
-  statProof: toProofNodes(validation2.statProof2),
-};
-
-// Define operation and predicate
-const op = { subtract: {} };
-const predicate2 = {
-  threshold: 5,
-  comparison: { lessThan: {} },
-};
-
-// Execute two-stat validation (reuses variables from single-stat example)
-const isValid2 = await program.methods
-  .validateStat(
-    new BN(targetTs),
-    fixtureSummary,
-    fixtureProof,
-    mainTreeProof,
-    predicate2,
-    stat1,
-    stat2,
-    op
-  )
-  .accounts({
-    dailyScoresMerkleRoots: dailyScoresPda,
-  })
-  .preInstructions([computeBudgetIx])
-  .view();
-
-console.log("Two-stat validation result:", isValid2);
-```
-
 ## V4 Validation
 
-`validateStatV4` and `validateOddsV4` take their proof material from backend-signed payloads and require the wallet to hold a `fixture_ticket` for the fixture, created by `book_fixture`. A `fixture_ticket` places no limit on the number of V4 validations for its fixture and no per-call payment applies. Unlike `validateStat`, the V4 instructions are not `.view()` calls: they are sent in a transaction.
+`validateStatV4` and `validateOddsV4` take their proof material from backend-signed payloads and require the wallet to hold a `fixture_ticket` for the fixture, created by `book_fixture`. A `fixture_ticket` places no limit on the number of V4 validations for its fixture and no per-call payment applies. The V4 instructions are not `.view()` calls: they are sent in a transaction.
 
 ### Instruction Sequence
 
@@ -479,6 +421,33 @@ await program.methods
 
 Every leaf must be covered by exactly one strategy predicate. A V2 payload that carries a `rawMask` is 512 bytes larger and does not fit a legacy transaction alongside the Ed25519 instruction; send it as a v1 transaction (`@solana/web3.js` cannot build these; `@solana/kit` can). Each `leaves[i]` corresponds to the `i`-th key in `statKeys`.
 
+### Single-Stat and Two-Stat Checks
+
+Request one stat key and cover it with a `single` predicate to check one stat. Request two keys and use a `binary` predicate to compare them, for example a score difference. Both run through the same three-step sequence as above.
+
+```typescript
+// One stat: statKeys "1002". Start with an exact match against the proven value as a sanity check,
+// then replace it with your application predicate.
+const singleStat = {
+  geometricTargets: [],
+  distancePredicate: null,
+  discretePredicates: [
+    { single: { index: 0, predicate: { threshold: payload.leaves[0].stat.value, comparison: { equalTo: {} } } } },
+  ],
+};
+
+// Two stats: statKeys "1002,1003". Passes when leaves[0] - leaves[1] < 5.
+const twoStat = {
+  geometricTargets: [],
+  distancePredicate: null,
+  discretePredicates: [
+    { binary: { indexA: 0, indexB: 1, op: { subtract: {} }, predicate: { threshold: 5, comparison: { lessThan: {} } } } },
+  ],
+};
+```
+
+A transaction that confirms does not mean the proof matched or the predicate held. A missing booking or co-signature fails the transaction, but a proof or predicate that does not hold returns `false`. The program returns the boolean result as the instruction's return data. Read it from the confirmed transaction's `meta.returnData`, as the runnable scripts do.
+
 ### V4 Odds Validation
 
 `GET /api/odds/validation-v4` takes `messageId` and `ts` of a finalized odds update. The response is `{ payload, signature }`:
@@ -548,27 +517,28 @@ await program.methods
   .rpc();
 ```
 
-The `fixture_ticket` must be for the odds update's fixture.
+The `fixture_ticket` must be for the odds update's fixture. When you choose an odds update to validate, check that its `FixtureId` is bookable, for example by matching it against `GET /api/fixtures-schedule`. An update for a fixture that cannot be booked can never be validated.
 
-### Booking and Runnable Scripts
+### Runnable Scripts
 
-Create the `fixture_ticket` with `book_fixture` before the first V4 call for a fixture; the flow is in [Booking Fixtures](/documentation/examples/booking-fixtures). Runnable versions of the sequences above:
+Runnable versions of the sequences above:
 
 | Script | Coverage |
 |--------|----------|
-| [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) | Booking, then V4 stat validation with a strategy. |
-| [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) | Booking, then V4 odds validation. |
+| [`V1_stat_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_stat_validation_v4.ts) | Booking if needed, then V4 stat validation with several strategies. |
+| [`V1_odds_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_odds_validation_v4.ts) | Picks an odds update for a bookable fixture, books it if needed, then runs V4 odds validation. |
 
 ## Common Validation Errors
 
 | Symptom | What to check |
 |---------|---------------|
-| `InvalidMainTreeProof` | Use the same `targetTs` for `validateStat` and `daily_scores_roots` PDA derivation. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
-| Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(targetTs / 86400000)`. |
-| Predicate returns false | First test with an exact predicate against the returned stat value, then replace it with your application predicate. |
+| `InvalidMainTreeProof` | Derive the root PDA from `payload.ts`, the same timestamp passed to `validateFixtureForTree`. Confirm the proof hashes are exactly 32 bytes and not reversed. Confirm fixture ID and `seq` match the returned proof payload. |
+| Account integrity passes but proof fails | The PDA is probably on the right network, but the timestamp, interval, or proof payload may not match the on-chain root. Recompute `epochDay = Math.floor(payload.ts / 86400000)`. |
+| Validation returns false | The proof did not match the published root, or the predicate did not hold. First test with an exact predicate against the proven stat value in `payload.leaves`. If that also returns false, check the payload, `seq`, and fixture. |
 | `IncompleteStatCoverage` | Ensure every entry in `payload.leaves` is referenced exactly once by a discrete predicate or geometric target. Remove unused requested stats or add the missing strategy coverage. |
 | V4 strategy validates the wrong stat | Confirm the requested `statKeys` order and the positional strategy indexes match. `index: 0` means the first requested key, not the smallest stat key. |
 | V4 instruction fails with no `fixture_ticket` | Book the fixture with `book_fixture` from the same wallet before calling `validateStatV4` or `validateOddsV4`. |
+| `404` from `GET /api/quotes/book-fixture` while preparing a validation | The fixture is not bookable. Choose a fixture, or an odds update, whose fixture is listed by `GET /api/fixtures-schedule`. |
 | `ConstraintSeeds` on `validateStatV4` or `validateOddsV4` | The leading `workerId` argument differs from the one used with `validateFixtureForTree`, or the `ticket` account is not the PDA for `(wallet, domain, workerId)`. |
 | `401` or `403` from the proof endpoint | Renew the guest JWT, keep the `X-Api-Token`, and confirm both credentials came from the same network host. |
 

@@ -55,6 +55,8 @@ Crypto Wallet: Yes. A Solana wallet is strictly required for all tiers—includi
 
 **Do I need a booking to validate data on-chain?** Yes. `validate_odds_v4` and `validate_stat_v4` require your wallet's `fixture_ticket` for the fixture. Validations are not charged per call and have no call limit.
 
+**Do I need a booking for a fixture my subscription already covers?** To read its data, no. To validate its data on-chain, yes. The validation instructions check only for the wallet's `fixture_ticket`, not for a subscription bundle.
+
 **Can I book the same fixture twice?** No. A repeat `book_fixture` for the same wallet and fixture fails with `FixtureAlreadyBooked` and transfers no TxL.
 
 **Which fixtures can I book?** Those listed by `GET /api/fixtures-schedule`: fixtures with both odds and scores available whose competition has a configured price. See [Booking Fixtures](/documentation/examples/booking-fixtures).

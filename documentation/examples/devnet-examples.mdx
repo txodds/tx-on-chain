@@ -1,18 +1,18 @@
 ---
 title: "Runnable Devnet Examples"
-description: "End-to-end devnet scripts for activation, streaming, and on-chain validation"
+description: "End-to-end devnet scripts for activation, booking, streaming, and on-chain validation"
 ---
 
-The repository includes runnable devnet scripts under [`examples/devnet`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet). They exercise the current activation, streaming, fixture validation, and score validation flows against `https://txline-dev.txodds.com`.
+The repository includes runnable devnet scripts under [`examples/devnet`](https://github.com/txodds/tx-on-chain/tree/main/examples/devnet). They exercise the current activation, booking, streaming, fixture validation, and V4 odds and stat validation flows against `https://txline-dev.txodds.com`.
 
 <Info>
-The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, which include the latest program types.
+The scripts use the devnet IDL and generated types in `examples/devnet/idl/txoracle.json` and `examples/devnet/types/txoracle.ts`. For mainnet integrations, use the root `idl/txoracle.json` and `types/txoracle.ts`, or the mainnet scripts under `examples/mainnet`.
 </Info>
 
 ## Requirements
 
 - Node.js `20` or newer. The current lockfile resolves `eventsource@4.1.0`, which declares `node >=20.0.0`.
-- A funded devnet wallet for `ANCHOR_WALLET`.
+- A devnet wallet keypair file for `ANCHOR_WALLET`, funded with devnet SOL for transaction fees.
 - `ANCHOR_PROVIDER_URL="https://api.devnet.solana.com"`.
 - `TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG`.
 
@@ -22,7 +22,7 @@ Install dependencies from the repository root:
 yarn install
 ```
 
-Run a script with the devnet environment values:
+Run every script from the repository root with the devnet environment values:
 
 ```bash
 TOKEN_MINT_ADDRESS=4Zao8ocPhmMgq7PdsYWyxvqySMGx7xb9cMftPMkEokRG \
@@ -31,37 +31,74 @@ ANCHOR_WALLET="./_keys/testuser-wallet-1.json" \
 yarn ts-node examples/devnet/scripts/subscription_free_tier.ts
 ```
 
+Each script's header comment has the exact command for that script.
+
+## Recommended Order
+
+A fixture must be booked before its data can be validated on-chain, so run the scripts in this order on a fresh wallet:
+
+<Steps>
+  <Step title="Fund the wallet with mock USDT">
+    `request_devnet_usdt.ts` requests mock USDT from the program's devnet faucet.
+  </Step>
+  <Step title="Buy TxL">
+    `purchase_tokens_usdt.ts` buys TxL with USDT through a backend-signed quote. Booking is paid in TxL.
+  </Step>
+  <Step title="Subscribe and fetch data">
+    `subscription_free_tier.ts` subscribes, activates an API token, and fetches fixtures and odds. `show_pricing_matrix.ts` prints the service levels you can subscribe to.
+  </Step>
+  <Step title="Book a fixture">
+    `book_fixture.ts` lists bookable fixtures, requests a quote, and books one fixture. It skips booking when the wallet already holds the ticket.
+  </Step>
+  <Step title="Validate on-chain">
+    `V1_stat_validation_v4.ts` and `V1_odds_validation_v4.ts` run the V4 validation sequence against a booked fixture. Both book the fixture first if the wallet has no ticket for it.
+  </Step>
+</Steps>
+
+`fixture_validation_view_only.ts` and `historical_scores.ts` subscribe on their own and need no booking, so they can run at any point.
+
 ## Script Index
 
 | Script | What it demonstrates |
 |--------|----------------------|
-| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Free-tier subscription activation, odds snapshot fetches, and odds SSE streams. |
-| [`subscription_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores.ts) | Scores snapshots, recent score scanning, legacy `validateStat` with `statKey`, and scores SSE streams. |
-| [`book_fixture.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/book_fixture.ts) | Listing bookable fixtures, fetching a backend-signed quote, and booking a fixture with `book_fixture`. |
-| [`subscription_scores_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_scores_v4.ts) | V4 stat validation: booking, then `validateFixtureForTree`, co-signed `validateStatV4`, and `closeWorkerTicket`. |
-| [`subscription_granular_custom_demo_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_granular_custom_demo_v4.ts) | V4 odds validation: booking, then `validateFixtureForTree`, co-signed `validateOddsV4`, and `closeWorkerTicket`. |
-| [`fixture_validation_view_only.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/fixture_validation_view_only.ts) | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. |
+| [`request_devnet_usdt.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/request_devnet_usdt.ts) | Requesting mock USDT from the devnet faucet instruction. |
+| [`purchase_tokens_usdt.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/purchase_tokens_usdt.ts) | Buying TxL with USDT: quote, local transaction safety check, signing, and submission. |
+| [`show_pricing_matrix.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/show_pricing_matrix.ts) | Reading and printing the on-chain pricing matrix. |
+| [`subscription_free_tier.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/subscription_free_tier.ts) | Free-tier subscription activation, fixture and odds snapshot fetches. |
+| [`book_fixture.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/book_fixture.ts) | Listing bookable fixtures, fetching a backend-signed quote, and booking a fixture with `book_fixture`. Set `FIXTURE_ID` to choose the fixture. |
+| [`V1_stat_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_stat_validation_v4.ts) | Booking, then `validateFixtureForTree`, co-signed `validateStatV4` with several strategies, `closeWorkerTicket`, and a scores SSE stream. |
+| [`V1_odds_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_odds_validation_v4.ts) | Finding an odds update for a bookable fixture, booking, then `validateFixtureForTree`, co-signed `validateOddsV4`, `closeWorkerTicket`, and an odds SSE stream. |
+| [`fixture_validation_view_only.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/fixture_validation_view_only.ts) | Fixture proof validation by simulation using the fixture validation endpoint and on-chain PDA. No booking needed. |
 | [`historical_scores.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/historical_scores.ts) | Fetching complete historical score updates for a specific fixture. |
+
+<Note>
+`subscription_free_tier.ts`, `V1_stat_validation_v4.ts`, and `V1_odds_validation_v4.ts` keep running for about an hour after their main work, to show streamed updates. Once the validation results or snapshots are printed, stop the script with `Ctrl+C`.
+</Note>
+
+### Choosing Fixtures
+
+- **`V1_odds_validation_v4.ts`** only picks odds updates for fixtures listed by `GET /api/fixtures-schedule` in the NFL or the Premier League. Edit the `allowedCompetitionIds` set in the script to target other bookable competitions.
+- **`V1_stat_validation_v4.ts`** validates a fixture ID set in the script. Change it to a fixture from `GET /api/fixtures-schedule`. The strategies labelled "calibrated" expect particular stat values, so they return `false` on other fixtures. A confirmed transaction returns `false` when the predicate does not hold and also when the proof does not match the published root.
+- **`book_fixture.ts`** books the fixture in `FIXTURE_ID`, or a default set in the script.
 
 The shared helpers are in `examples/devnet/common`:
 
 | File | Purpose |
 |------|---------|
 | `config.ts` | Devnet API and guest JWT hosts. |
-| `users.ts` | Wallet setup, free-tier subscription, activation signing, JWT renewal, API client setup, and transaction safety helpers. |
+| `users.ts` | Wallet setup, subscription, activation signing, JWT renewal, API client setup, and transaction safety helpers. |
+| `utils.ts` | IDL-driven encoders that format API payloads into the program's argument types. |
 
-## Score Validation Paths
-
-Validation uses the following paths:
+## Validation Paths
 
 | API request | On-chain method | Use case |
 |-------------|-----------------|----------|
-| `/scores/stat-validation?fixtureId=...&seq=...&statKey=...` | `validateStat` | Single-stat or legacy two-stat examples using `statKey` and optional `statKey2`. |
 | `/scores/stat-validation-v4?fixtureId=...&seq=...&statKeys=1,2,...` | `validateFixtureForTree` → `validateStatV4` → `closeWorkerTicket` | Backend-co-signed multiproof validation with a `strategy`. Requires a `fixture_ticket` from `book_fixture`. |
 | `/odds/validation-v4?messageId=...&ts=...` | `validateFixtureForTree` → `validateOddsV4` → `closeWorkerTicket` | Backend-co-signed validation of one odds update. Requires a `fixture_ticket` from `book_fixture`. |
+| `/fixtures/validation?fixtureId=...&timestamp=...` | `validateFixture` (simulated view) | Fixture proof validation. No booking needed. |
 
 <Warning>
-The fixed `fixtureId` and `seq` pairs in the example scripts are demo fixtures. In production, derive `fixtureId`, `seq`, phase, and status from an observed score record from snapshot, updates, historical data, or the scores stream.
+The fixed fixture IDs in the example scripts are demo fixtures. In production, derive `fixtureId`, `seq`, phase, and status from an observed score record from snapshot, updates, historical data, or the scores stream, and book the fixture before validating.
 </Warning>
 
 ## Final Outcome and Fixtures
@@ -80,7 +117,7 @@ Use `fixture_validation_view_only.ts` for the runnable fixture proof flow. The s
 ## Related Guides
 
 - [Quickstart](/documentation/quickstart)
-- [Streaming Data](/documentation/examples/streaming-data)
 - [Booking Fixtures](/documentation/examples/booking-fixtures)
 - [On-Chain Validation](/documentation/examples/onchain-validation)
+- [Streaming Data](/documentation/examples/streaming-data)
 - [Troubleshooting](/documentation/examples/troubleshooting)

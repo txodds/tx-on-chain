@@ -1,6 +1,6 @@
 ---
 title: "Booking Fixtures"
-description: "Book individual fixtures with TxL to access their scores and odds and validate them on-chain"
+description: "Book a fixture with TxL so your wallet can validate its stats and odds on-chain"
 ---
 
 <Info>
@@ -9,22 +9,68 @@ description: "Book individual fixtures with TxL to access their scores and odds 
 
 ## Overview
 
-A wallet can book a single fixture with `book_fixture`, paying in TxL, instead of subscribing to a league bundle. A booking creates a `fixture_ticket` PDA for the `(wallet, fixtureId)` pair and transfers the quoted price from the wallet's TxL token account into the `token_treasury_v2` vault.
+A subscription lets you **read** TxLINE data. A booking lets you **prove** a fixture's data on-chain.
 
-A `fixture_ticket` provides:
+Booking buys your wallet a ticket for one fixture, paid once in TxL. Every on-chain validation of that fixture's stats or odds checks for the ticket. Without it, the validation fails.
 
-- **Scores and odds access.** Endpoints such as `GET /api/scores/snapshot/{fixtureId}` succeed for the booked fixture whether or not your subscription bundle covers it. A request is denied with `403` only when the fixture is neither in your bundle nor booked. Access starts once the backend has indexed the ticket.
-- **On-chain validation.** `validate_odds_v4` and `validate_stat_v4` require the wallet's `fixture_ticket` for the fixture. See [On-Chain Validation](/documentation/examples/onchain-validation).
+## What You Need for Each Task
 
-TxL is paid once, at booking. Validations against a ticket cost nothing extra and have no call limit.
+| To do this | Subscription | Booking for the fixture |
+|------------|:------------:|:-----------------------:|
+| Read scores and odds for fixtures in your bundle | Yes | No |
+| Read scores and odds for a fixture outside your bundle | Yes | Yes |
+| Validate the fixture's stats on-chain with `validate_stat_v4` | Yes | Yes |
+| Validate the fixture's odds on-chain with `validate_odds_v4` | Yes | Yes |
+| Validate fixture details with `validate_fixture` | Yes | No |
 
-Only fixtures that have both odds and scores available, and whose competition has a configured price, can be booked.
+The subscription is needed in every case because the API calls that fetch data and proofs need an activated API token. Validation needs a booking even when your bundle covers the fixture: the validation instructions check for the booking, not the subscription.
 
-## Flow
+## How a Booking Connects to Validation
 
-1. `GET /api/fixtures-schedule` to list bookable fixtures.
-2. `GET /api/quotes/book-fixture` to get a backend-signed quote for one fixture.
-3. Submit `book_fixture` with the quote payload, preceded by an Ed25519 verify instruction for the quote's signature.
+```mermaid
+flowchart LR
+  Q["Quote<br/>GET /api/quotes/book-fixture"] --> B["book_fixture<br/>TxL paid once"]
+  B --> T[("fixture_ticket<br/>your wallet + fixture ID")]
+  T -->|checked by| S["validate_stat_v4<br/>prove stats"]
+  T -->|checked by| O["validate_odds_v4<br/>prove odds"]
+  S --> R["true or false"]
+  O --> R
+```
+
+`book_fixture` creates a `fixture_ticket` account whose address is derived from your wallet and the fixture ID. Each stat or odds validation passes that account in, and the program checks it before evaluating the proof. These rules follow:
+
+- **Book with the wallet that validates.** The ticket belongs to the wallet that booked. A different wallet has no ticket for the fixture, even if someone else booked it.
+- **The ticket covers one fixture.** The fixture in the proof must match the ticket. For odds, that is the odds update's `FixtureId`. A ticket for one fixture cannot validate another.
+- **Book once, validate as often as you like.** TxL is charged only at booking. The ticket stays on-chain, and validations against it have no per-call fee and no limit.
+- **The check happens at the validate step.** Staging a worker ticket with `validate_fixture_for_tree` does not need a booking. A missing booking shows up when `validate_stat_v4` or `validate_odds_v4` runs.
+- **Not every fixture can be booked.** Only fixtures listed by `GET /api/fixtures-schedule` can be booked: those with both odds and scores available whose competition has a configured price. Choose fixtures from that list, not from the odds or scores feeds.
+
+Booking also opens scores and odds data for that fixture. Endpoints such as `GET /api/scores/snapshot/{fixtureId}` succeed for a booked fixture whether or not your bundle covers it. Access starts once the backend has indexed the ticket.
+
+## Booking Flow
+
+<Steps>
+  <Step title="Get TxL">
+    Booking is paid in TxL. Buy TxL with USDT as described in [Purchase TxL](/documentation/quickstart#purchase-txl-optional). On devnet, request mock USDT from the program faucet first with [`request_devnet_usdt.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/request_devnet_usdt.ts).
+  </Step>
+  <Step title="Subscribe and activate">
+    Submit `subscribe` and activate an API token as in the [Quickstart](/documentation/quickstart). The booking endpoints need the guest JWT and the activated `X-Api-Token`.
+  </Step>
+  <Step title="Choose a bookable fixture">
+    Call `GET /api/fixtures-schedule`, optionally filtered by sport, country, or competition. See [List Bookable Fixtures](#list-bookable-fixtures).
+  </Step>
+  <Step title="Check for an existing ticket">
+    Derive the `fixture_ticket` address for your wallet and the fixture. If the account exists, the fixture is already booked and you can go straight to validation. See [One Booking per Fixture](#one-booking-per-fixture).
+  </Step>
+  <Step title="Request a quote">
+    Call `GET /api/quotes/book-fixture` with the fixture and your wallet. The backend returns a signed payload with the price and a validity window. See [Request a Quote](#request-a-quote).
+  </Step>
+  <Step title="Book on-chain">
+    Submit `book_fixture` with the quote payload, immediately preceded by an Ed25519 verify instruction for the quote's signature. The price is transferred in TxL and the `fixture_ticket` is created. See [Book On-Chain](#book-on-chain).
+  </Step>
+</Steps>
+
+Once the ticket exists, validate the fixture's data with [On-Chain Validation](/documentation/examples/onchain-validation). Its worked example starts from a booked fixture and ends with a proven result.
 
 ## List Bookable Fixtures
 
@@ -89,7 +135,7 @@ The response contains:
 | `payload.validity` | Validity window; `book_fixture` fails with `QuoteExpired` once it has passed. |
 | `signature` | Backend admin Ed25519 signature over the payload. |
 
-A `404 Not Found` means the fixture does not have both odds and scores available, or its competition has no configured price. No payload is returned.
+A `404 Not Found` means the fixture does not have both odds and scores available, or its competition has no configured price. No payload is returned. This happens most often when the fixture ID was taken from the odds or scores feeds instead of from `GET /api/fixtures-schedule`.
 
 ## Book On-Chain
 
@@ -152,7 +198,7 @@ const txSig = await program.methods
   .rpc();
 ```
 
-`backendAdminPubkey` is the backend admin key of the network you are using; see [Program Addresses](/documentation/programs/addresses). The runnable devnet examples keep it as `BACKEND_ADMIN_PUBKEY` in `examples/devnet/common/config.ts`.
+`backendAdminPubkey` is the backend admin key of the network you are using; see [Program Addresses](/documentation/programs/addresses). It is also the `BACKEND_ADMIN_PUBKEY` constant in each network's IDL, which is where the runnable examples read it from.
 
 ## One Booking per Fixture
 
@@ -164,6 +210,14 @@ if (existing) {
   // already booked; skip straight to data access or validation
 }
 ```
+
+## Runnable Scripts
+
+| Script | Coverage |
+|--------|----------|
+| [`book_fixture.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/book_fixture.ts) | Schedule, quote, and `book_fixture` for one fixture. Set `FIXTURE_ID` to choose the fixture. |
+| [`V1_stat_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_stat_validation_v4.ts) | Books the fixture set in the script if no ticket exists, then runs V4 stat validation. |
+| [`V1_odds_validation_v4.ts`](https://github.com/txodds/tx-on-chain/blob/main/examples/devnet/scripts/V1_odds_validation_v4.ts) | Picks an odds update for a bookable fixture, books it if needed, then runs V4 odds validation. |
 
 ## Next Steps
 

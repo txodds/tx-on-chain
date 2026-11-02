@@ -11,6 +11,7 @@ Most integration issues come from one of four causes:
 - Signing the wrong activation message.
 - Using an expired or missing guest JWT.
 - Deriving validation PDAs from a timestamp that does not match the proof payload.
+- Validating a fixture that the wallet has not booked with `book_fixture`.
 
 Use one network consistently for every value:
 
@@ -56,6 +57,8 @@ When running the repository examples in `examples/devnet`, confirm:
 - The script imports the devnet IDL/types from `examples/devnet/idl` and `examples/devnet/types`.
 - The wallet in `ANCHOR_WALLET` has enough devnet SOL for subscription transactions and account rent.
 - Fixed `fixtureId` and `seq` pairs in example scripts are demo fixtures. For production, derive them from an observed score record.
+- The fixture you validate is booked by the same wallet, or is listed by `GET /api/fixtures-schedule` so the script can book it. See [Booking Fixtures](/documentation/examples/booking-fixtures).
+- Scripts that open a stream keep running for about an hour after their main work. Stop them with `Ctrl+C` once the results are printed.
 - Final match outcome settlement should use scores records with `action=game_finalised`, `statusId=100`, and `period=100`.
 - Fixture examples should expect the backward-compatible `GameState` field; current values are `1` for scheduled and `6` for cancelled.
 
@@ -70,13 +73,14 @@ When running the repository examples in `examples/devnet`, confirm:
 | `403 Access denied` on data endpoints | Invalid API token, expired subscription, wrong network token, or insufficient subscription permissions | Confirm the `X-Api-Token` came from the same network and subscription bundle |
 | `Invalid public key input` | Placeholder value was not replaced with a real Solana public key | Replace all placeholders with the program ID, TxL mint, and wallet public key for the selected network |
 | SSE connection opens but no data messages arrive | The stream can be healthy even when no covered fixture is actively producing updates | Check the [Schedule](/documentation/scores/schedule), keep the stream open, or use historical endpoints for completed fixtures |
-| `/api/scores/stat-validation` called with `seq=0` or a random `seq` | The sequence was treated as a placeholder instead of coming from a real score record | Get a score record from snapshot, updates, historical data, or the scores stream, then pass that record's observed `Seq` or `seq` value |
-| `InvalidMainTreeProof` during validation | Timestamp, epoch day PDA, proof decoding, or fixture/update selection mismatch | Derive `daily_scores_roots` from the same timestamp passed to `validateStat`, decode hashes to exactly 32 bytes, and verify you are using the intended fixture and sequence |
+| `/api/scores/stat-validation-v4` called with `seq=0` or a random `seq` | The sequence was treated as a placeholder instead of coming from a real score record | Get a score record from snapshot, updates, historical data, or the scores stream, then pass that record's observed `Seq` or `seq` value |
+| `InvalidMainTreeProof` during validation | Timestamp, epoch day PDA, proof decoding, or fixture/update selection mismatch | Derive `daily_scores_roots` or `daily_batch_roots` from `payload.ts`, the timestamp passed to `validateFixtureForTree`, decode hashes to exactly 32 bytes, and verify you are using the intended fixture and sequence |
+| V4 validation confirms but returns `false` | Either the proof did not match the published root, or the strategy's predicate did not hold for the proven values. The instruction returns `false` in both cases instead of failing | Test with an exact predicate against the values in `payload.leaves`. If that also returns `false`, the proof did not match: check the payload, `seq`, and fixture |
 | `validateStatV4` strategy checks the wrong value | `statKeys` order and positional strategy indexes were mixed up | Keep the requested `statKeys` order next to the strategy. `index`, `indexA`, `indexB`, and `statIndex` refer to `leaves[0..N]`, not to the numeric stat key itself |
 | Final outcome settlement uses the wrong phase | The client selected an in-running or period-specific record instead of the match finalisation record | Use a scores record with `action=game_finalised`, `statusId=100`, and `period=100` |
 | `FixtureAlreadyBooked` from `book_fixture` | The wallet already holds a `fixture_ticket` for that `fixtureId`. A fixture is booked once per wallet and no TxL is transferred on the failed call | Check for an existing `fixture_ticket` PDA before booking. The existing ticket already grants access and V4 validation for the fixture |
 | `QuoteExpired` from `book_fixture` | The quote's `validity` window had passed when the transaction executed | Request a new quote from `GET /api/quotes/book-fixture` and submit `book_fixture` straight away |
-| `404` from `GET /api/quotes/book-fixture` | The fixture does not have both odds and scores available, or its competition has no configured price | Pick a fixture from `GET /api/fixtures-schedule`, which lists only bookable fixtures |
+| `404` from `GET /api/quotes/book-fixture` | The fixture does not have both odds and scores available, or its competition has no configured price. Fixture IDs taken from the odds or scores feeds are often not bookable | Pick a fixture from `GET /api/fixtures-schedule`, which lists only bookable fixtures |
 | `validateStatV4` or `validateOddsV4` fails and the wallet has no `fixture_ticket` | V4 validation requires the wallet's `fixture_ticket` for the fixture being validated | Book the fixture with `book_fixture` from the validating wallet, and pass the PDA derived from that wallet and `fixtureId` |
 | `validateStatV4`, `validateOddsV4`, or `closeWorkerTicket` fails because the `worker_ticket` account does not exist | The `worker_ticket` for `(domain, workerId)` was never staged, or was already closed by `closeWorkerTicket` | Call `validateFixtureForTree` again for the same `domain` and `workerId`, then validate and close |
 | `ConstraintSeeds` from `validateStatV4` or `validateOddsV4` | The leading `workerId` argument differs from the `workerId` that staged the `worker_ticket` | Pass the same `workerId` to `validateFixtureForTree`, `validate*V4`, and `closeWorkerTicket` |
@@ -109,11 +113,13 @@ When debugging streams:
 
 ## Validation Debugging
 
+Before debugging a proof, confirm the wallet holds a `fixture_ticket` for the fixture. V4 validation fails without one; see [Booking Fixtures](/documentation/examples/booking-fixtures).
+
 For score validation, keep the API proof, PDA derivation, and on-chain call aligned:
 
 ```typescript
-const targetTs = validation.summary.updateStats.minTimestamp;
-const epochDay = Math.floor(targetTs / (24 * 60 * 60 * 1000));
+const { payload } = (await httpClient.get("/api/scores/stat-validation-v4", { params: { fixtureId, seq, statKeys } })).data;
+const epochDay = Math.floor(payload.ts / (24 * 60 * 60 * 1000));
 
 const [dailyScoresPda] = PublicKey.findProgramAddressSync(
   [
@@ -124,20 +130,23 @@ const [dailyScoresPda] = PublicKey.findProgramAddressSync(
 );
 ```
 
-Pass the same `targetTs` into `validateStat`, and make sure every proof hash is decoded to exactly 32 bytes before passing it to Anchor.
+Pass the same `payload.ts` into `validateFixtureForTree`, and make sure every proof hash is decoded to exactly 32 bytes before passing it to Anchor.
 
-Use a real score record sequence for `/api/scores/stat-validation`; `seq=0` is not valid. For settlement conditions tied to a period result, choose a record whose phase or status represents that completed period. An in-running record proves the condition at that moment, not the final result of the period.
+Use a real score record sequence for `/api/scores/stat-validation-v4`; `seq=0` is not valid. For settlement conditions tied to a period result, choose a record whose phase or status represents that completed period. An in-running record proves the condition at that moment, not the final result of the period.
 
 For final match outcome settlement, use `action=game_finalised` records. Current devnet and mainnet releases set both `statusId` and `period` to `100` for those records.
 
 For V4 validation, request multiple stats with `statKeys=1,2,...` and keep that order stable when building `leaves` and strategy predicates. See [Runnable Devnet Examples](/documentation/examples/devnet-examples) for the complete `validateStatV4` script.
 
-For a first sanity check, use an exact predicate against the returned stat value if your response shape includes `validation.statToProve.value`:
+For a first sanity check, use an exact predicate against the proven stat value in `payload.leaves`:
 
 ```typescript
-const predicate = {
-  threshold: validation.statToProve.value,
-  comparison: { equalTo: {} },
+const strategy = {
+  geometricTargets: [],
+  distancePredicate: null,
+  discretePredicates: [
+    { single: { index: 0, predicate: { threshold: payload.leaves[0].stat.value, comparison: { equalTo: {} } } } },
+  ],
 };
 ```
 
