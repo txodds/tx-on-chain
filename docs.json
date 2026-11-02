@@ -26,6 +26,7 @@
             "group": "Odds",
             "pages": [
               "documentation/odds/overview",
+              "documentation/odds/odds-fields",
               "documentation/odds/odds-coverage"
             ]
           },

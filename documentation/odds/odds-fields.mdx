@@ -1,0 +1,117 @@
+---
+title: "Odds Record Fields"
+description: "What each field of an odds record means, including QuoteSigma, the price and probability corridors, and Confidence"
+---
+
+This page explains the fields of an odds record, as in `OddsPayload` in the [Odds API Reference](/api-reference/odds). Fields marked optional can be missing, null, empty or `"NA"`. Treat any of these as not provided for that record, not as zero.
+
+## Record Fields
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `FixtureId` | integer | The fixture the record belongs to. |
+| `MessageId` | string | Unique id of the odds message. |
+| `Ts` | integer | Record timestamp. |
+| `Bookmaker`, `BookmakerId` | string, integer | The source of the quote. |
+| `SuperOddsType` | string | The market type. |
+| `MarketParameters` | string, optional | Market parameters, such as a handicap or total line. |
+| `MarketPeriod` | string, optional | The period the market covers. |
+| `GameState` | string, optional | Game state when the quote was made. |
+| `InRunning` | boolean | `true` once the fixture is in play. |
+| `PriceNames` | string array | One name per selection. Every array below is in this order. |
+| `Prices` | integer array | Decimal odds ×1000. `1909` is 1.909. |
+| `PricesLow`, `PricesHigh` | integer array, optional | Lower and upper bound of each price, on the same ×1000 scale. |
+| `Pct` | string array, optional | Implied probability of each selection, as a percentage with three decimals, such as `"52.632"`. `"NA"` for quarter-handicap lines. |
+| `PctLow`, `PctHigh` | string array, optional | Lower and upper bound of each probability, in the same format as `Pct`. |
+| `QuoteSigma` | integer, optional | Uncertainty of the quote, as a probability standard error ×1000. See [QuoteSigma](#quotesigma). |
+| `Confidence` | integer array, optional | A 0–100 score per selection. See [Confidence](#confidence). |
+
+## De-Margined, Aggregated Prices
+
+`Prices` are de-margined: the bookmaker's overround has been removed using power de-margining, so the probabilities implied by the selections sum to 1. The prices are fair odds, not the margined odds a bookmaker offers.
+
+Stable Price aggregates lines across bookmakers. A record carries one `QuoteSigma` for the whole aggregate, not one per contributing bookmaker.
+
+Two `Bookmaker` values carry Stable Price records, and both are de-margined:
+
+| `Bookmaker` | Fields |
+|-------------|--------|
+| `TXLineStablePrice` | De-margined, and calculated with the additional fields: `QuoteSigma`, `PricesLow`, `PricesHigh`, `PctLow`, `PctHigh` and `Confidence`, as well as `Pct`. |
+| `TXLineStablePriceDemargined` | De-margined, with `Pct`. The additional fields are empty. |
+
+Read `QuoteSigma`, the `Low`/`High` bounds and `Confidence` from `TXLineStablePrice` records.
+
+## QuoteSigma
+
+`QuoteSigma` is the standard error of a de-margined quote, in probability units, stored as an integer scaled by 1000. A value of `24` means a standard error of 0.024, or 2.4 percentage points.
+
+It combines two independent sources of uncertainty:
+
+- **Overround.** A bookmaker's margin is spread over the selections in a way we can't observe. The uncertainty from this is the overround per selection.
+- **Tick rounding.** Raw odds are rounded to three decimals, which moves the implied probability by a small, known amount.
+
+```text
+q_i        = 1 / raw decimal odds of selection i
+overround  = max(0, sum(q_i) - 1)
+n          = number of selections (2 or 3)
+
+sigma_vig   = overround / n
+sigma_quant = (1/n) * sum( 0.0005 / rawOdds_i^2 )
+sigma_quote = sqrt(sigma_vig^2 + sigma_quant^2)
+
+QuoteSigma  = max(1, round(1000 * sigma_quote))
+```
+
+Because it is a probability and not a price, it is always between 1 and 666. `Prices` values are always above 1000, so the two can't be confused. The floor of 1 applies to a book with no margin.
+
+| Market | Typical `QuoteSigma` |
+|--------|----------------------|
+| Sharp pre-match main line (about 2.4% margin) | 12 |
+| Standard live two-way line (about 4.8% margin) | 24 |
+| Standard three-way line (6–8% margin) | 20–27 |
+| Wide in-running or deep alternate line (8–12% margin) | 40–60 |
+
+<Info>
+`QuoteSigma` is in probability space, so the same value means different things at different prices. A value of 20 is tight on an even-money line and very wide on a 50.00 longshot. Use `Confidence` or the `Low`/`High` bounds when you need a measure that accounts for the price.
+</Info>
+
+## Price and Probability Bounds
+
+`PricesLow`/`PricesHigh` and `PctLow`/`PctHigh` give the one-sigma range in which the true fair price or probability plausibly lies. They are derived from `QuoteSigma` in log-odds space, which keeps every bound strictly between 0 and 1 for probabilities and strictly above 1.0 for decimal odds. A plain `Pct - QuoteSigma` would go negative on a longshot.
+
+```text
+c            = probability of selection i, from Pct
+sigma_logit  = sigma_quote / max(0.0001, c * (1 - c))
+M            = exp(sigma_logit)
+
+PricesLow    = 1 + (odds - 1) / M
+PricesHigh   = 1 + (odds - 1) * M
+```
+
+- The bounds bracket the price: `PricesLow < Prices < PricesHigh`, and `PctLow < Pct < PctHigh`.
+- A higher price means a lower probability. `PricesLow[i]` therefore pairs with `PctHigh[i]`, and `PricesHigh[i]` pairs with `PctLow[i]`.
+- The range is asymmetric away from even money. It is about symmetric near 50%, and skews towards longer prices on a longshot.
+
+For an even-money selection quoted 1.909/1.909, `QuoteSigma` is `24`, the price is 2.000, `PricesLow` is 1.909 and `PricesHigh` is 2.100. `PctLow` is 47.619, `Pct` is 50.000 and `PctHigh` is 52.383.
+
+## Confidence
+
+`Confidence` turns the uncertainty into a single 0–100 score per selection, where higher means a tighter quote. It uses the log-odds standard error above, so it is comparable between favourites and longshots:
+
+```text
+Confidence = round( 100 / (1 + (sigma_logit / 0.20)^2) )
+```
+
+A `sigma_logit` of 0.20 scores 50.
+
+| Selection | `QuoteSigma` | Price | `Confidence` |
+|-----------|--------------|-------|--------------|
+| Even-money main line | 24 | 2.000 | 81 |
+| Longshot on a 1.015/15.000 line | 26 | 46.916 | 3 |
+
+The same `QuoteSigma` gives very different scores here. A 2.6-point error is small on an even-money line and larger than the probability itself on a longshot.
+
+## Using the Bounds
+
+- **Valuation.** `PricesLow` to `PricesHigh` answers "where could the true fair price plausibly lie?"
+- **Execution.** A price slightly above `Prices` may be inside the noise. To require an edge of `k` standard deviations, the offered price must exceed `1 + (odds - 1) * exp(k * sigma_logit)`. At `k = 1` this is `PricesHigh`.
