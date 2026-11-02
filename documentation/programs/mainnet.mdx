@@ -43,12 +43,14 @@ Send the detached wallet signature as base64 in `walletSignature`, and send the 
 
 | Account | Seed(s) | Used for |
 |---------|---------|----------|
-| Daily scores roots | `daily_scores_roots`, `epochDay` as u16 little-endian | Score proof validation with `validateStatV4` |
-| Daily batch roots | `daily_batch_roots`, `epochDay` as u16 little-endian | Odds proof validation |
+| Daily scores roots | `daily_scores_roots`, epoch day as u16 little-endian | Score proof validation with `validateStatV4` |
+| Daily batch roots | `daily_batch_roots`, epoch day as u16 little-endian | Odds proof validation |
 | Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | Fixture proof validation |
 
+The epoch day is the number of whole UTC days since 1 January 1970: `Math.floor(timestampMs / 86_400_000)`. The aligned epoch day rounds it down to a multiple of 10. See [Epoch Day](/documentation/programs/addresses#epoch-day) for details.
+
 <Warning>
-Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. For V4 validation (scores and odds), use `payload.ts`. Recompute it for every proof.
+Derive the epoch day from the timestamp in the proof response, never from `Date.now()`. For scores and odds V4 validation, use `payload.ts`; for fixtures, use `snapshot.Ts`. Recompute it for every proof.
 </Warning>
 
 ```typescript

@@ -127,8 +127,8 @@ Before sending a V4 validation, confirm:
 - The wallet holds a `fixture_ticket` for the fixture being validated.
 - The proof came from the same API host as your activated subscription.
 - The program ID matches the network used for the proof.
-- The root PDA (`daily_scores_roots` or `daily_batch_roots`) is derived from `payload.ts`.
-- The epoch day is encoded as u16 little-endian.
+- The root PDA (`daily_scores_roots` or `daily_batch_roots`) uses the [epoch day](/documentation/programs/addresses#epoch-day) of `payload.ts`: `Math.floor(payload.ts / 86_400_000)`.
+- The epoch day is encoded as u16 little-endian (2 bytes).
 - Every proof hash is decoded to exactly 32 bytes.
 - The fixture ID and sequence number refer to the score update you intend to validate.
 - Each strategy index refers to the same position in the requested `statKeys` array.

@@ -75,17 +75,48 @@ ${txSig}::${jwt}
 
 Send the detached wallet signature as base64 in `walletSignature`, and send the guest JWT from the matching network as `Authorization: Bearer <jwt>`.
 
+## Epoch Day
+
+An **epoch day** is the number of whole days since the Unix epoch, 1 January 1970 00:00 UTC. Compute it from a timestamp in milliseconds:
+
+```typescript
+const epochDay = Math.floor(timestampMs / 86_400_000); // 86,400,000 ms per day
+```
+
+Days are counted in UTC, so the epoch day changes at midnight UTC, not at local midnight. For example, 1 November 2026 15:20 UTC is `1793546400000` ms, which is epoch day `20758`.
+
+The epoch day is used in two places:
+
+- **On-chain root accounts.** Merkle roots are stored in one account per epoch day, and the epoch day is part of the account's PDA seeds. It is encoded as a u16, little-endian: 2 bytes, so day `20758` is the bytes `16 51`. A u16 holds days up to `65535`, which is in the year 2149.
+- **API paths.** Endpoints such as `GET /api/scores/updates/{epochDay}/{hourOfDay}/{interval}` take the epoch day of the period you want. See [Fetching Snapshots](/documentation/examples/fetching-snapshots#time-period-parameters).
+
+### Aligned Epoch Day
+
+Fixture roots are stored ten days to an account. The account for a fixture proof is keyed by the **aligned epoch day**, the first day of its ten-day window: the epoch day rounded down to a multiple of 10.
+
+```typescript
+const alignedEpochDay = Math.floor(epochDay / 10) * 10; // day 20758 -> 20750
+```
+
+Day `20750` covers epoch days `20750` to `20759`, 24 October to 2 November 2026 UTC.
+
+### Which Timestamp to Use
+
+Derive the epoch day from the timestamp in the proof response, never from `Date.now()`. A proof can belong to an earlier day than today, for example a record from just before midnight UTC fetched just after it, so the current time can select the wrong account. Recompute it for every proof.
+
+| Validation | Timestamp | Root account |
+|------------|-----------|--------------|
+| Scores (`validateStatV4`) | `payload.ts` from `GET /api/scores/stat-validation-v4` | `daily_scores_roots` for that epoch day |
+| Odds (`validateOddsV4`) | `payload.ts` from `GET /api/odds/validation-v4` | `daily_batch_roots` for that epoch day |
+| Fixtures (`validateFixture`) | `snapshot.Ts` from `GET /api/fixtures/validation` | `ten_daily_fixtures_roots` for the aligned epoch day |
+
 ## Public Validation Accounts
 
 | Account | Seed(s) | Purpose |
 |---------|---------|---------|
-| Daily scores roots | `daily_scores_roots`, `epochDay` as u16 little-endian | On-chain root account used for score proof validation |
-| Daily batch roots | `daily_batch_roots`, `epochDay` as u16 little-endian | On-chain root account used for odds proof validation |
-| Ten daily fixtures roots | `ten_daily_fixtures_roots`, aligned epoch day as u16 little-endian | On-chain root account used for fixture proof validation |
-
-<Warning>
-Derive the epoch day from the exact timestamp in the proof response, never from `Date.now()`. For scores, use `validation.summary.updateStats.minTimestamp`; for fixtures, use `validation.snapshot.Ts`; for odds, use `validation.odds.Ts`. For V4 validation (scores and odds), use `payload.ts`. Recompute it for every proof.
-</Warning>
+| Daily scores roots | `daily_scores_roots`, [epoch day](#epoch-day) as u16 little-endian | On-chain root account used for score proof validation |
+| Daily batch roots | `daily_batch_roots`, [epoch day](#epoch-day) as u16 little-endian | On-chain root account used for odds proof validation |
+| Ten daily fixtures roots | `ten_daily_fixtures_roots`, [aligned epoch day](#aligned-epoch-day) as u16 little-endian | On-chain root account used for fixture proof validation |
 
 ```typescript
 import { PublicKey } from "@solana/web3.js";
