@@ -538,3 +538,73 @@ export function verifyTransactionSafety(
     throw new Error("Safety check failed: Multiple Oracle instructions detected in payload");
   }
 }
+
+const TOKEN_PROGRAM_ID = address("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+
+async function deriveAta(owner: Address, mint: Address, tokenProgram: Address): Promise<Address> {
+  const [ata] = await getProgramDerivedAddress({
+    programAddress: ASSOCIATED_TOKEN_PROGRAM_ID,
+    seeds: [
+      getAddressEncoder().encode(owner),
+      getAddressEncoder().encode(tokenProgram),
+      getAddressEncoder().encode(mint),
+    ]
+  });
+  return ata;
+}
+
+/**
+ * Checks every account of the purchase_subscription_token_usdt instruction against values derived locally.
+ * verifyTransactionSafety checks the programs, signers and amount, but a quote could still name other token
+ * accounts and redirect the buyer's USDT or the purchased TxL.
+ */
+export async function verifyPurchaseAccounts(
+  transaction: any,
+  expectedBuyer: Address,
+  programId: Address
+): Promise<void> {
+  const message = decompileTransactionMessage(getCompiledTransactionMessageDecoder().decode(transaction.messageBytes));
+  const instruction: any = message.instructions.find((ix: any) => ix.programAddress === programId);
+  if (!instruction) {
+    throw new Error("Safety check failed: No Oracle instruction found in payload");
+  }
+
+  const idl = TxoracleJson as any;
+  const constant = (name: string) => address(idl.constants.find((c: any) => c.name === name).value);
+  const usdtMint = constant("USDT_MINT");
+  const txlMint = constant("TXLINE_MINT");
+  const programPda = async (seed: string) =>
+    (await getProgramDerivedAddress({ programAddress: programId, seeds: [getUtf8Encoder().encode(seed)] }))[0];
+  const usdtTreasury = await programPda("usdt_treasury");
+  const tokenTreasury = await programPda("token_treasury_v2");
+
+  const expected: Record<string, Address> = {
+    buyer: expectedBuyer,
+    backend_admin: constant("BACKEND_ADMIN_PUBKEY"),
+    usdt_mint: usdtMint,
+    buyer_usdt_account: await deriveAta(expectedBuyer, usdtMint, TOKEN_PROGRAM_ID),
+    usdt_treasury_vault: await deriveAta(usdtTreasury, usdtMint, TOKEN_PROGRAM_ID),
+    usdt_treasury_pda: usdtTreasury,
+    subscription_token_mint: txlMint,
+    token_treasury_vault: await deriveAta(tokenTreasury, txlMint, TOKEN_2022_PROGRAM_ID),
+    token_treasury_pda: tokenTreasury,
+    buyer_token_account: await deriveAta(expectedBuyer, txlMint, TOKEN_2022_PROGRAM_ID),
+    token_program: TOKEN_PROGRAM_ID,
+    token_2022_program: TOKEN_2022_PROGRAM_ID,
+    system_program: SYSTEM_PROGRAM_ID,
+    associated_token_program: ASSOCIATED_TOKEN_PROGRAM_ID,
+  };
+
+  const names: string[] = idl.instructions
+    .find((ix: any) => ix.name === "purchase_subscription_token_usdt")
+    .accounts.map((account: any) => account.name);
+  if (instruction.accounts?.length !== names.length) {
+    throw new Error(`Safety check failed: Expected ${names.length} purchase accounts, found ${instruction.accounts?.length}`);
+  }
+  names.forEach((name, i) => {
+    const actual = instruction.accounts[i].address;
+    if (actual !== expected[name]) {
+      throw new Error(`Safety check failed: ${name} is ${actual}, expected ${expected[name]}`);
+    }
+  });
+}

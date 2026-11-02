@@ -120,6 +120,7 @@ async function main() {
       programId,
       BigInt(txlineAmount)
     );
+    await users.verifyPurchaseAccounts(txWithLifetime, userSigner.address, programId);
     console.log(`[${name}] Transaction cryptographically verified and safe to sign`);
 
     // Sign transaction with local keypair
