@@ -96,7 +96,7 @@ Most data endpoints require both credentials:
 | `Authorization` | `Bearer <guest-jwt>` from `/auth/guest/start` |
 | `X-Api-Token` | Activated API token from `/api/token/activate` |
 
-If the guest JWT expires, request a new JWT from the same network host. You do not need to reactivate the API token unless the subscription or token itself is invalid.
+If the guest JWT expires, request a new JWT from the same network host. You do not need to reactivate the API token unless the subscription or token itself is invalid. See [Authentication](/documentation/api/authentication) for how each credential is issued and renewed, and [Errors](/documentation/api/errors) for every API status code.
 
 ## Stream Debugging
 

@@ -67,17 +67,9 @@ console.log(`Retrieved ${allFixtures.length} total fixtures`);
 
 ## Time Period Parameters
 
-The `updates` endpoints return the records published in one period, identified by path parameters. All three are in UTC.
+The `updates` endpoints return the records published in one UTC period, given as path parameters: `epochDay`, `hourOfDay`, and, for odds and scores, the 5-minute `interval`. [Time and Batches](/documentation/api/time-and-batches) defines each parameter and the batch it selects.
 
-| Parameter | Range | Meaning |
-|-----------|-------|---------|
-| `epochDay` | `0` and up | Whole days since 1 January 1970 UTC: `Math.floor(timestampMs / 86_400_000)`. See [Epoch Day](/documentation/programs/addresses#epoch-day). |
-| `hourOfDay` | `0`–`23` | The UTC hour within that day. |
-| `interval` | `0`–`11` | The 5-minute slot within that hour: `Math.floor(utcMinutes / 5)`. Odds and scores only. |
-
-Odds and scores are published every 5 minutes, so their paths take all three: `/api/odds/updates/{epochDay}/{hourOfDay}/{interval}` and `/api/scores/updates/{epochDay}/{hourOfDay}/{interval}`. Fixtures are published hourly, so `/api/fixtures/updates/{epochDay}/{hourOfDay}` has no `interval`.
-
-Compute all three from one timestamp so they describe the same period:
+The examples below compute all three from one timestamp with this helper:
 
 ```typescript
 function periodOf(timestampMs: number) {
