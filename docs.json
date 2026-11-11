@@ -62,8 +62,7 @@
           {
             "group": "Legal",
             "pages": [
-              "documentation/legal/terms-and-conditions",
-              "documentation/legal/hackathon-terms"
+              "documentation/legal/terms-and-conditions"
             ]
           }
         ]
