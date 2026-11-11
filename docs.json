@@ -84,7 +84,7 @@
     },
     {
       "source": "/worldcup",
-      "destination": "/documentation/worldcup"
+      "destination": "/documentation/subscription-tiers"
     },
     {
       "source": "/subscription-tiers",

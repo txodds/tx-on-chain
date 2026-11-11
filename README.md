@@ -40,7 +40,6 @@ Essentialy the data access layer (use case 1) allows users to front-run their tr
 
 Current coverage and pricing are documented in the hosted docs:
 
-- [World Cup Free Tier](https://txline.txodds.com/documentation/worldcup) - service levels 1 and 12 for World Cup and International Friendlies data.
 - [Subscription Tiers](https://txline.txodds.com/documentation/subscription-tiers) - free and paid tier IDs, delays, and 28-day pricing.
 - [StablePrice Feed](https://txline.txodds.com/documentation/odds/odds-coverage) - covered odds competitions and downloadable soccer league list.
 - [Scores Schedule](https://txline.txodds.com/documentation/scores/schedule) - currently listed confirmed fixtures.
