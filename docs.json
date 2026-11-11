@@ -69,7 +69,65 @@
       },
       {
         "tab": "API Reference",
-        "openapi": "https://txline.txodds.com/docs/docs.yaml"
+        "openapi": "https://txline.txodds.com/docs/docs.yaml",
+        "groups": [
+          {
+            "group": "Access",
+            "pages": [
+              "POST /auth/guest/start",
+              "POST /api/token/activate",
+              "POST /api/guest/purchase/quote"
+            ]
+          },
+          {
+            "group": "Booking",
+            "pages": [
+              "GET /api/fixtures-schedule",
+              "GET /api/quotes/book-fixture"
+            ]
+          },
+          {
+            "group": "Fixtures",
+            "pages": [
+              "GET /api/fixtures/snapshot",
+              "GET /api/fixtures/updates/{epochDay}/{hourOfDay}"
+            ]
+          },
+          {
+            "group": "Odds",
+            "pages": [
+              "GET /api/odds/snapshot/{fixtureId}",
+              "GET /api/odds/updates/{fixtureId}",
+              "GET /api/odds/updates/{epochDay}/{hourOfDay}/{interval}"
+            ]
+          },
+          {
+            "group": "Scores",
+            "pages": [
+              "GET /api/scores/snapshot/{fixtureId}",
+              "GET /api/scores/updates/{fixtureId}",
+              "GET /api/scores/updates/{epochDay}/{hourOfDay}/{interval}",
+              "GET /api/scores/historical/{fixtureId}"
+            ]
+          },
+          {
+            "group": "Streams",
+            "pages": [
+              "GET /api/odds/stream",
+              "GET /api/scores/stream"
+            ]
+          },
+          {
+            "group": "Validation Proofs",
+            "pages": [
+              "GET /api/fixtures/validation",
+              "GET /api/fixtures/batch-validation",
+              "GET /api/odds/validation-v4",
+              "GET /api/odds/validation",
+              "GET /api/scores/stat-validation-v4"
+            ]
+          }
+        ]
       }
     ]
   },
