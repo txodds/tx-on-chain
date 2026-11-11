@@ -1,0 +1,73 @@
+---
+title: "Streaming"
+description: "The odds and scores Server-Sent Events streams: request headers, event types, resuming, and reconnecting"
+---
+
+TxLINE streams odds and scores updates as [Server-Sent Events](https://html.spec.whatwg.org/multipage/server-sent-events.html) (SSE) over a long-lived HTTP response.
+
+| Stream | Endpoint | Each data message carries |
+|--------|----------|---------------------------|
+| Odds | `GET /api/odds/stream` | One odds record, as returned by the odds endpoints |
+| Scores | `GET /api/scores/stream` | One scores record, as returned by the scores endpoints |
+
+## Request
+
+| Header or parameter | Required | Value |
+|---------------------|:--------:|-------|
+| `Authorization` | Yes | `Bearer <guest-jwt>` |
+| `X-Api-Token` | Yes | Your API token |
+| `Accept` | Recommended | `text/event-stream` |
+| `Cache-Control` | Recommended | `no-cache` |
+| `Accept-Encoding` | Optional | `gzip`. See [Compression](#compression). |
+| `Last-Event-ID` | Optional | The `id` of the last data message you received, to resume after a disconnect. |
+| `fixtureId` (query) | Optional | Limit the stream to one fixture. |
+
+```bash
+curl -N "https://txline.txodds.com/api/scores/stream?fixtureId=17952170" \
+  -H "Authorization: Bearer $JWT" \
+  -H "X-Api-Token: $API_TOKEN" \
+  -H "Accept: text/event-stream"
+```
+
+## Events
+
+| Event | `event` field | `id` field | `data` field |
+|-------|---------------|------------|--------------|
+| Data message | Not set | `timestamp:index` | A JSON object for one odds or scores record |
+| Heartbeat | `heartbeat` | Not set | Can carry a timestamp, such as `{"Ts": 12345}` |
+
+On the wire, a data message is an `id` line and a `data` line followed by a blank line:
+
+```text
+id: <timestamp>:<index>
+data: <one odds or scores record as JSON>
+
+```
+
+Heartbeats keep the connection open while no data is flowing. They are not records and have nothing to validate.
+
+## Quiet Streams
+
+An open stream with only heartbeats is healthy. It means no covered fixture is producing updates at that moment. Check the [Schedule](/documentation/scores/schedule) for live and upcoming fixtures, and use the batch or historical endpoints for data from finished fixtures.
+
+## Resuming and Reconnecting
+
+Keep the `id` of the last data message you processed. When the connection drops, reconnect with that value in the `Last-Event-ID` header to resume from that point.
+
+| Close or error | Cause | What to do |
+|----------------|-------|------------|
+| Connection drops | Network interruption or a server-side close | Reconnect with `Last-Event-ID`, backing off between attempts. |
+| `401` | The guest JWT expired | Start a new guest session on the same host, then reconnect with the same API token. |
+| `403` | The API token is invalid, from the other network, or does not cover the fixture | Check the token and network, or [book the fixture](/documentation/examples/booking-fixtures). |
+
+## Compression
+
+Add `Accept-Encoding: gzip` to cut bandwidth by 70–80%. If your HTTP client does not decompress responses automatically, decompress the body before parsing events, for example with Node's `zlib`.
+
+## Using Stream Records for Validation
+
+A scores data message is a full scores record. To prove it on-chain, pass its `Seq` (or `seq`) value to `GET /api/scores/stat-validation-v4`. Odds records carry the `MessageId` and `Ts` that `GET /api/odds/validation-v4` takes. See [On-Chain Validation](/documentation/examples/onchain-validation).
+
+## Examples
+
+[Streaming Data](/documentation/examples/streaming-data) has a dependency-free SSE parser and complete TypeScript for both streams. The [runnable devnet scripts](/documentation/examples/devnet-examples) add activation and JWT renewal.

@@ -72,6 +72,17 @@
         "openapi": "https://txline.txodds.com/docs/docs.yaml",
         "groups": [
           {
+            "group": "Using the API",
+            "pages": [
+              "documentation/api/introduction",
+              "documentation/api/authentication",
+              "documentation/api/time-and-batches",
+              "documentation/api/fixture-lifecycle",
+              "documentation/api/streaming",
+              "documentation/api/errors"
+            ]
+          },
+          {
             "group": "Access",
             "pages": [
               "POST /auth/guest/start",

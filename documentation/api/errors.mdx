@@ -1,0 +1,37 @@
+---
+title: "Errors"
+description: "HTTP status codes the TxLINE API returns, what each means, and what to do"
+---
+
+Error responses have a plain-text body, not JSON. Read the body as text and log it: it usually names the header or parameter at fault.
+
+```text
+Invalid value for: query parameter fixtureId
+```
+
+## Status Codes
+
+| Status | Meaning | What to do |
+|--------|---------|------------|
+| `400 Bad Request` | A header, path parameter, query parameter, or body is missing or malformed. The body names it. | Fix the named value. For example, `statKeys` must hold 1 to 5 integers. |
+| `401 Unauthorized` | The guest JWT is missing, invalid, or expired. | Start a new guest session on the same host and retry with the same API token. |
+| `403 Forbidden` | The API token is missing or invalid, belongs to the other network, or does not cover the data requested. On activation, the wallet signature did not verify. | Check the token and network. For a fixture outside your bundle, [book it](/documentation/examples/booking-fixtures). For activation, see [Authentication](/documentation/api/authentication#activate-an-api-token). |
+| `404 Not Found` | The record or fixture you asked for does not exist or is not available. | See [404 by Endpoint](#404-by-endpoint). |
+| `500 Internal Server Error` | The server failed to handle the request. | Retry with backoff. If it persists, contact support with the details listed in [Troubleshooting](/documentation/examples/troubleshooting#support-template). |
+| `504 Gateway Timeout` | Seen on `POST /api/token/activate`, often when the transaction and activation host are on different networks. | Confirm the transaction, guest JWT, and activation URL are all mainnet or all devnet. |
+
+## 404 by Endpoint
+
+| Endpoint | Meaning |
+|----------|---------|
+| `GET /api/quotes/book-fixture` | The fixture cannot be booked: it lacks odds or scores coverage, or its competition has no price. Choose a fixture from `GET /api/fixtures-schedule`. |
+| `GET /api/scores/stat-validation-v4` | No processed scores record exists for that `fixtureId` and `seq`. Use a `seq` from a record you received. |
+| `GET /api/odds/validation-v4` | No odds record matches that `messageId` and `ts`. |
+
+## Rate Limits
+
+The free tiers have no rate limits.
+
+## On-Chain Errors
+
+Errors from the TxLINE program, such as `FixtureAlreadyBooked`, `QuoteExpired`, or `InvalidMainTreeProof`, come from Solana transactions, not from the API. See [Troubleshooting](/documentation/examples/troubleshooting#common-errors) for each one.

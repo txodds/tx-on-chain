@@ -1,0 +1,70 @@
+---
+title: "Time and Batches"
+description: "How TxLINE batches records by time, the epochDay, hourOfDay, and interval parameters, and how far back each endpoint reaches"
+---
+
+TxLINE publishes records in time-based batches, and each batch's Merkle root is committed on Solana. The batch a record belongs to decides which endpoint returns it, which proof covers it, and which on-chain root account the proof is checked against.
+
+All times are UTC. Timestamps are Unix time in milliseconds.
+
+## Batches
+
+| Data | Batch length | Batch endpoint | On-chain root account |
+|------|--------------|----------------|-----------------------|
+| Odds | 5 minutes | `GET /api/odds/updates/{epochDay}/{hourOfDay}/{interval}` | `daily_batch_roots`, one per epoch day |
+| Scores | 5 minutes | `GET /api/scores/updates/{epochDay}/{hourOfDay}/{interval}` | `daily_scores_roots`, one per epoch day |
+| Fixtures | 1 hour | `GET /api/fixtures/updates/{epochDay}/{hourOfDay}` | `ten_daily_fixtures_roots`, one per ten epoch days |
+
+The batch endpoints return a JSON array of the records published in that period.
+
+## Period Parameters
+
+| Parameter | Range | Meaning |
+|-----------|-------|---------|
+| `epochDay` | `0` and up | Whole days since 1 January 1970 UTC: `Math.floor(timestampMs / 86_400_000)`. |
+| `hourOfDay` | `0`–`23` | The UTC hour within that day. |
+| `interval` | `0`–`11` | The 5-minute slot within that hour: `Math.floor(utcMinutes / 5)`. Odds and scores only. |
+
+Compute all three from one timestamp so they describe the same period:
+
+```typescript
+function periodOf(timestampMs: number) {
+  const date = new Date(timestampMs);
+  return {
+    epochDay: Math.floor(timestampMs / 86_400_000),
+    hourOfDay: date.getUTCHours(),
+    interval: Math.floor(date.getUTCMinutes() / 5),
+  };
+}
+
+periodOf(Date.UTC(2026, 10, 1, 15, 20)); // 1 Nov 2026 15:20 UTC -> { epochDay: 20758, hourOfDay: 15, interval: 4 }
+```
+
+The epoch day changes at midnight UTC, not local midnight. The same epoch day keys the on-chain root accounts. For PDA derivation, the aligned epoch day used by fixture roots, and why a proof's own timestamp must be used, see [Epoch Day](/documentation/programs/addresses#epoch-day).
+
+## Live and Historical Reads
+
+Each data type has an endpoint for the current period and endpoints for past ones.
+
+| Endpoint | Returns |
+|----------|---------|
+| `GET /api/odds/updates/{fixtureId}` | All odds offers for the fixture in the current 5-minute interval. |
+| `GET /api/scores/updates/{fixtureId}` | All score updates for the fixture in the current 5-minute interval. |
+| `GET /api/odds/snapshot/{fixtureId}` | The latest odds for each market line in the current 5-minute interval. With `asOf`, the latest as of that time, from historical data. |
+| `GET /api/scores/snapshot/{fixtureId}` | The latest score event for each action. With `asOf`, the latest as of that time. |
+| `GET /api/scores/historical/{fixtureId}` | Every score update for the fixture, in sequence. |
+| `GET /api/odds/updates/{epochDay}/{hourOfDay}/{interval}`, `GET /api/scores/updates/{epochDay}/{hourOfDay}/{interval}` | Everything published in a past 5-minute interval. Filter with `fixtureId`. The scores endpoint returns no live data. |
+
+## Time Windows
+
+Some endpoints only reach so far forward or back.
+
+| Endpoint | Window |
+|----------|--------|
+| `GET /api/fixtures/snapshot` | Fixtures starting on `startEpochDay` or within the 30 days after it. `startEpochDay` defaults to today. |
+| `GET /api/fixtures-schedule` | Fixtures starting at or after `afterTs`, which defaults to now and can be at most two weeks in the past. |
+| `GET /api/scores/historical/{fixtureId}` | Fixtures that started between two weeks and six hours ago. |
+
+## Sequence Numbers
+
+Score updates for a fixture are numbered in order. The `seq` of a score record identifies it within its fixture, and `GET /api/scores/stat-validation-v4` takes it to select the record to prove. Always take `seq` from a record you received. `seq=0` and made-up values are not valid.

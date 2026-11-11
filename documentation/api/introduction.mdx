@@ -1,0 +1,64 @@
+---
+title: "Introduction"
+description: "Hosts, request conventions, and a map of the TxLINE API endpoints"
+---
+
+The TxLINE API serves fixtures, odds, and scores from TxODDS. Every record it returns belongs to a batch whose Merkle root is published on Solana, so any record can be proven on-chain with a proof from the same API.
+
+Access is paid for on-chain: a wallet subscribes with the TxLINE program, then exchanges the confirmed transaction for an API token. The [Quickstart](/documentation/quickstart) walks through that flow end to end. The pages in this group describe the API itself.
+
+## Hosts
+
+Mainnet and devnet are separate deployments. Credentials, transactions, and proofs from one network do not work on the other.
+
+| Network | Host | Guest session | Everything else |
+|---------|------|---------------|-----------------|
+| Mainnet | `https://txline.txodds.com` | `POST /auth/guest/start` | `/api/...` |
+| Devnet | `https://txline-dev.txodds.com` | `POST /auth/guest/start` | `/api/...` |
+
+The guest session endpoint is at the host root. All other endpoints are under `/api/`.
+
+The OpenAPI document behind the endpoint pages is published at [`https://txline.txodds.com/docs/docs.yaml`](https://txline.txodds.com/docs/docs.yaml).
+
+## Conventions
+
+| Topic | Convention |
+|-------|------------|
+| Authentication | Data endpoints need two headers, `Authorization: Bearer <guest-jwt>` and `X-Api-Token: <api-token>`. See [Authentication](/documentation/api/authentication). |
+| Format | Successful responses are JSON, except token activation, which returns the token as plain text, and the streams, which are Server-Sent Events. |
+| Errors | Error bodies are plain text, not JSON. See [Errors](/documentation/api/errors). |
+| Timestamps | Unix time in milliseconds, UTC. |
+| Time periods | Historical batches are addressed by `epochDay`, `hourOfDay`, and `interval`, all in UTC. See [Time and Batches](/documentation/api/time-and-batches). |
+| Identifiers | Fixtures, competitions, sports, and countries are identified by integer IDs (`fixtureId`, `competitionId`, `sportId`, `countryId`). |
+| Compression | Streams accept `Accept-Encoding: gzip`, which cuts bandwidth by 70–80%. See [Streaming](/documentation/api/streaming#compression). |
+
+## Endpoint Map
+
+The endpoints are grouped by what you use them for.
+
+| Group | Endpoints | Use them to |
+|-------|-----------|-------------|
+| Access | `/auth/guest/start`, `/api/token/activate`, `/api/guest/purchase/quote` | Start a session, activate an API token after subscribing, and buy TxL with USDT. |
+| Booking | `/api/fixtures-schedule`, `/api/quotes/book-fixture` | Find bookable fixtures and get a signed quote for the on-chain `book_fixture` instruction. |
+| Fixtures | `/api/fixtures/snapshot`, `/api/fixtures/updates/...` | List upcoming fixtures, or read the fixture updates published in one hourly batch. |
+| Odds | `/api/odds/snapshot/...`, `/api/odds/updates/...` | Read the latest odds for a fixture, now or as of a past time, or the odds published in one 5-minute batch. |
+| Scores | `/api/scores/snapshot/...`, `/api/scores/updates/...`, `/api/scores/historical/...` | Read the latest scores for a fixture, the scores published in one 5-minute batch, or a fixture's full score sequence. |
+| Streams | `/api/odds/stream`, `/api/scores/stream` | Receive odds and scores updates in real time. See [Streaming](/documentation/api/streaming). |
+| Validation proofs | `/api/fixtures/validation`, `/api/fixtures/batch-validation`, `/api/odds/validation-v4`, `/api/odds/validation`, `/api/scores/stat-validation-v4` | Fetch the Merkle proofs that the on-chain validation instructions check. See [On-Chain Validation](/documentation/examples/onchain-validation). |
+
+## Typical Integration
+
+<Steps>
+  <Step title="Get access">
+    Start a guest session, submit `subscribe` on-chain, and activate an API token. See the [Quickstart](/documentation/quickstart).
+  </Step>
+  <Step title="Find fixtures">
+    List fixtures with `GET /api/fixtures/snapshot`, or bookable fixtures with `GET /api/fixtures-schedule`. See [Fixture Lifecycle](/documentation/api/fixture-lifecycle).
+  </Step>
+  <Step title="Read data">
+    Use snapshots for the current state, the streams for live updates, and the batch endpoints for history.
+  </Step>
+  <Step title="Prove data on-chain">
+    Book the fixture, fetch a proof from a validation endpoint, and submit it to the TxLINE program. See [Booking Fixtures](/documentation/examples/booking-fixtures) and [On-Chain Validation](/documentation/examples/onchain-validation).
+  </Step>
+</Steps>

@@ -1,0 +1,50 @@
+---
+title: "Fixture Lifecycle"
+description: "What the API offers for a fixture before, during, and after the match, and which records to use for settlement"
+---
+
+A fixture moves from listed, to in play, to finished. What you can read, book, and prove changes along the way. This page follows one fixture through those stages.
+
+## Stages
+
+| Stage | What happens | Endpoints to use |
+|-------|--------------|------------------|
+| Listed | The fixture appears in the fixtures feed, up to 30 days ahead. | `GET /api/fixtures/snapshot` |
+| Bookable | The fixture has odds and scores coverage and a configured price, so it can be booked. | `GET /api/fixtures-schedule`, `GET /api/quotes/book-fixture` |
+| Pre-match | Odds update as the market moves. | `GET /api/odds/snapshot/{fixtureId}`, `GET /api/odds/stream` |
+| In play | Score events arrive as the match progresses, and odds continue in running. | `GET /api/scores/stream`, `GET /api/scores/snapshot/{fixtureId}`, `GET /api/odds/stream` |
+| Finished | The final scores record is published. | `GET /api/scores/snapshot/{fixtureId}`, `GET /api/scores/historical/{fixtureId}` |
+| Replay | The full score sequence is available from six hours to two weeks after the start time. | `GET /api/scores/historical/{fixtureId}` |
+
+Each record is proven against the batch it was published in. See [Time and Batches](/documentation/api/time-and-batches) for how batches are addressed and the time windows each endpoint covers.
+
+## Fixture Records
+
+Fixture records from `GET /api/fixtures/snapshot` carry the fixture's ID, competition, start time, and participants.
+
+- `Participant1IsHome` says which participant the feed treats as home. It is not a venue guarantee: at neutral venues, the team listed as home may not be playing in its own country.
+- `GameState` is numeric in a backward-compatible format. Current values are `1` for scheduled and `6` for cancelled.
+
+`GET /api/fixtures-schedule` returns bookable fixtures in reduced detail, with `GameState` as a string: `scheduled`, `walkover`, `finished`, `live`, `postponed`, `cancelled`, `retired`, or `suspended`. See [List Bookable Fixtures](/documentation/examples/booking-fixtures#list-bookable-fixtures).
+
+## Booking
+
+Booking buys your wallet a `fixture_ticket` for one fixture. The ticket is needed to prove the fixture's stats or odds on-chain, and it also opens the fixture's scores and odds data when your subscription bundle does not cover it.
+
+Only fixtures listed by `GET /api/fixtures-schedule` can be booked. Fixture IDs taken from the odds or scores feeds are often not bookable. See [Booking Fixtures](/documentation/examples/booking-fixtures).
+
+## Match Phases
+
+Score records report the match phase with sport-specific codes. Soccer, for example, uses `2` for first half in play, `3` for halftime, and `5` for ended. Each sport's codes are on its feed page:
+
+- [Soccer Feed](/documentation/scores/soccer-feed#game-phase-encoding)
+- [American Football Feed](/documentation/scores/football-feed)
+- [Basketball Feed](/documentation/scores/basketball-feed)
+
+## Settling on the Final Result
+
+To settle on the final match result, use the scores record with `action=game_finalised`. On the current devnet and mainnet releases, that record has `statusId=100` and `period=100`, whether the match ended in regulation, extra time, penalties, or abandonment.
+
+An in-running record proves a condition at the moment it was observed, not the final result. For a period result, use a record whose phase or status shows that the period is complete.
+
+Take the record's `seq` and pass it to `GET /api/scores/stat-validation-v4` to get the proof. See [On-Chain Validation](/documentation/examples/onchain-validation).

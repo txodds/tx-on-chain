@@ -1,0 +1,89 @@
+---
+title: "Authentication"
+description: "The guest JWT and the API token, where each comes from, and which endpoints need them"
+---
+
+TxLINE uses two credentials. Data endpoints need both on every request.
+
+| Credential | Header | How you get it | Lifetime |
+|------------|--------|----------------|----------|
+| Guest JWT | `Authorization: Bearer <jwt>` | `POST /auth/guest/start` on the host root | Expires after 30 days. Renew it by starting a new guest session. |
+| API token | `X-Api-Token: <token>` | `POST /api/token/activate` after an on-chain `subscribe` transaction | Long-lived. It stays valid while the subscription it was activated from is active. |
+
+## Which Endpoints Need What
+
+| Endpoints | Guest JWT | API token |
+|-----------|:---------:|:---------:|
+| `POST /auth/guest/start` | No | No |
+| `POST /api/token/activate`, `POST /api/guest/purchase/quote` | Yes | No |
+| Every other endpoint, including the streams | Yes | Yes |
+
+## Start a Guest Session
+
+`POST /auth/guest/start` takes no body and returns a JWT:
+
+```bash
+curl -s -X POST https://txline.txodds.com/auth/guest/start
+```
+
+```json
+{ "token": "<guest-jwt>" }
+```
+
+Use the host of the network you subscribed on. A devnet JWT does not work on mainnet, and the reverse.
+
+## Activate an API Token
+
+After the `subscribe` transaction confirms, sign an activation message with the subscribing wallet and send it to `POST /api/token/activate`, with the guest JWT as the bearer token.
+
+The message is the transaction signature, the comma-separated league IDs, and the guest JWT, joined with colons:
+
+```text
+${txSig}:${leagues.join(",")}:${jwt}
+```
+
+| Subscription | `leagues` | Message signed |
+|--------------|-----------|----------------|
+| Free or standard bundle | `[]` | `${txSig}::${jwt}` |
+| Custom bundle | The league IDs you choose, up to the number purchased | `${txSig}:500001,500005:${jwt}` |
+
+The request body:
+
+```json
+{
+  "txSig": "<subscribe transaction signature>",
+  "walletSignature": "<base64 detached signature over the message>",
+  "leagues": []
+}
+```
+
+The response body is the API token as plain text, not JSON.
+
+The rules that most often cause a `403` on activation:
+
+- The signing wallet must be the wallet that submitted `subscribe`.
+- `walletSignature` must be a base64-encoded detached signature over the exact message string.
+- The JWT in the message must be the same JWT sent in the `Authorization` header, and come from the same network as the transaction.
+
+The [Quickstart](/documentation/quickstart#activate-your-api-token) has the full TypeScript for signing and activation.
+
+## Call a Data Endpoint
+
+Send both credentials:
+
+```bash
+curl -s "https://txline.txodds.com/api/fixtures/snapshot" \
+  -H "Authorization: Bearer $JWT" \
+  -H "X-Api-Token: $API_TOKEN"
+```
+
+## Renewing Credentials
+
+| Response | Meaning | What to do |
+|----------|---------|------------|
+| `401` | The guest JWT is missing, invalid, or expired | Start a new guest session on the same host and retry with the same API token. You do not need to reactivate. |
+| `403` | The API token is invalid, belongs to the other network, or does not cover the data requested | Check the token and network. For a fixture outside your bundle, [book the fixture](/documentation/examples/booking-fixtures). |
+
+<Warning>
+Never share your guest JWT, API token, or wallet secret key, and redact request headers before posting logs in a support channel.
+</Warning>
